@@ -45,7 +45,8 @@ Thumbs.db
 tmp/
 temp/
 *.tmp
-!/.mcp.json
+# .mcp.json contains secrets - never commit
+.mcp.json
 
 # AI config - Commit .claude/ but ignore personal/sensitive files
 .claude/

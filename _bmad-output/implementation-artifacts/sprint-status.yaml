@@ -1,0 +1,283 @@
+# generated: 2026-01-11
+# project: trafi-app
+# project_key: trafi-app
+# tracking_system: file-system
+# story_location: _bmad-output/implementation-artifacts
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Epic Status Transitions:
+#   - backlog -> in-progress: Automatically when first story is created (via create-story)
+#   - in-progress -> done: Manually when all stories reach 'done' status
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in stories folder
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review (via Dev's code-review workflow)
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+#
+# WORKFLOW NOTES:
+# ===============
+# - Epic transitions to 'in-progress' automatically when first story is created
+# - Stories can be worked in parallel if team capacity allows
+# - SM typically creates next story after previous one is 'done' to incorporate learnings
+# - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
+
+generated: 2026-01-11
+project: trafi-app
+project_key: trafi-app
+tracking_system: file-system
+story_location: _bmad-output/implementation-artifacts
+
+development_status:
+  # ============================================
+  # EPIC 1: Foundation & Developer Bootstrap
+  # Thomas peut creer un projet Trafi fonctionnel en 5 minutes avec CLI, monorepo configure, et seed data.
+  # ============================================
+  epic-1: in-progress
+  1-1-initialize-turborepo-monorepo-structure: done
+  1-2-setup-nestjs-api-application: done
+  1-3-setup-nextjs-dashboard-application: backlog
+  1-4-create-shared-packages-structure: backlog
+  1-5-configure-prisma-with-postgresql: backlog
+  1-6-setup-test-infrastructure: backlog
+  1-7-seed-demo-data-for-development: backlog
+  1-8-docker-containerization-setup: backlog
+  epic-1-retrospective: optional
+
+  # ============================================
+  # EPIC 2: Admin Authentication & Store Setup
+  # Admin peut se connecter au dashboard, configurer le store, et gerer les acces utilisateurs avec RBAC.
+  # ============================================
+  epic-2: backlog
+  2-1-admin-user-model-and-authentication: backlog
+  2-2-dashboard-authentication-guard: backlog
+  2-3-role-based-access-control-rbac-foundation: backlog
+  2-4-admin-user-management: backlog
+  2-5-api-key-management: backlog
+  2-6-tenant-scoped-authorization: backlog
+  2-7-store-settings-configuration: backlog
+  2-8-ownership-transfer: backlog
+  epic-2-retrospective: optional
+
+  # ============================================
+  # EPIC 3: Product Catalog & Inventory
+  # Merchant peut creer, editer, et organiser son catalogue produits complet avec gestion d'inventaire.
+  # ============================================
+  epic-3: backlog
+  3-1-product-model-and-basic-crud: backlog
+  3-2-product-variants-management: backlog
+  3-3-product-media-upload: backlog
+  3-4-categories-management: backlog
+  3-5-collections-management: backlog
+  3-6-product-pricing-and-tax-rules: backlog
+  3-7-inventory-tracking: backlog
+  3-8-oversell-prevention: backlog
+  epic-3-retrospective: optional
+
+  # ============================================
+  # EPIC 4: Shopping Cart & Checkout
+  # Buyer peut ajouter au panier, voir les frais de livraison en temps reel, et finaliser son achat en guest checkout.
+  # ============================================
+  epic-4: backlog
+  4-1-cart-model-and-session-management: backlog
+  4-2-add-to-cart-functionality: backlog
+  4-3-cart-management-and-updates: backlog
+  4-4-shipping-zones-and-rates-configuration: backlog
+  4-5-shipping-rate-calculation: backlog
+  4-6-tax-calculation-engine: backlog
+  4-7-checkout-flow-guest-checkout: backlog
+  4-8-checkout-flow-address-and-shipping-selection: backlog
+  4-9-order-creation-and-confirmation: backlog
+  epic-4-retrospective: optional
+
+  # ============================================
+  # EPIC 5: Payment Processing
+  # Systeme gere les paiements Stripe complets avec 3DS, webhooks, remboursements, et audit trail.
+  # ============================================
+  epic-5: backlog
+  5-1-stripe-account-connection: backlog
+  5-2-stripe-elements-integration: backlog
+  5-3-express-checkout-apple-pay-google-pay: backlog
+  5-4-payment-processing-with-3ds: backlog
+  5-5-payment-webhook-handler: backlog
+  5-6-payment-failure-handling: backlog
+  5-7-refund-processing: backlog
+  5-8-payment-audit-trail: backlog
+  epic-5-retrospective: optional
+
+  # ============================================
+  # EPIC 6: Order Management & Fulfillment
+  # Merchant peut traiter, expedier, et suivre les commandes avec integration 3PL et gestion des retours.
+  # ============================================
+  epic-6: backlog
+  6-1-order-list-and-search: backlog
+  6-2-order-detail-view: backlog
+  6-3-order-status-transitions: backlog
+  6-4-order-fulfillment-manual: backlog
+  6-5-shipping-notification-emails: backlog
+  6-6-fulfillment-webhooks-for-3pl: backlog
+  6-7-3pl-tracking-update-api: backlog
+  6-8-return-authorization-rma: backlog
+  6-9-return-policy-configuration: backlog
+  epic-6-retrospective: optional
+
+  # ============================================
+  # EPIC 7: Customer Accounts & Wishlist
+  # Buyer peut creer un compte (email, Google, Apple), gerer ses adresses, wishlist, et voir son historique.
+  # ============================================
+  epic-7: backlog
+  7-1-customer-registration-with-email: backlog
+  7-2-customer-login-and-session: backlog
+  7-3-password-reset-flow: backlog
+  7-4-google-oauth-authentication: backlog
+  7-5-sign-in-with-apple: backlog
+  7-6-address-book-management: backlog
+  7-7-order-history-view: backlog
+  7-8-order-tracking: backlog
+  7-9-returning-customer-identification: backlog
+  7-10-wishlist-add-and-view: backlog
+  7-11-wishlist-management: backlog
+  7-12-wishlist-to-cart: backlog
+  epic-7-retrospective: optional
+
+  # ============================================
+  # EPIC 8: Profit Engine - Analytics & Recommendations
+  # Merchant voit les metriques de conversion et recoit des recommandations d'optimisation avec rollback automatique.
+  # ============================================
+  epic-8: backlog
+  8-1-event-instrumentation-schema: backlog
+  8-2-storefront-event-capture: backlog
+  8-3-event-aggregation-pipeline: backlog
+  8-4-store-performance-dashboard: backlog
+  8-5-checkout-funnel-visualization: backlog
+  8-6-funnel-diagnostics-engine: backlog
+  8-7-recommendation-generation: backlog
+  8-8-recommendation-review-interface: backlog
+  8-9-feature-flag-system: backlog
+  8-10-statistical-measurement-engine: backlog
+  8-11-automatic-rollback: backlog
+  8-12-experiment-results-and-proof: backlog
+  8-13-profit-guardrails-configuration: backlog
+  8-14-guardrails-enforcement: backlog
+  8-15-profit-attribution-dashboard: backlog
+  epic-8-retrospective: optional
+
+  # ============================================
+  # EPIC 9: Profit Engine - Cart Recovery
+  # Systeme envoie des emails de recuperation de panier abandonne avec restauration one-click.
+  # ============================================
+  epic-9: backlog
+  9-1-abandoned-cart-detection: backlog
+  9-2-recovery-email-sequence-configuration: backlog
+  9-3-recovery-email-templates: backlog
+  9-4-recovery-email-job-scheduling: backlog
+  9-5-magic-link-cart-restoration: backlog
+  9-6-recovery-attribution-tracking: backlog
+  9-7-recovery-analytics-dashboard: backlog
+  9-8-recovery-email-unsubscribe: backlog
+  epic-9-retrospective: optional
+
+  # ============================================
+  # EPIC 10: Privacy & Compliance
+  # DPO peut gerer les demandes GDPR (recherche, export, suppression) avec audit trail complet et consent tracking.
+  # ============================================
+  epic-10: backlog
+  10-1-privacy-manager-role: backlog
+  10-2-customer-data-search: backlog
+  10-3-gdpr-data-export: backlog
+  10-4-data-erasure-request-processing: backlog
+  10-5-consent-tracking-system: backlog
+  10-6-customer-consent-management: backlog
+  10-7-cookie-consent-banner: backlog
+  10-8-cookie-consent-configuration: backlog
+  10-9-data-operation-audit-log: backlog
+  epic-10-retrospective: optional
+
+  # ============================================
+  # EPIC 11: Platform Operations & Jobs
+  # Ops peuvent monitorer la sante systeme, gerer les jobs asynchrones BullMQ, et diagnostiquer les problemes.
+  # ============================================
+  epic-11: backlog
+  11-1-bullmq-job-queue-setup: backlog
+  11-2-job-retry-with-exponential-backoff: backlog
+  11-3-dead-letter-queue-management: backlog
+  11-4-queue-status-dashboard: backlog
+  11-5-system-health-dashboard: backlog
+  11-6-per-tenant-metrics: backlog
+  11-7-event-flow-health-indicator: backlog
+  11-8-slo-monitoring-and-alerting: backlog
+  11-9-synthetic-monitoring: backlog
+  11-10-support-mode-access: backlog
+  11-11-diagnostic-report-generation: backlog
+  11-12-deployment-rollback: backlog
+  epic-11-retrospective: optional
+
+  # ============================================
+  # EPIC 12: SDK & API Experience
+  # Developer dispose d'un SDK type-safe complet avec documentation, templates, et excellent DX.
+  # ============================================
+  epic-12: backlog
+  12-1-sdk-package-structure: backlog
+  12-2-storefront-sdk-client: backlog
+  12-3-admin-sdk-client: backlog
+  12-4-sdk-safe-defaults: backlog
+  12-5-sdk-error-handling: backlog
+  12-6-event-instrumentation-sdk: backlog
+  12-7-nextjs-storefront-template: backlog
+  12-8-api-documentation-generation: backlog
+  12-9-sdk-code-examples: backlog
+  12-10-sdk-version-management: backlog
+  12-11-api-key-scopes-documentation: backlog
+  epic-12-retrospective: optional
+
+  # ============================================
+  # EPIC 13: Module System & Extensibility
+  # Developer peut creer, installer, et gerer des modules custom avec hot-reload et sandboxing.
+  # ============================================
+  epic-13: backlog
+  13-1-module-manifest-schema: backlog
+  13-2-module-cli-install: backlog
+  13-3-module-cli-list-and-status: backlog
+  13-4-module-enable-disable: backlog
+  13-5-module-validation-and-safety: backlog
+  13-6-module-discovery-and-loading: backlog
+  13-7-module-hot-reload-development: backlog
+  13-8-backend-extension-services: backlog
+  13-9-backend-extension-api-endpoints: backlog
+  13-10-dashboard-extension-views: backlog
+  13-11-event-hooks-system: backlog
+  13-12-database-schema-extension: backlog
+  13-13-module-update-and-compatibility: backlog
+  13-14-module-rollback-and-removal: backlog
+  13-15-module-custom-metrics: backlog
+  epic-13-retrospective: optional
+
+  # ============================================
+  # EPIC 14: Cloud & Multi-tenancy
+  # Merchant peut utiliser Trafi Cloud sans gerer l'infrastructure, avec migration Shopify automatisee.
+  # ============================================
+  epic-14: backlog
+  14-1-cloud-signup-flow: backlog
+  14-2-tenant-provisioning-orchestration: backlog
+  14-3-database-per-tenant-isolation: backlog
+  14-4-tenant-database-backups: backlog
+  14-5-tenant-database-restore: backlog
+  14-6-resource-auto-scaling: backlog
+  14-7-tenant-resource-limits: backlog
+  14-8-shopify-migration-data-export: backlog
+  14-9-shopify-migration-data-import: backlog
+  14-10-shopify-migration-validation: backlog
+  14-11-custom-domain-configuration: backlog
+  14-12-tenant-offboarding: backlog
+  epic-14-retrospective: optional

@@ -1,0 +1,24 @@
+# BMM Workflow Status
+# Tracks completion of BMM workflows for trafi-app
+
+project_name: trafi-app
+last_updated: 2026-01-09
+
+# Completed Workflows
+workflow_status:
+  product-brief:
+    status: completed
+    completed_at: 2026-01-09
+    output_file: "_bmad-output/planning-artifacts/product-brief-trafi-app-2026-01-09.md"
+    steps_completed: [1, 2, 3, 4, 5, 6]
+    input_documents:
+      - "_bmad-output/analysis/brainstorming-session-2026-01-08.md"
+
+# Next Recommended Workflows
+recommended_next:
+  - workflow: create-prd
+    reason: "Detailed product requirements based on product brief"
+  - workflow: create-ux-design
+    reason: "UX research and design (can run parallel with PRD)"
+  - workflow: create-architecture
+    reason: "Technical architecture decisions"

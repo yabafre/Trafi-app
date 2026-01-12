@@ -1,0 +1,20 @@
+// =============================================================================
+// Store Domain Schema
+// =============================================================================
+// Multi-tenant store entity - the root of all tenant-scoped data.
+// ID prefix pattern: store_ (implemented in service layer)
+// =============================================================================
+
+model Store {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  users    User[]
+  products Product[]
+
+  @@map("stores")
+}

@@ -1,0 +1,28 @@
+// =============================================================================
+// Product Domain Schema
+// =============================================================================
+// Product catalog entity for e-commerce.
+// ID prefix pattern: prod_ (implemented in service layer)
+// Money fields use INTEGER cents (ARCH-25).
+// All queries MUST be scoped by storeId for multi-tenancy (CRITICAL).
+// =============================================================================
+
+model Product {
+  id           String   @id @default(cuid())
+  storeId      String   @map("store_id")
+  name         String
+  slug         String
+  description  String?
+  priceInCents Int      @map("price_in_cents") // Money as cents (ARCH-25): $19.99 = 1999
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  // Indexes for multi-tenancy and lookup queries
+  @@unique([storeId, slug])
+  @@index([storeId])
+  @@map("products")
+}

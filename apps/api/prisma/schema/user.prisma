@@ -1,0 +1,23 @@
+// =============================================================================
+// User Domain Schema
+// =============================================================================
+// Admin users for store management (dashboard access).
+// ID prefix pattern: usr_ (implemented in service layer)
+// All queries MUST be scoped by storeId for multi-tenancy (CRITICAL).
+// =============================================================================
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  storeId   String   @map("store_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  // Indexes for multi-tenancy queries
+  @@index([storeId])
+  @@map("users")
+}

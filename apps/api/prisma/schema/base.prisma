@@ -1,0 +1,22 @@
+// =============================================================================
+// Prisma Schema - Base Configuration
+// =============================================================================
+// This file contains the generator and datasource configuration.
+// In Prisma 7, the database URL is configured in prisma.config.ts
+//
+// NAMING CONVENTIONS (ARCH-22):
+// - Models: PascalCase singular (Store, Product, User)
+// - Tables: snake_case plural via @@map("stores")
+// - Columns: camelCase in Prisma, snake_case in DB via @map
+// - IDs: CUID with domain prefix pattern (store_, prod_, usr_)
+// - Money: INTEGER cents (ARCH-25)
+// =============================================================================
+
+generator client {
+  provider = "prisma-client"
+  output   = "../../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}

@@ -5,5 +5,6 @@
   "compilerOptions": {
     "deleteOutDir": false,
     "tsConfigPath": "tsconfig.build.json"
-  }
+  },
+  "exec": "node --require tsconfig-paths/register"
 }

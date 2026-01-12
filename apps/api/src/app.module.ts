@@ -4,6 +4,7 @@ import { envValidationSchema } from './config';
 import { DatabaseModule } from './database';
 import { HealthModule } from './health';
 import { ObservabilityModule } from './observability';
+import { AuthModule } from '@modules/auth/auth.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { ObservabilityModule } from './observability';
     DatabaseModule,
     ObservabilityModule,
     HealthModule,
+    AuthModule,
   ],
   controllers: [],
   providers: [],

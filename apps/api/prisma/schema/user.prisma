@@ -6,18 +6,37 @@
 // All queries MUST be scoped by storeId for multi-tenancy (CRITICAL).
 // =============================================================================
 
+enum UserRole {
+  OWNER
+  ADMIN
+  EDITOR
+  VIEWER
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  INVITED
+}
+
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String?
-  storeId   String   @map("store_id")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id               String      @id @default(cuid())
+  email            String      @unique
+  name             String?
+  passwordHash     String      @map("password_hash")
+  role             UserRole    @default(EDITOR)
+  status           UserStatus  @default(INVITED)
+  lastLoginAt      DateTime?   @map("last_login_at")
+  refreshTokenHash String?     @map("refresh_token_hash")
+  storeId          String      @map("store_id")
+  createdAt        DateTime    @default(now()) @map("created_at")
+  updatedAt        DateTime    @updatedAt @map("updated_at")
 
   // Relations
   store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
 
   // Indexes for multi-tenancy queries
   @@index([storeId])
+  @@index([email, storeId])
   @@map("users")
 }

@@ -100,6 +100,46 @@ _This file contains critical rules and patterns that AI agents must follow when 
 - Use `@Permissions('products:write')` for granular access
 - Use `@Public()` decorator for public endpoints only
 
+#### Swagger/OpenAPI Documentation (MANDATORY)
+Every API endpoint MUST have Swagger decorators. This is not optional.
+
+**Controller-level:**
+```typescript
+@ApiTags('products')  // Group endpoints by domain
+@Controller('products')
+```
+
+**Endpoint-level:**
+```typescript
+@ApiOperation({ summary: 'Create product', description: 'Full description...' })
+@ApiBody({ type: CreateProductDto })
+@ApiResponse({ status: 201, description: 'Product created', type: ProductDto })
+@ApiResponse({ status: 400, description: 'Validation error', type: ErrorResponseDto })
+@ApiResponse({ status: 401, description: 'Unauthorized', type: ErrorResponseDto })
+@ApiBearerAuth('JWT-auth')  // For protected endpoints
+@Post()
+create(@Body() dto: CreateProductDto) { ... }
+```
+
+**DTO Classes (for Swagger schemas):**
+```typescript
+// Create in: src/modules/{domain}/dto/{name}.dto.ts
+export class CreateProductDto {
+  @ApiProperty({ description: 'Product name', example: 'Premium T-Shirt' })
+  name: string;
+
+  @ApiProperty({ description: 'Price in cents', example: 2999, minimum: 0 })
+  priceInCents: number;
+}
+```
+
+**Rules:**
+- Every controller needs `@ApiTags()`
+- Every endpoint needs `@ApiOperation()` + `@ApiResponse()` for all status codes
+- Every protected endpoint needs `@ApiBearerAuth('JWT-auth')`
+- Create DTO classes with `@ApiProperty()` for request/response bodies
+- Swagger UI available at `/docs`
+
 #### tRPC Routers
 - Naming: `{resource}.{action}` → `products.list`, `orders.create`
 - Input validation via Zod schemas from `@trafi/validators`

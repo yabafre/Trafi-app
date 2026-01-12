@@ -28,8 +28,20 @@
     "noFallthroughCasesInSwitch": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "paths": {
+      "@/*": ["src/*"],
+      "@common": ["src/common/index"],
+      "@common/*": ["src/common/*"],
+      "@modules": ["src/modules/index"],
+      "@modules/*": ["src/modules/*"],
+      "@database": ["src/database/index"],
+      "@database/*": ["src/database/*"],
+      "@config": ["src/config/index"],
+      "@config/*": ["src/config/*"],
+      "@generated/*": ["src/generated/*"]
+    }
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "test", "**/*.spec.ts"]
+  "exclude": ["node_modules", "dist"]
 }

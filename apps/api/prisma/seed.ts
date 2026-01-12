@@ -14,8 +14,9 @@
 
 // Import PrismaClient from the custom generated location (Prisma 7)
 // Uses @prisma/adapter-pg for PostgreSQL connection (same as PrismaService)
-import { PrismaClient } from '../src/generated/prisma/client';
+import { PrismaClient, UserRole, UserStatus } from '../src/generated/prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
+import * as bcrypt from 'bcrypt';
 
 // Validate DATABASE_URL is set before proceeding
 const databaseUrl = process.env.DATABASE_URL;
@@ -36,6 +37,8 @@ const prisma = new PrismaClient({ adapter });
 // =============================================================================
 
 const LOG_SEPARATOR_WIDTH = 60;
+const BCRYPT_ROUNDS = 10;
+const DEMO_PASSWORD = 'TrafiDemo123!'; // Demo password for all users
 
 // =============================================================================
 // Demo Data Definitions
@@ -46,10 +49,42 @@ const DEMO_STORE = {
   slug: 'demo-store',
 };
 
-const DEMO_USERS = [
-  { email: 'admin@trafi.dev', name: 'Admin User' },
-  { email: 'manager@trafi.dev', name: 'Store Manager' },
-  { email: 'staff@trafi.dev', name: 'Staff Member' },
+const DEMO_USERS: Array<{
+  email: string;
+  name: string;
+  role: UserRole;
+  status: UserStatus;
+}> = [
+  {
+    email: 'owner@trafi.dev',
+    name: 'Store Owner',
+    role: 'OWNER',
+    status: 'ACTIVE',
+  },
+  {
+    email: 'admin@trafi.dev',
+    name: 'Admin User',
+    role: 'ADMIN',
+    status: 'ACTIVE',
+  },
+  {
+    email: 'editor@trafi.dev',
+    name: 'Editor User',
+    role: 'EDITOR',
+    status: 'ACTIVE',
+  },
+  {
+    email: 'viewer@trafi.dev',
+    name: 'Viewer User',
+    role: 'VIEWER',
+    status: 'ACTIVE',
+  },
+  {
+    email: 'invited@trafi.dev',
+    name: 'Invited User',
+    role: 'EDITOR',
+    status: 'INVITED',
+  },
 ];
 
 // Products with prices in cents (ARCH-25)
@@ -156,21 +191,35 @@ async function seedStore(): Promise<string> {
 async function seedUsers(storeId: string): Promise<void> {
   console.log('\n--- Seeding Users ---');
 
+  // Hash password once for all users (performance optimization)
+  const passwordHash = bcrypt.hashSync(DEMO_PASSWORD, BCRYPT_ROUNDS);
+  console.log(`  Password hash generated (bcrypt rounds: ${BCRYPT_ROUNDS})`);
+
   for (const userData of DEMO_USERS) {
     const user = await prisma.user.upsert({
       where: { email: userData.email },
-      update: {},
+      update: {
+        // Update role and status if user exists
+        role: userData.role,
+        status: userData.status,
+        passwordHash: passwordHash,
+      },
       create: {
         email: userData.email,
         name: userData.name,
+        passwordHash: passwordHash,
+        role: userData.role,
+        status: userData.status,
         storeId: storeId,
       },
     });
 
-    console.log(`  User: ${user.name} (${user.email})`);
+    const statusIcon = user.status === 'ACTIVE' ? '✓' : '○';
+    console.log(`  [${statusIcon}] ${user.name} (${user.email}) - ${user.role}`);
   }
 
   console.log(`  Total: ${DEMO_USERS.length} users`);
+  console.log(`  Demo login: any email above with password "${DEMO_PASSWORD}"`);
 }
 
 async function seedProducts(storeId: string): Promise<void> {

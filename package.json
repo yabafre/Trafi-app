@@ -22,7 +22,15 @@
     "db:migrate:dev": "dotenv -- pnpm --filter @trafi/api db:migrate:dev",
     "db:migrate:deploy": "dotenv -- pnpm --filter @trafi/api db:migrate:deploy",
     "db:studio": "dotenv -- pnpm --filter @trafi/api db:studio",
-    "db:seed": "dotenv -- pnpm --filter @trafi/api db:seed"
+    "db:seed": "dotenv -- pnpm --filter @trafi/api db:seed",
+    "docker:up": "docker compose up",
+    "docker:up:build": "docker compose up --build",
+    "docker:up:detach": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "docker:down:volumes": "docker compose down -v",
+    "docker:build": "docker compose build",
+    "docker:logs": "docker compose logs -f",
+    "docker:ps": "docker compose ps"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^8.20.0",

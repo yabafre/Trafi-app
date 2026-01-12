@@ -1,0 +1,59 @@
+# ============================================
+# Trafi Dashboard - Docker Ignore
+# ============================================
+# Files and directories to exclude from Docker build context
+# This reduces build time and image size
+# ============================================
+
+# Dependencies (will be installed in container)
+node_modules/
+.pnpm-store/
+
+# Build outputs (will be built in container)
+.next/
+out/
+build/
+*.tsbuildinfo
+
+# Test files and coverage
+coverage/
+*.spec.ts
+*.spec.tsx
+*.test.ts
+*.test.tsx
+__tests__/
+src/__tests__/
+
+# Development files
+.env
+.env.*
+*.log
+
+# IDE and editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+README.md
+*.md
+docs/
+
+# Docker files (avoid recursive inclusion)
+Dockerfile
+.dockerignore
+docker-compose*.yml
+
+# Storybook (if exists)
+.storybook/
+storybook-static/
+
+# Playwright (E2E tests)
+playwright-report/
+test-results/

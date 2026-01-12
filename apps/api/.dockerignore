@@ -1,0 +1,53 @@
+# ============================================
+# Trafi API - Docker Ignore
+# ============================================
+# Files and directories to exclude from Docker build context
+# This reduces build time and image size
+# ============================================
+
+# Dependencies (will be installed in container)
+node_modules/
+.pnpm-store/
+
+# Build outputs (will be built in container)
+dist/
+*.tsbuildinfo
+
+# Test files and coverage
+coverage/
+*.spec.ts
+*.test.ts
+test/
+__tests__/
+
+# Development files
+.env
+.env.*
+*.log
+
+# IDE and editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+README.md
+*.md
+docs/
+
+# Prisma migrations (not needed for build)
+prisma/migrations/
+
+# Generated files (will be generated in container)
+src/generated/
+
+# Docker files (avoid recursive inclusion)
+Dockerfile
+.dockerignore
+docker-compose*.yml

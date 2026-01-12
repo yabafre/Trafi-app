@@ -1,6 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { TerminusModule, HealthCheckService } from '@nestjs/terminus';
 import { HealthController } from '../../src/health/health.controller';
+import { PrismaHealthIndicator } from '../../src/health/prisma.health';
+
+// Mock PrismaHealthIndicator to avoid database dependency in unit tests
+const mockPrismaHealthIndicator = {
+  isHealthy: jest.fn().mockResolvedValue({ database: { status: 'up' } }),
+};
 
 describe('HealthController', () => {
   let controller: HealthController;
@@ -10,6 +16,12 @@ describe('HealthController', () => {
     const module: TestingModule = await Test.createTestingModule({
       imports: [TerminusModule],
       controllers: [HealthController],
+      providers: [
+        {
+          provide: PrismaHealthIndicator,
+          useValue: mockPrismaHealthIndicator,
+        },
+      ],
     }).compile();
 
     controller = module.get<HealthController>(HealthController);
@@ -30,9 +42,10 @@ describe('HealthController', () => {
       expect(result).toHaveProperty('details');
     });
 
-    it('should include memory health indicators', async () => {
+    it('should include memory and database health indicators', async () => {
       const result = await controller.check();
 
+      expect(result.info).toHaveProperty('database');
       expect(result.info).toHaveProperty('memory_heap');
       expect(result.info).toHaveProperty('memory_rss');
     });

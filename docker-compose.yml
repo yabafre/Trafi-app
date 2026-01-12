@@ -1,0 +1,153 @@
+# ============================================
+# Trafi - Docker Compose Development Configuration
+# ============================================
+# This file orchestrates all services needed for local development.
+# Run: docker compose up (or pnpm docker:up)
+#
+# Services:
+#   - postgres: PostgreSQL 16 database with data persistence
+#   - redis: Redis 7 for caching and BullMQ job queues
+#   - api: NestJS API backend (port 3001)
+#   - dashboard: Next.js admin dashboard (port 3000)
+#
+# For more information, see: README.md#docker-setup
+# ============================================
+
+services:
+  # ============================================
+  # PostgreSQL Database
+  # ============================================
+  # Multi-tenant database with persistent storage
+  # Accessible at localhost:5432
+  postgres:
+    image: postgres:16-alpine
+    container_name: trafi-postgres
+    restart: unless-stopped
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-trafi}
+      POSTGRES_USER: ${POSTGRES_USER:-trafi}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-trafi_dev_password}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-trafi} -d ${POSTGRES_DB:-trafi}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - trafi-network
+
+  # ============================================
+  # Redis Cache & Queue
+  # ============================================
+  # Used for BullMQ job queues and caching
+  # Accessible at localhost:6379
+  redis:
+    image: redis:7-alpine
+    container_name: trafi-redis
+    restart: unless-stopped
+    # Enable AOF persistence for durability
+    command: redis-server --appendonly yes
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - trafi-network
+
+  # ============================================
+  # NestJS API Backend
+  # ============================================
+  # Main API service running on port 3001
+  # Depends on PostgreSQL and Redis
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+      target: development
+    container_name: trafi-api
+    restart: unless-stopped
+    ports:
+      - "${API_PORT:-3001}:3001"
+    environment:
+      NODE_ENV: development
+      PORT: 3001
+      DATABASE_URL: postgresql://${POSTGRES_USER:-trafi}:${POSTGRES_PASSWORD:-trafi_dev_password}@postgres:5432/${POSTGRES_DB:-trafi}?schema=public
+      REDIS_URL: redis://redis:6379
+    volumes:
+      # Mount source code for hot-reload (read-only for safety)
+      - ./apps/api/src:/app/apps/api/src:ro
+      # Mount Prisma schema for development
+      - ./apps/api/prisma:/app/apps/api/prisma:ro
+      # Mount shared packages
+      - ./packages:/app/packages:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3001/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - trafi-network
+
+  # ============================================
+  # Next.js Dashboard
+  # ============================================
+  # Admin dashboard running on port 3000
+  # Depends on API being healthy
+  dashboard:
+    build:
+      context: .
+      dockerfile: apps/dashboard/Dockerfile
+      target: development
+    container_name: trafi-dashboard
+    restart: unless-stopped
+    ports:
+      - "${DASHBOARD_PORT:-3000}:3000"
+    environment:
+      NODE_ENV: development
+      NEXT_PUBLIC_API_URL: http://localhost:3001
+      # Internal API URL for server-side calls within Docker network
+      API_URL: http://api:3001
+    volumes:
+      # Mount source code for hot-reload (read-only for safety)
+      - ./apps/dashboard/src:/app/apps/dashboard/src:ro
+      # Mount shared packages
+      - ./packages:/app/packages:ro
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - trafi-network
+
+# ============================================
+# Named Volumes for Data Persistence
+# ============================================
+volumes:
+  postgres_data:
+    name: trafi-postgres-data
+    driver: local
+  redis_data:
+    name: trafi-redis-data
+    driver: local
+
+# ============================================
+# Docker Network
+# ============================================
+networks:
+  trafi-network:
+    name: trafi-network
+    driver: bridge

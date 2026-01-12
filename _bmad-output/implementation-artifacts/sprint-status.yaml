@@ -52,7 +52,7 @@ development_status:
   1-5-configure-prisma-with-postgresql: done
   1-6-setup-test-infrastructure: done
   1-7-seed-demo-data-for-development: done
-  1-8-docker-containerization-setup: in-progress
+  1-8-docker-containerization-setup: done
   epic-1-retrospective: optional
 
   # ============================================

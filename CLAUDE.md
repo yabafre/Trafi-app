@@ -65,6 +65,40 @@ pnpm --filter @trafi/api test:e2e
 pnpm --filter @trafi/api test -- path/to/test.spec.ts
 ```
 
+### Docker Development
+
+```bash
+# Start all services (PostgreSQL, Redis, API, Dashboard)
+pnpm docker:up
+
+# Start with rebuild
+pnpm docker:up:build
+
+# Start in background (detached)
+pnpm docker:up:detach
+
+# Stop all services
+pnpm docker:down
+
+# Stop and remove volumes (fresh database)
+pnpm docker:down:volumes
+
+# View logs
+pnpm docker:logs
+
+# Check service status
+pnpm docker:ps
+```
+
+**Environment Variables:**
+Copy `.env.docker.example` to `.env.docker` and customize.
+
+**Ports:**
+- Dashboard: http://localhost:3000
+- API: http://localhost:3001
+- PostgreSQL: localhost:5432
+- Redis: localhost:6379
+
 ## Architecture
 
 ### Monorepo Structure
@@ -303,10 +337,11 @@ Completed stories:
 - 1.3: Setup Next.js Dashboard application
 - 1.4: Create shared packages structure
 - 1.5: Configure Prisma with PostgreSQL
+- 1.6: Setup test infrastructure
+- 1.7: Seed demo data for development
+- 1.8: Docker containerization setup
 
-Remaining: Test infrastructure, seed data, Docker containerization
-
-Total: 14 epics, 144 stories planned
+Epic 1 complete! Total: 14 epics, 144 stories planned
 
 ## Environment Setup
 

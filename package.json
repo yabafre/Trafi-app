@@ -12,6 +12,8 @@
     "build": "dotenv -- turbo build",
     "lint": "dotenv -- turbo lint",
     "test": "dotenv -- turbo test",
+    "test:cov": "dotenv -- turbo test:cov",
+    "test:e2e": "pnpm --filter @trafi/e2e test:e2e",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "typecheck": "dotenv -- turbo typecheck",

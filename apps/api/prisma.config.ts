@@ -10,6 +10,7 @@ export default defineConfig({
   // Migrations configuration
   migrations: {
     path: 'prisma/migrations',
+    seed: 'npx tsx prisma/seed.ts',
   },
 
   // Database connection from environment

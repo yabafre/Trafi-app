@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { envValidationSchema } from './config';
+import { DatabaseModule } from './database';
 import { HealthModule } from './health';
 import { ObservabilityModule } from './observability';
 
@@ -14,6 +15,7 @@ import { ObservabilityModule } from './observability';
         abortEarly: false,
       },
     }),
+    DatabaseModule,
     ObservabilityModule,
     HealthModule,
   ],

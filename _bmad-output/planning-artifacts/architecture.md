@@ -206,7 +206,7 @@ This ensures implementations stay current with library updates and avoid depreca
 ┌─────────────────────────────────────────────────────────────────┐
 │                    DATA LAYER (Prisma)                          │
 ├─────────────────────────────────────────────────────────────────┤
-│  @trafi/db        │  Connection Pool  │  Per-tenant DB          │
+│   database        │  Connection Pool  │  Per-tenant DB          │
 │  (Prisma Client)  │  (PgBouncer)      │  isolation              │
 └────────┬──────────┴────────┬──────────┴────────┬────────────────┘
          │                   │                   │

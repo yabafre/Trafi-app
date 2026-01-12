@@ -47,7 +47,7 @@ development_status:
   epic-1: in-progress
   1-1-initialize-turborepo-monorepo-structure: done
   1-2-setup-nestjs-api-application: done
-  1-3-setup-nextjs-dashboard-application: backlog
+  1-3-setup-nextjs-dashboard-application: done
   1-4-create-shared-packages-structure: backlog
   1-5-configure-prisma-with-postgresql: backlog
   1-6-setup-test-infrastructure: backlog

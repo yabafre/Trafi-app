@@ -663,6 +663,187 @@ services:
 // - Profit Engine recommendation accuracy
 ```
 
+### Distribution Model: Trafi Core Package
+
+#### Vision: Extensible Commerce Framework
+
+**Decision:** Trafi will be distributed as an NPM package (`@trafi/core`) that developers install and extend, similar to Medusa.
+
+**Rationale:**
+- Enables customization without forking the entire codebase
+- Clean separation between core functionality and merchant customizations
+- Familiar pattern for developers (Medusa, Strapi, Payload)
+- Supports both self-hosted and Trafi Cloud deployment models
+
+#### Distribution Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    @trafi/core (NPM Package)                     │
+│                  Code source accessible via node_modules         │
+│                                                                  │
+│  ┌────────────────────────┐    ┌────────────────────────────┐  │
+│  │   server/ (NestJS)     │    │   app/ (Next.js Dashboard) │  │
+│  │                        │    │                            │  │
+│  │  • Product Module      │    │  • Products UI             │  │
+│  │  • Order Module        │    │  • Orders UI               │  │
+│  │  • Profit Engine       │    │  • Profit Engine UI        │  │
+│  │  • Auth Module         │    │  • Auth UI                 │  │
+│  └────────────────────────┘    └────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              │ npx create-trafi my-store
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│          Developer's Project (Scaffolded, Customizable)         │
+│                                                                  │
+│  app/           → Dashboard overrides (pages, components)       │
+│  server/        → Backend overrides (services, controllers)     │
+│  trafi.config.ts → Central configuration                        │
+│  prisma/        → Editable database schema                      │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+#### Developer Project Structure (Generated)
+
+```
+my-store/
+├── app/                              # Dashboard (Next.js App Router)
+│   ├── (auth)/
+│   │   └── login/page.tsx
+│   ├── (dashboard)/
+│   │   ├── products/
+│   │   │   ├── page.tsx              # Override core products page
+│   │   │   └── _components/
+│   │   └── custom-analytics/         # Custom page
+│   │       └── page.tsx
+│   └── layout.tsx
+│
+├── server/                           # Backend (NestJS)
+│   ├── modules/
+│   │   ├── product/                  # Override Product module
+│   │   │   └── product.service.ts
+│   │   └── loyalty/                  # Custom module
+│   │       └── loyalty.module.ts
+│   ├── listeners/
+│   └── main.ts
+│
+├── components/                       # Shared components
+├── lib/                              # Utilities
+├── hooks/                            # Custom React hooks
+├── prisma/schema.prisma              # Editable schema
+├── trafi.config.ts                   # Central configuration
+├── package.json
+└── docker-compose.yml
+```
+
+#### Override Patterns
+
+**Backend (NestJS) - Service Override:**
+```typescript
+// server/modules/product/product.service.ts
+import { Injectable } from '@nestjs/common';
+import { ProductService as CoreService } from '@trafi/core/server';
+
+@Injectable()
+export class ProductService extends CoreService {
+  async create(storeId: string, data: CreateProductDto) {
+    await this.syncWithERP(data);                    // Custom BEFORE
+    const product = await super.create(storeId, data); // Core logic
+    await this.notifyAnalytics(product);             // Custom AFTER
+    return product;
+  }
+
+  // Protected methods can be overridden
+  protected async validatePrice(price: number) {
+    await super.validatePrice(price);
+    if (price > 100000) throw new Error('Requires approval');
+  }
+}
+```
+
+**Dashboard (Next.js) - Page Override:**
+```typescript
+// app/(dashboard)/products/page.tsx
+import { ProductsPage as CorePage } from '@trafi/core/dashboard';
+import { CustomAnalytics } from '@/components/analytics-widget';
+
+export default function ProductsPage() {
+  return (
+    <div>
+      <CustomAnalytics />     {/* Custom widget BEFORE */}
+      <CorePage />            {/* Core page */}
+      <CustomFooter />        {/* Custom widget AFTER */}
+    </div>
+  );
+}
+```
+
+#### CLI Commands
+
+```bash
+npx create-trafi my-store    # Scaffold new project
+cd my-store
+
+trafi dev                    # Start server (3001) + dashboard (3000)
+trafi build                  # Build for production
+trafi start                  # Start production
+
+trafi db:generate            # Generate Prisma client
+trafi db:push                # Push schema to database
+trafi db:migrate             # Create migration
+trafi db:seed                # Seed database
+```
+
+#### Configuration (trafi.config.ts)
+
+```typescript
+import { defineConfig } from '@trafi/core';
+
+export default defineConfig({
+  store: {
+    name: 'My Fashion Store',
+    currency: 'EUR',
+  },
+
+  modules: {
+    profitEngine: { enabled: true },
+    builder: { enabled: true },
+    multiCurrency: { enabled: true, currencies: ['EUR', 'USD'] },
+  },
+
+  server: {
+    port: 3001,
+    overrides: {
+      modules: { product: './server/modules/product' },
+    },
+  },
+
+  dashboard: {
+    port: 3000,
+    overrides: {
+      pages: { '/products': './app/(dashboard)/products/page.tsx' },
+    },
+  },
+});
+```
+
+#### Implementation Guidelines
+
+To support this distribution model, all code must be written with extensibility in mind:
+
+**Backend (NestJS):**
+- Use `protected` methods for overridable logic (NOT `private`)
+- Export explicit public API from each module
+- Use composition over hard dependencies
+- Emit events for extension points
+
+**Dashboard (Next.js):**
+- Design components with customization props
+- Use composition pattern for wrappable pages
+- Export components for reuse
+- Avoid inline styles that can't be overridden
+
 ### Decision Impact Analysis
 
 **Implementation Sequence:**

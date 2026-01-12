@@ -141,6 +141,34 @@ Storefront       -> REST/SDK           -> NestJS API -> Prisma -> PostgreSQL
 | API | tRPC (internal), REST (external/SDK) | |
 | Auth | JWT + NestJS Passport | Session-based dashboard, API keys for SDK |
 
+### Distribution Model (Trafi Core)
+
+Trafi is designed as an extensible commerce framework, distributed as `@trafi/core` NPM package:
+
+```
+@trafi/core (NPM Package)
+├── server/        # Backend NestJS modules
+└── app/           # Dashboard Next.js pages/components
+
+Developer's Project (via npx create-trafi)
+├── app/           # Dashboard overrides
+├── server/        # Backend overrides
+├── trafi.config.ts # Central configuration
+└── prisma/        # Editable schema
+```
+
+**Override Patterns:**
+- **Backend:** Extend services with `protected` methods, call `super.method()`
+- **Dashboard:** Wrap core pages/components with custom additions
+
+**Implementation Guidelines:**
+- Use `protected` methods (not `private`) for overridable logic
+- Export explicit public API from modules
+- Design components with customization props
+- Use composition pattern for wrappable pages
+
+See `_bmad-output/planning-artifacts/architecture.md` section "Distribution Model" for full details.
+
 ## Critical Patterns
 
 ### Type Management (Source of Truth)

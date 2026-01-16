@@ -66,7 +66,7 @@ development_status:
   2-1-admin-user-model-and-authentication: done
   2-2-dashboard-authentication-guard: done
   2-3-role-based-access-control-rbac-foundation: done
-  2-4-admin-user-management: review
+  2-4-admin-user-management: done
   2-5-api-key-management: backlog
   2-6-tenant-scoped-authorization: backlog
   2-7-store-settings-configuration: backlog

@@ -1,6 +1,6 @@
 # Story 2.4: Admin User Management
 
-Status: review
+Status: done
 
 ## Story
 
@@ -465,11 +465,23 @@ N/A
 
 - All 12 tasks completed successfully
 - Backend: 59 API tests passing (including 13 new user service tests)
+- Dashboard: 75 tests passing (including 27 new user management tests)
 - Role hierarchy validation implemented (Admin cannot assign Owner)
 - Last Owner protection implemented (BadRequestException when attempting to deactivate)
 - Dashboard components follow Digital Brutalism v2 design system
 - All TypeScript compiles without errors
 - E2E tests created with 19 test cases (API + UI flows)
+
+### Code Review Fixes Applied
+
+**Reviewed by:** Adversarial Code Review (Claude Opus 4.5)
+**Review Date:** 2026-01-16
+
+**Issues Found & Fixed:**
+1. **HIGH-1:** Dashboard unit tests missing (Task 11) - FIXED: Created 3 test files with 27 tests
+2. **HIGH-2:** `app.module.ts` UserModule import not committed - FIXED: Added to commit
+3. **MEDIUM-1:** InviteUserDialog role filter too restrictive for VIEWER - FIXED: Changed `<` to `<=`
+4. **MEDIUM-2:** `name` field missing from InviteUserDto - FIXED: Added field with Swagger docs
 
 ### File List
 
@@ -508,6 +520,11 @@ N/A
 - `apps/dashboard/src/app/(dashboard)/settings/users/_hooks/useDeactivateUser.ts`
 - `apps/dashboard/src/components/ui/dialog.tsx`
 - `apps/dashboard/src/components/ui/select.tsx`
+
+**Dashboard Unit Tests (added via code review):**
+- `apps/dashboard/src/app/(dashboard)/settings/users/_components/__tests__/UsersTable.test.tsx`
+- `apps/dashboard/src/app/(dashboard)/settings/users/_hooks/__tests__/useUsers.test.tsx`
+- `apps/dashboard/src/app/(dashboard)/settings/users/_hooks/__tests__/useMutationHooks.test.tsx`
 
 **E2E Tests:**
 - `e2e/tests/user-management.spec.ts`

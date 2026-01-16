@@ -4,6 +4,34 @@ Thomas peut creer un projet Trafi fonctionnel en 5 minutes avec CLI, monorepo co
 
 **FRs covered:** FR1, FR2, FR8 + ARCH-1 to ARCH-26
 
+**Status:** COMPLETED (8/8 stories) - 2026-01-12
+
+---
+
+## Epic Retrospective Learnings (Generated Post-Completion)
+
+These learnings emerged during Epic 1 implementation and are **MANDATORY** for all future epics:
+
+### Key Learnings
+1. **Context7 MCP is essential** - Always query for up-to-date docs before implementing
+2. **Root-first monorepo** - All commands executable from project root improves DX
+3. **Architecture evolves** - Be ready to adapt (e.g., @trafi/db → apps/api/prisma)
+4. **Code for extensibility** - Use `protected` methods, composition patterns
+5. **Adversarial reviews catch issues** - Every story benefited from thorough review
+
+### Action Items for Future Epics
+- **RETRO-1:** Always use Context7 MCP before implementing libraries
+- **RETRO-2:** Backend services use `protected` methods (not `private`)
+- **RETRO-3:** Backend modules export explicit public API
+- **RETRO-4:** Dashboard components designed with customization props
+- **RETRO-5:** Dashboard pages use composition pattern for wrappable components
+- **RETRO-6:** Code with @trafi/core override patterns in mind
+
+### Technical Debt Deferred
+- Shared test config needs @trafi/config build step → Epic 12
+- Unit tests for seed script → Epic 11
+- Restructure to @trafi/core package → Epic 12/13
+
 ---
 
 ## Story 1.1: Initialize Turborepo Monorepo Structure

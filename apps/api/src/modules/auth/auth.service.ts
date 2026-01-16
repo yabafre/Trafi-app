@@ -4,8 +4,11 @@ import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '@database/prisma.service';
 import type { User } from '@generated/prisma/client';
-import type { AuthenticatedUser, AuthResponse, UserRole, JwtPayload } from '@trafi/types';
-import { DEFAULT_ROLE_PERMISSIONS } from '@trafi/types';
+import type { AuthenticatedUser, AuthResponse, JwtPayload } from '@trafi/types';
+import {
+  ROLE_PERMISSIONS,
+  type Role,
+} from '../../common/types/permissions';
 
 /**
  * Authentication service for admin dashboard access
@@ -89,7 +92,7 @@ export class AuthService {
   protected async generateTokens(
     user: User
   ): Promise<{ accessToken: string; refreshToken: string }> {
-    const permissions = this.getPermissionsForRole(user.role as UserRole);
+    const permissions = this.getPermissionsForRole(user.role as Role);
 
     const payload = {
       sub: user.id,
@@ -133,8 +136,8 @@ export class AuthService {
   /**
    * Get permissions array for a given role
    */
-  protected getPermissionsForRole(role: UserRole): string[] {
-    const permissions = DEFAULT_ROLE_PERMISSIONS[role];
+  protected getPermissionsForRole(role: Role): string[] {
+    const permissions = ROLE_PERMISSIONS[role];
     return permissions ?? [];
   }
 
@@ -163,7 +166,7 @@ export class AuthService {
    * Convert User entity to AuthenticatedUser response
    */
   protected toAuthenticatedUser(user: User): AuthenticatedUser {
-    const role = user.role as UserRole;
+    const role = user.role as Role;
     return {
       id: user.id,
       email: user.email,

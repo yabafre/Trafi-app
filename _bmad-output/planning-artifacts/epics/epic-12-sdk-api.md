@@ -1,8 +1,88 @@
 # Epic 12: SDK & API Experience
 
-Developer dispose d'un SDK type-safe complet avec documentation, templates, et excellent DX.
+Developer dispose d'un SDK type-safe complet avec documentation, templates, et excellent DX. Le SDK implémente le **Override Kernel factory pattern** pour l'extensibilité.
 
 **FRs covered:** FR3, FR4, FR6, FR7, FR9, FR88, FR89, FR90
+
+**Revision:** v2.0 (2026-01-15) - PRD v2 Alignment: Override Kernel SDK Factory Pattern, Brutalist UX
+
+---
+
+## Epic Implementation Guidelines
+
+### Override Kernel: SDK Factory Pattern (PRD v2)
+
+The SDK implements the Override Kernel pattern for customization:
+
+```typescript
+// Default usage
+const trafi = createTrafiClient({
+  apiKey: 'pk_...',
+  storeId: 'store_...',
+});
+
+// Override-ready factory pattern
+const trafi = createTrafiClient({
+  apiKey: 'pk_...',
+  storeId: 'store_...',
+
+  // Override Kernel: Interceptors
+  interceptors: {
+    request: async (config) => {
+      config.headers['X-Custom-Header'] = 'value';
+      return config;
+    },
+    response: async (response) => {
+      // Custom response processing
+      return response;
+    },
+  },
+
+  // Override Kernel: Event Hooks
+  hooks: {
+    onCartUpdate: async (cart) => {
+      // Custom cart processing
+      await syncWithExternalCRM(cart);
+    },
+    onCheckoutComplete: async (order) => {
+      // Custom order processing
+      await notifyFulfillment(order);
+    },
+  },
+
+  // Override Kernel: Custom Services
+  services: {
+    pricing: CustomPricingService, // Extends core
+  },
+});
+```
+
+### Retrospective Learnings (MANDATORY)
+- **RETRO-1:** Use Context7 MCP before implementing SDK build tools, documentation
+- **RETRO-2:** SDK classes expose `protected` methods for extension
+- **RETRO-3:** @trafi/sdk exports explicit public API with clear boundaries
+- **RETRO-4:** SDK follows @trafi/core vision (extensible, overridable)
+- **RETRO-5:** Build @trafi/config with proper build step (deferred from Epic 1)
+- **RETRO-6:** SDK is the foundation for future @trafi/core NPM package
+- **RETRO-7:** SDK factory pattern implements Override Kernel for customization
+
+### UX Design Requirements (Documentation Site - Brutalist)
+- **UX-1:** Pure Black (#000000) background with white text
+- **UX-2:** Visible grid navigation with 1px borders
+- **UX-3:** Copy-to-clipboard on code examples (monospace JetBrains Mono)
+- **UX-4:** Interactive API playground (OpenAPI)
+- **UX-TYPE:** JetBrains Mono for code, system font for body
+- **UX-RADIUS:** 0px everywhere
+
+### UX Design Requirements (Dashboard - API Keys - Brutalist)
+- **UX-1:** Pure Black (#000000) background
+- **UX-2:** Rail (64px) + Sidebar (240px) + Main content layout
+- **UX-3:** Breadcrumb: Dashboard > Settings > API Keys
+- **UX-4:** Key visibility toggle (show/hide) with instant state change
+- **UX-5:** Scope checkboxes with descriptions in monospace
+- **UX-6:** API key in monospace font, truncated with copy button
+- **UX-COLOR-1:** Primary Acid Lime #CCFF00, borders #333333
+- **UX-RADIUS:** 0px everywhere
 
 ---
 

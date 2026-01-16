@@ -1,4 +1,12 @@
-import { Controller, Post, Get, Body, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Body,
+  HttpCode,
+  HttpStatus,
+  UseGuards,
+} from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -9,10 +17,17 @@ import {
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from '@common/guards/jwt-auth.guard';
 import { Public } from '@common/decorators/public.decorator';
-import { CurrentUser } from '@common/decorators/current-user.decorator';
 import { LoginSchema, RefreshTokenRequestSchema } from '@trafi/validators';
 import type { AuthenticatedUser, AuthResponse } from '@trafi/types';
-import { LoginDto, RefreshTokenDto, AuthResponseDto, AuthenticatedUserDto, ErrorResponseDto } from './dto';
+import {
+  LoginDto,
+  RefreshTokenDto,
+  AuthResponseDto,
+  AuthenticatedUserDto,
+  ErrorResponseDto,
+} from './dto';
+import { RequirePermissions, Roles, CurrentUser } from './decorators';
+import { PermissionsGuard, RolesGuard } from './guards';
 
 /**
  * Authentication controller for admin dashboard
@@ -136,5 +151,81 @@ export class AuthController {
   })
   me(@CurrentUser() user: AuthenticatedUser): AuthenticatedUser {
     return user;
+  }
+
+  /**
+   * Test endpoint: requires products:read permission
+   * Used for verifying RBAC implementation
+   */
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions('products:read')
+  @Get('test/products-read')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'Test products:read permission',
+    description:
+      'Test endpoint that requires products:read permission. Used for RBAC verification.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'User has products:read permission',
+    schema: {
+      type: 'object',
+      properties: {
+        message: { type: 'string', example: 'Access granted' },
+        permission: { type: 'string', example: 'products:read' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Insufficient permissions',
+    type: ErrorResponseDto,
+  })
+  testProductsRead(): { message: string; permission: string } {
+    return {
+      message: 'Access granted',
+      permission: 'products:read',
+    };
+  }
+
+  /**
+   * Test endpoint: requires OWNER or ADMIN role
+   * Used for verifying RBAC implementation
+   */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('OWNER', 'ADMIN')
+  @Get('test/admin-only')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'Test OWNER/ADMIN role requirement',
+    description:
+      'Test endpoint that requires OWNER or ADMIN role. Used for RBAC verification.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'User has required role',
+    schema: {
+      type: 'object',
+      properties: {
+        message: { type: 'string', example: 'Access granted' },
+        requiredRoles: {
+          type: 'array',
+          items: { type: 'string' },
+          example: ['OWNER', 'ADMIN'],
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Insufficient role privileges',
+    type: ErrorResponseDto,
+  })
+  testAdminOnly(): { message: string; requiredRoles: string[] } {
+    return {
+      message: 'Access granted',
+      requiredRoles: ['OWNER', 'ADMIN'],
+    };
   }
 }

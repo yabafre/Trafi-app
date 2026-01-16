@@ -1,81 +1,17 @@
 import type { Metadata } from "next"
-import localFont from "next/font/local"
-import { JetBrains_Mono } from "next/font/google"
+import { Space_Grotesk, JetBrains_Mono } from "next/font/google"
 import { ThemeProvider } from "@/components/theme-provider"
 import "./globals.css"
 
-// Body font - General Sans (Variable)
-const generalSans = localFont({
-  src: [
-    {
-      path: "../fonts/GeneralSans-Regular.woff2",
-      weight: "400",
-      style: "normal",
-    },
-    {
-      path: "../fonts/GeneralSans-Italic.woff2",
-      weight: "400",
-      style: "italic",
-    },
-    {
-      path: "../fonts/GeneralSans-Medium.woff2",
-      weight: "500",
-      style: "normal",
-    },
-    {
-      path: "../fonts/GeneralSans-MediumItalic.woff2",
-      weight: "500",
-      style: "italic",
-    },
-    {
-      path: "../fonts/GeneralSans-Semibold.woff2",
-      weight: "600",
-      style: "normal",
-    },
-    {
-      path: "../fonts/GeneralSans-SemiboldItalic.woff2",
-      weight: "600",
-      style: "italic",
-    },
-    {
-      path: "../fonts/GeneralSans-Bold.woff2",
-      weight: "700",
-      style: "normal",
-    },
-    {
-      path: "../fonts/GeneralSans-BoldItalic.woff2",
-      weight: "700",
-      style: "italic",
-    },
-  ],
-  variable: "--font-general-sans",
+// Primary font - Space Grotesk (Brutalist v2)
+const spaceGrotesk = Space_Grotesk({
+  subsets: ["latin"],
+  variable: "--font-space-grotesk",
   display: "swap",
+  weight: ["300", "400", "500", "600", "700"],
 })
 
-// Heading font - Clash Display
-const clashDisplay = localFont({
-  src: [
-    {
-      path: "../fonts/ClashDisplay-Medium.woff2",
-      weight: "500",
-      style: "normal",
-    },
-    {
-      path: "../fonts/ClashDisplay-Semibold.woff2",
-      weight: "600",
-      style: "normal",
-    },
-    {
-      path: "../fonts/ClashDisplay-Bold.woff2",
-      weight: "700",
-      style: "normal",
-    },
-  ],
-  variable: "--font-clash-display",
-  display: "swap",
-})
-
-// Code font - JetBrains Mono
+// Code/Data font - JetBrains Mono
 const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
   variable: "--font-jetbrains-mono",
@@ -95,12 +31,12 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${generalSans.variable} ${clashDisplay.variable} ${jetbrainsMono.variable} font-sans antialiased`}
+        className={`${spaceGrotesk.variable} ${jetbrainsMono.variable} font-sans antialiased bg-background text-foreground`}
       >
         <ThemeProvider
           attribute="class"
-          defaultTheme="dark"
-          enableSystem
+          defaultTheme="system"
+          enableSystem={true}
           disableTransitionOnChange
         >
           {children}

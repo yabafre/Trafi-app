@@ -7,6 +7,8 @@ import { AuthController } from './auth.controller';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { LocalStrategy } from './strategies/local.strategy';
 import { LocalAuthGuard } from './guards/local-auth.guard';
+import { PermissionsGuard } from './guards/permissions.guard';
+import { RolesGuard } from './guards/roles.guard';
 import { DatabaseModule } from '@database';
 
 /**
@@ -16,10 +18,13 @@ import { DatabaseModule } from '@database';
  * - JWT token generation and validation
  * - Local (email/password) authentication
  * - Passport strategies for authentication flow
+ * - RBAC guards (PermissionsGuard, RolesGuard)
+ * - RBAC decorators (@RequirePermissions, @Roles, @CurrentUser)
  *
- * Exports AuthService for use in other modules
+ * Exports AuthService and RBAC guards for use in other modules
  *
  * @see architecture.md#Authentication-&-Security
+ * @see epic-02-admin-auth.md#Story-2.3
  */
 @Module({
   imports: [
@@ -37,7 +42,14 @@ import { DatabaseModule } from '@database';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, LocalStrategy, LocalAuthGuard],
-  exports: [AuthService, JwtModule],
+  providers: [
+    AuthService,
+    JwtStrategy,
+    LocalStrategy,
+    LocalAuthGuard,
+    PermissionsGuard,
+    RolesGuard,
+  ],
+  exports: [AuthService, JwtModule, PermissionsGuard, RolesGuard],
 })
 export class AuthModule {}

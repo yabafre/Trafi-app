@@ -2,19 +2,44 @@
 stepsCompleted: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
 status: complete
 completedAt: 2026-01-11
+revisedAt: 2026-01-14
+revision: 2.0
 inputDocuments:
   - '_bmad-output/planning-artifacts/product-brief-trafi-app-2026-01-09.md'
   - '_bmad-output/planning-artifacts/prd.md'
 additionalContext:
   - 'Visual Directives (user-provided inline)'
+  - 'Brutalist Design Overhaul (2026-01-14)'
+  - 'PRD v2 Alignment: ChangeSet, Override Kernel, Module Sandbox'
 date: 2026-01-10
 author: Alex
+revisionNotes: |
+  v2.0 Brutalist Overhaul (2026-01-14):
+  - Design Direction: "Raw Intelligence" Digital Brutalism
+  - Radius-Zero, High Contrast, Acid Accents
+  - PRD Alignment: Autopilot ChangeSet, Override Kernel, Module Sandbox
+  - UX Architecture: Console/Autopilot/Overrides/Modules/Data/Execution/Audit
+  - Implementation: Brutal primitives, enforced via wrappers
 ---
 
-# UX Design Specification - trafi-app
+# UX/UI Design Specification — Trafi v2
 
+**Theme:** Raw Intelligence
+**Style:** Digital Brutalism / Swiss Utility
+**Revision:** 2.0 (Brutalist Overhaul)
 **Author:** Alex
-**Date:** 2026-01-10
+
+---
+
+## 0. Goal
+
+Trafi's UI is not a "pretty dashboard". It is an **execution console** for an e-commerce OS.
+
+This spec hard-aligns the interface with:
+
+- **Autopilot ChangeSet** — auditable, reversible artifact
+- **Override Kernel** — deterministic override resolution
+- **Module System + Module Sandbox** — runtime extensibility with security boundaries
 
 ---
 
@@ -22,14 +47,14 @@ author: Alex
 
 ### Project Vision
 
-Trafi is an open-source e-commerce platform that bridges the gap between developer flexibility and merchant success. Unlike traditional headless solutions that deliver technical freedom but leave merchants struggling with conversion, Trafi provides a unified system where the **Profit Engine** acts as an intelligent co-pilot: it instruments, diagnoses, proposes, proves, and protects.
+Trafi is an open-source e-commerce platform that bridges the gap between developer flexibility and merchant success. The **Profit Engine** (Autopilot) acts as an intelligent co-pilot that instruments, diagnoses, proposes, proves, and protects — replacing 4 human roles (Growth/CRO, CRM/Lifecycle, Analytics/Data, Ops/Safety).
 
-**UX Philosophy:** "Autopilot PROPOSES, merchant APPROVES" — inverting the traditional CRO workflow to reduce friction while maintaining human control.
+**UX Philosophy:** "The interface is a machine. No decoration, only data and action."
 
 **Design Direction:**
-- **Dashboard:** Vercel-inspired dark mode, Shadcn UI components, GSAP micro-interactions, data-rich but accessible
-- **Storefront:** Bold, creative, memorable — proving that headless means creative freedom, not template mediocrity
-- **System:** Black & White base with Orange accent, fully themable per merchant brand
+- **Dashboard:** Digital Brutalism — radius-zero, visible grid structure, high contrast, acid accents
+- **Storefront:** Same brutal aesthetic — the machine serves buyers too
+- **System:** Pure Black (#000) + Pure White (#FFF) + Acid Lime (#CCFF00)
 
 ### Target Users
 
@@ -73,19 +98,58 @@ With 60%+ e-commerce traffic on mobile, the checkout flow must be ruthlessly opt
 ### Design Opportunities
 
 #### Inverted CRO Workflow
-Traditional CRO tools show data and expect merchants to figure out actions. Trafi inverts this: the system does the analysis and proposes specific actions. The UX opportunity is making this "proposal → approval" flow feel empowering rather than passive.
+Traditional CRO tools show data and expect merchants to figure out actions. Trafi inverts this: the system does the analysis and proposes specific actions via **Autopilot ChangeSets**. The UX opportunity is making "proposal → approval → proof → permanent" flow feel empowering.
 
 #### Visual Profit Guardrails
-Before any action executes, showing the merchant "this would reduce your margin on SKU-X below threshold" creates a differentiated trust moment. The system protects the merchant from mistakes — including its own recommendations.
+Before any action executes, showing the merchant "this would reduce your margin on SKU-X below threshold" creates a differentiated trust moment. Guardrails are **fences, not pillows** — robotic, precise, reassuring through competence.
 
 #### Confidence Through Rollback Visibility
-Explicitly showing "If this doesn't work, we'll automatically revert in 7 days" reduces approval anxiety. The rollback isn't a failure state — it's a safety feature that enables experimentation.
+Explicitly showing "AUTO-ROLLBACK: ARMED • DEVIATION > 5% = AUTO-KILL" reduces approval anxiety. The rollback isn't a failure state — it's a safety feature that enables experimentation.
 
-#### Storefront as Capability Proof
-The default storefront template isn't just functional — it's a showcase proving that headless commerce enables creative freedom. Bold design choices, smooth animations, and modern patterns (Bento, Frosted Glass) demonstrate what's possible.
+#### The Collective Brain
+When local traffic is insufficient for statistical significance, the UI substitutes "Local Uncertainty" with "Network Certainty" — showing "VALIDATED ON 1,240 STORES" when the merchant's own data is inconclusive.
 
-#### Dark Mode as Identity
-Dark mode isn't just a preference toggle — it's the default identity. Aligned with developer aesthetics, modern SaaS patterns, and the Vercel/Linear design language that signals "this is a serious tool for serious builders."
+#### Brutalist Identity
+The interface is a machine. No decoration, only data and action. This signals to both developers and merchants: "This is a serious tool that respects your intelligence."
+
+---
+
+## 1. Design Manifesto
+
+### The Interface is a Machine
+
+- **No decoration** — only data, structure, and action
+- **Radius-zero** everywhere — everything is a rectangle
+- **Visible grid** — 1px borders expose structure
+- **High contrast** — pure black background, pure white text
+- **Acid accents** — signals for action (#CCFF00), stability (#00FF94), risk (#FF3366)
+- **Monospace for data** — it should look like terminal output
+
+### UX Philosophy — "The Collective Brain"
+
+The UI must bridge:
+
+| State | Visualization |
+|-------|---------------|
+| **Local Uncertainty** | Low traffic → inconclusive tests → "INSUFFICIENT DATA" (muted) |
+| **Network Certainty** | Federated learning → "VALIDATED ON N STORES" (bright acid) |
+
+**Tone shift:**
+- Before: "Try this?"
+- Now: "Network confirms this works on 850 stores."
+
+### Brutalist Design Pillars
+
+| Pillar | Implementation |
+|--------|----------------|
+| **Strict Radius Zero** | `border-radius: 0px !important` enforced globally |
+| **Visible Grids** | Borders (1px solid #333) separate every element |
+| **High Contrast** | Pure Black (#000) background, Pure White (#FFF) text |
+| **Acid Accents** | #CCFF00 for action, #00FF94 for success, #FF3366 for risk |
+| **Monospace Data** | JetBrains Mono for all numbers, metrics, code |
+| **No Shadows** | Elements sit firmly in the grid, no floating |
+| **No Gradients** | Colors are solid and flat |
+| **Instant Feedback** | Hover = instant inversion, no slow transitions |
 
 ## Core User Experience
 
@@ -515,18 +579,18 @@ Don't dumb down — make complex things accessible. Merchants aren't stupid; the
 | AI chatbot support | Premature, documentation-first approach |
 | Complex permission UI | Keep RBAC simple, avoid enterprise bloat |
 
-## Design System Foundation
+## 2. Visual System (The Physics)
 
 ### Design System Choice
 
-**Selected Approach:** Shadcn UI + Tailwind CSS with Dynamic Theme Injection
+**Selected Approach:** Shadcn UI + Tailwind CSS 4.x with Brutalist Overrides
 
-Trafi uses a **dynamic design system architecture** where:
-- Design tokens are stored in the database, not bundled in code
+Trafi uses a **brutalist design system architecture** where:
+- Design tokens enforce radius-zero, no-shadow, high-contrast globally
 - Theme changes from Dashboard propagate to Storefronts without redeployment
-- Builder module renders JSON configurations as React components dynamically
+- All components are wrapped in "Brutal" primitives that enforce the spec
 
-This architecture enables no-code customization while maintaining developer flexibility.
+This architecture enables no-code customization while enforcing the brutalist identity.
 
 ### Architecture Overview
 
@@ -966,71 +1030,86 @@ $ npx create-trafi-app my-store
 
 ## Visual Design Foundation
 
-### Color System
+### 2.1 Color Palette
 
-**Philosophy: "Sophisticated Monochrome + Energetic Accent"**
+**Philosophy: "The Void + The Signal"**
 
-Trafi's color system follows the Typology-inspired approach: a refined monochrome base that provides professional clarity, punctuated by a vibrant orange accent that signals action and energy.
+Trafi's color system follows a brutalist approach: pure black void punctuated by acid signals that demand attention.
 
-#### Semantic Color Tokens
+#### Base Colors (The Void)
 
-| Token | Light Mode | Dark Mode | Usage |
-|-------|------------|-----------|-------|
-| `--background` | #FAFAFA | #0A0A0A | Base canvas |
-| `--foreground` | #171717 | #FAFAFA | Primary text |
-| `--muted` | #F5F5F5 | #171717 | Subtle backgrounds |
-| `--muted-foreground` | #737373 | #A3A3A3 | Secondary text |
-| `--border` | #E5E5E5 | #262626 | Dividers, cards |
-| `--primary` | #F97316 | #F97316 | Orange accent (CTAs, focus, Profit Engine) |
-| `--primary-foreground` | #FFFFFF | #FFFFFF | Text on primary |
-| `--success` | #22C55E | #22C55E | Positive states, uplift indicators |
-| `--warning` | #EAB308 | #EAB308 | Caution, pending states |
-| `--error` | #EF4444 | #EF4444 | Error states, rollback triggers |
+| Token | Value | Usage |
+|-------|-------|-------|
+| `--surface-0` | `#000000` | Main background |
+| `--surface-1` | `#050505` | Cards, panels |
+| `--surface-2` | `#111111` | Hover states |
+| `--border` | `#333333` | The Grid — visible structure |
 
-#### Frosted Glass Effect (Trend: Frosted Touch)
+#### Signal Colors (The Acid)
 
-For modals, overlays, and floating elements:
-- Light: `rgba(255, 255, 255, 0.7)` + `blur(12px)`
-- Dark: `rgba(10, 10, 10, 0.8)` + `blur(12px)`
-- Border: `1px solid rgba(255, 255, 255, 0.1)`
+| Token | Value | Usage |
+|-------|-------|-------|
+| `--primary` / `--acid-primary` | `#CCFF00` | CTA, active states, new intelligence |
+| `--success` / `--acid-success` | `#00FF94` | Stability, profit, proven results |
+| `--destructive` / `--neon-warning` | `#FF3366` | Risk, errors, rollback triggers |
+| `--muted-foreground` | `#888888` | Labels, metadata |
 
-#### Dark Mode as Identity
+#### Light Mode (Inverted)
 
-Dark mode is the **default identity** for Dashboard, not an afterthought:
-- Aligned with developer aesthetics (Vercel, Linear)
-- Reduces eye strain for data-dense interfaces
-- Creates professional, focused atmosphere
-- Light mode available as preference toggle
+| Token | Value | Usage |
+|-------|-------|-------|
+| `--background` | `#FFFFFF` | Main background |
+| `--foreground` | `#000000` | Primary text |
+| `--border` | `#E5E5E5` | Dividers |
+| `--surface-1` | `#F8F8F8` | Cards |
+| `--surface-2` | `#F0F0F0` | Hover |
 
-### Typography System
+#### Usage Rules
 
-**Pairing: General Sans + Clash Display**
+- **Never use gradients** — colors are solid and flat
+- **Never use opacity for backgrounds** (except modals) — use solid colors
+- **Invert colors on hover** — black text on acid background
+- **No shadows** — elements sit firmly in the grid
+- **No blur/glass effects** — brutalism rejects blur
 
-This pairing delivers "Functional Elegance" — both fonts are geometric and modern, but Clash Display provides striking visual punch for key moments while General Sans handles the workhorse duties with excellent legibility.
+#### Dark Mode as Default Identity
+
+Dark mode is the **default** (not optional):
+- Pure black (#000) creates maximum contrast
+- Acid accents pop against void
+- Data-dense interfaces need darkness
+- Light mode available but secondary
+
+### 2.2 Typography System
+
+**Pairing: Space Grotesk + JetBrains Mono**
+
+This pairing delivers "Technical Precision" — Space Grotesk is geometric and slightly wide with a "tech" feel, while JetBrains Mono handles all data and numbers with terminal authenticity.
 
 #### Type Scale
 
-| Element | Font | Weight | Size | Line Height | Usage |
-|---------|------|--------|------|-------------|-------|
-| Display | Clash Display | 600 | 48-72px | 1.1 | Hero sections, landing |
-| H1 | Clash Display | 600 | 36-48px | 1.2 | Page titles |
-| H2 | Clash Display | 500 | 28-32px | 1.25 | Section headers |
-| H3 | General Sans | 600 | 20-24px | 1.3 | Subsections |
-| H4 | General Sans | 600 | 16-18px | 1.4 | Card titles |
-| Body | General Sans | 400 | 16px | 1.6 | Main content |
-| Body Small | General Sans | 400 | 14px | 1.5 | Secondary text |
-| Caption | General Sans | 500 | 12px | 1.4 | Labels, metadata |
-| Code | JetBrains Mono | 400 | 14px | 1.5 | Code, CLI output |
+| Element | Font | Weight | Size | Line Height | Treatment |
+|---------|------|--------|------|-------------|-----------|
+| H1 | Space Grotesk | 700 | 48px | 1.1 | **UPPERCASE**, tight tracking |
+| H2 | Space Grotesk | 700 | 32px | 1.2 | **UPPERCASE**, tight tracking |
+| H3 | Space Grotesk | 500 | 24px | 1.3 | **UPPERCASE** |
+| H4 | Space Grotesk | 500 | 18px | 1.4 | **UPPERCASE** |
+| Body | Space Grotesk | 400 | 14px | 1.6 | Normal case |
+| Label | Space Grotesk | 700 | 10px | 1.4 | **UPPERCASE**, wide tracking (0.1em) |
+| Data | JetBrains Mono | 400 | 14px | 1.5 | Numbers, metrics, values |
+| Code | JetBrains Mono | 400 | 13px | 1.5 | Code, CLI output |
 
 #### Font Usage Guidelines
 
-- **Clash Display**: Reserved for high-impact moments — hero headlines, Profit Engine insights, CTAs, empty states. Creates visual hierarchy and brand recognition.
-- **General Sans**: Default for all UI text — navigation, labels, body copy, data tables. Optimized for legibility at all sizes.
-- **JetBrains Mono**: Developer-facing content — code snippets, CLI examples, technical values.
+- **Space Grotesk**: All headings and UI text — navigation, labels, buttons. Always uppercase for headings, tight tracking (-0.02em) or wide tracking (0.1em) for labels.
+- **JetBrains Mono**: ALL numbers, metrics, table data, prices, percentages, dates. Data should look like it came from a terminal.
+- **Rule**: If it's a number, it's monospace. No exceptions.
 
-### Spacing & Layout Foundation
+### 2.3 Layout & Density (The Grid)
 
-**Base Unit: 4px** with consistent scale for predictable rhythm.
+**Philosophy: Separation via borders, not whitespace.**
+
+Density is high. The interface is a professional console, not a marketing page.
 
 #### Spacing Scale
 
@@ -1038,36 +1117,57 @@ This pairing delivers "Functional Elegance" — both fonts are geometric and mod
 |-------|-------|-------|
 | --space-1 | 4px | Tight spacing, inline elements |
 | --space-2 | 8px | Default gap, icon spacing |
-| --space-3 | 12px | Form fields, small cards |
-| --space-4 | 16px | Standard padding |
+| --space-3 | 12px | Form fields |
+| --space-4 | 16px | Card padding |
 | --space-6 | 24px | Section spacing |
 | --space-8 | 32px | Large gaps |
-| --space-12 | 48px | Section dividers |
-| --space-16 | 64px | Page sections |
 
 #### Border Radius Scale
 
 | Token | Value | Usage |
 |-------|-------|-------|
-| --radius-sm | 6px | Buttons, inputs |
-| --radius-md | 8px | Cards, dropdowns |
-| --radius-lg | 12px | Modals, panels |
-| --radius-xl | 16px | Large containers |
-| --radius-full | 9999px | Pills, avatars |
+| --radius-sm | **0px** | Buttons, inputs |
+| --radius-md | **0px** | Cards, dropdowns |
+| --radius-lg | **0px** | Modals, panels |
+| --radius-xl | **0px** | Large containers |
+| --radius-full | **0px** | Pills, avatars — still rectangles |
 
-#### Layout Principles (Trend: Bento Design + Snug Simple)
+**There is no radius. Everything is a rectangle.**
 
-**Dashboard Layout:**
-- 12-column grid with 16px gap
-- Dense but not cramped — "snug simple" approach
-- Bento-style widget arrangement for Profit Engine metrics
-- Sidebar navigation (collapsible) + main content area
+#### The Border Rule
 
-**Storefront Layout:**
-- Flexible content grid: `repeat(auto-fit, minmax(280px, 1fr))`
-- 24px gap for breathing room
-- Bento sections for product showcases
-- Full-bleed hero sections with constrained content width (max 1280px)
+Elements are defined by their borders, not by whitespace or shadows.
+
+**Grid Border Pattern (no double borders):**
+```css
+/* Parent has border-top border-left */
+.brutalist-grid {
+  display: grid;
+  gap: 0;
+  border-top: 1px solid var(--border);
+  border-left: 1px solid var(--border);
+}
+
+/* Children have border-right border-bottom */
+.brutalist-grid > * {
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+```
+
+#### Dashboard Layout
+
+- Fixed left sidebar: the vertical axis of the grid
+- Main area: 3-4 column brutalist grid
+- No card shadows — every panel is a bordered rectangle
+- Gap: 0 — borders create separation
+
+#### Storefront Layout
+
+- Same brutalist grid pattern
+- Full-bleed sections with max-width content (1280px)
+- Product cards as bordered rectangles
+- Checkout as single-column form in bordered container
 
 ### Accessibility Considerations
 
@@ -1102,33 +1202,40 @@ Status indicators never rely on color alone:
 - Logical tab order maintained
 - Skip links for main content
 
-### Animation Guidelines (GSAP)
+### 7. Motion & Micro-interactions (Brutalist)
+
+**Philosophy: Instant feedback. No slow fades.**
 
 #### Timing Reference
 
 | Context | Duration | Easing | Example |
 |---------|----------|--------|---------|
-| Micro-interactions | 150-200ms | power2.out | Button hover, toggle |
-| Transitions | 200-300ms | power2.inOut | Modal open, page navigation |
-| Data updates | 300-500ms | power3.out | Chart animations, counters |
-| Scroll reveals | 400-600ms | power2.out | Fade in, slide up |
-| Hero animations | 600-800ms | power3.out | Landing page entrances |
+| Hover states | **0ms** | instant | Color inversion, border snap |
+| Button press | **0-50ms** | linear | Background change |
+| Panel slide | **100ms** | ease-out | Slide from right, hard stop |
+| Tab switch | **0ms** | instant | Whole tab block changes |
+| Modal open | **0-100ms** | linear | Fade + slight scale |
+
+#### Brutalist Motion Rules
+
+- **Timing**: Instant (0-100ms). No slow fades.
+- **Easing**: Linear or slight ease-out. No bounces.
+- **Hover**: Instant color inversion + border snap.
+- **No scaling/growing**: Keep the grid rigid.
+- **Slide panels**: Hard stop from right edge.
+- **Tabs**: No sliding underline. Whole block changes color instantly.
 
 #### Performance Rules
 
 - Use `transform` and `opacity` only — no layout-triggering properties
-- Batch DOM reads/writes to prevent layout thrashing
-- Use `will-change` sparingly and remove after animation
-- Test animations on low-end devices
+- Remove all `transition` by default in CSS
+- Only allow transitions for specific elements (buttons, links)
 - Budget: Max 16ms per frame (60fps target)
 
-#### Subtle "Cartoon Vibes"
+#### No "Cartoon Vibes"
 
-For moments of delight without breaking professionalism:
-- Gentle overshoot on success states (bounce)
-- Playful micro-animations on empty states
-- Easter eggs in CLI (ASCII art, witty messages)
-- Celebration moments for Profit Engine wins (confetti? subtle)
+Brutalism rejects playfulness. No bounces, no confetti, no easter eggs.
+The machine is serious. Success is shown through data, not celebration.
 
 ## Design Direction Decision
 
@@ -1506,18 +1613,207 @@ flowchart TD
 5. **Respect Time** - Mobile users especially have limited patience
 6. **Reduce Cognitive Load** - One decision per screen when possible
 
+## 3. Core UI Primitives
+
+These primitives MUST be used everywhere. Developers never style from scratch.
+
+### 3.1 Frame (The Basic Unit)
+
+A "frame" is the basic layout unit: a rectangle with explicit borders.
+
+```css
+.brutal-frame {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: 0;
+  box-shadow: none;
+}
+```
+
+### 3.2 Buttons
+
+| Variant | Background | Text | Border | Hover |
+|---------|------------|------|--------|-------|
+| **Primary Action** | White | Black | White | Acid bg + black text |
+| **Collective (AI)** | Acid (#CCFF00) | Black | Acid | White bg + black text |
+| **Secondary/Ghost** | Transparent | Grey (#888) | Grey (#333) | White border + white text |
+| **Destructive** | Neon Red (#FF3366) | White | Neon Red | Darker red |
+
+**Text rules:** Uppercase, bold, wide tracking (0.1em)
+
+**Collective Action buttons** always include icon: `Zap` or `Brain`
+
+### 3.3 Badges
+
+Rectangle badges, compact padding (4px 8px):
+
+| Variant | Background | Text |
+|---------|------------|------|
+| **Active** | Acid (#CCFF00) | Black |
+| **Success** | Success Acid (#00FF94) | Black |
+| **Neutral** | Transparent | Grey (#888) + grey border |
+| **Risk** | Neon Red (#FF3366) | White |
+
+### 3.4 Inputs
+
+```css
+.brutal-input {
+  background: var(--surface-0);
+  border: 1px solid var(--border);
+  border-radius: 0;
+  font-family: 'JetBrains Mono', monospace;
+  padding: 8px 12px;
+}
+
+.brutal-input:focus {
+  border-color: var(--primary); /* Acid */
+  outline: none;
+}
+```
+
+### 3.5 Tables (Engineering Style)
+
+```css
+.brutal-table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid var(--border);
+}
+
+.brutal-table th {
+  background: var(--surface-1);
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  text-align: left;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.brutal-table td {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.brutal-table tr:hover {
+  background: var(--surface-2);
+}
+```
+
+### 3.6 Cards (Brutal Cards)
+
+```css
+.brutal-card {
+  background: var(--surface-0);
+  border: 1px solid var(--border);
+  border-radius: 0;
+  padding: 0; /* Content handles padding */
+}
+
+.brutal-card:hover {
+  background: var(--surface-2);
+}
+
+.brutal-card-header {
+  border-bottom: 1px solid var(--border);
+  padding: 16px 20px;
+}
+```
+
+### 3.7 Guardrail Box
+
+A special component for safety messaging:
+
+```css
+.guardrail-box {
+  border: 1px dashed var(--border);
+  padding: 16px;
+  background: var(--surface-1);
+}
+
+.guardrail-box .icon {
+  color: var(--acid-success); /* Shield icon */
+}
+
+.guardrail-box .copy {
+  font-family: 'JetBrains Mono', monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+```
+
+**Copy examples:**
+- `SURVEILLANCE ACTIVE`
+- `DEVIATION > 5% = AUTO-KILL`
+- `AUTO-ROLLBACK: ARMED`
+
+---
+
+## 4. Product-Level UX Architecture
+
+The Back Office navigation is organized around the OS concepts from the PRD.
+
+### Primary Navigation Areas
+
+| Area | Purpose | Key Screens |
+|------|---------|-------------|
+| **Console** | Overview / current system state | Dashboard, health metrics, active experiments |
+| **Autopilot** | ChangeSets + Proof + Guardrails | Recommendations, experiments, proof results |
+| **Overrides** | Override Kernel config + resolution | Token registry, config editor, resolution trace |
+| **Modules** | Module manager + Sandbox results | Install, enable/disable, sandbox reports |
+| **Data Plane** | Events, funnels, attribution | Event explorer, funnel visualization, attribution |
+| **Execution Plane** | Feature flags, workflows, jobs | Flag management, workflow editor, job monitor |
+| **Audit** | Immutable logs | Timeline, event details, export |
+
+### Navigation Structure
+
+```
+TRAFI
+├── Console (Dashboard)
+├── Autopilot
+│   ├── Recommendations
+│   ├── Active Experiments
+│   ├── Proof Results
+│   └── Guardrails Config
+├── Overrides
+│   ├── Token Registry
+│   ├── Config Editor
+│   └── Resolution Trace
+├── Modules
+│   ├── Installed
+│   ├── Marketplace
+│   └── Sandbox Reports
+├── Data Plane
+│   ├── Events
+│   ├── Funnels
+│   └── Attribution
+├── Execution Plane
+│   ├── Feature Flags
+│   ├── Workflows
+│   └── Jobs
+└── Audit
+    └── Timeline
+```
+
+---
+
 ## Component Strategy
 
-### Design System Components (Shadcn UI)
+### Design System Components (Shadcn UI + Brutal Wrappers)
 
-Trafi leverages Shadcn UI as the foundation layer, using these components directly:
+Trafi leverages Shadcn UI as the foundation, wrapped in brutal primitives:
 
-**Primitives:** Button, Input, Select, Checkbox, Radio, Switch, Slider, Textarea
-**Layout:** Card, Separator, Sheet, Dialog, Drawer, Scroll Area
-**Navigation:** Tabs, Breadcrumb, Navigation Menu, Sidebar
-**Data Display:** Table, Badge, Avatar, Progress, Skeleton
-**Feedback:** Toast, Alert, Tooltip, Popover
-**Overlay:** Dialog, Sheet, Dropdown Menu, Context Menu, Command
+**Primitives:** BrutalButton, BrutalInput, BrutalSelect, BrutalCheckbox
+**Layout:** BrutalCard, BrutalSheet, BrutalDialog, BrutalFrame
+**Navigation:** BrutalTabs, BrutalBreadcrumb, BrutalSidebar
+**Data Display:** BrutalTable, BrutalBadge, GuardrailBox
+**Feedback:** BrutalToast, BrutalAlert, BrutalTooltip
+
+**Rule:** Devs never use raw Shadcn — always use Brutal wrappers.
 
 ### Custom Components
 
@@ -1577,22 +1873,410 @@ Trafi leverages Shadcn UI as the foundation layer, using these components direct
 ### Implementation Roadmap
 
 **Phase 1: MVP Core (Sprint 1-2)**
-- StatusBadge, MetricCard, BentoGrid (Dashboard foundation)
-- ProductCard, CartSlideOver, ExpressCheckout (Storefront checkout)
+- BrutalButton, BrutalCard, BrutalTable (Foundation)
+- BrutalBadge, GuardrailBox (Status + Safety)
 
-**Phase 2: Profit Engine (Sprint 3-4)**
-- RecommendationCard, FunnelVisualization, ConfidenceMeter
-- GuardrailsAlert for margin protection
+**Phase 2: Autopilot (Sprint 3-4)**
+- ChangeSetCard, ChangeSetDetail (Recommendation flow)
+- ProofMeter, RollbackStatus (Measurement visualization)
 
-**Phase 3: Recovery & Polish (Sprint 5-6)**
-- RecoveryTimeline for cart recovery visualization
-- ShippingEstimate for early cost display
-- CLI components (ProgressIndicator, WizardPrompt)
+**Phase 3: Overrides & Modules (Sprint 5-6)**
+- TokenRegistry, ResolutionTrace (Override Kernel)
+- SandboxReport, ModuleCard (Module system)
 
 **Phase 4: Enhancement (P1)**
 - CommandPalette for power user navigation
-- NotificationCenter for alert aggregation
-- Enhanced DataTable for orders/products
+- AuditTimeline for immutable logs
+- Enhanced BrutalTable with filtering
+
+---
+
+## 5. Key UX Flows (Aligned to PRD)
+
+### 5.1 Autopilot ChangeSet (The Executable Artifact)
+
+A ChangeSet is not a suggestion. It's an **executable contract**.
+
+#### ChangeSet List View
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ AUTOPILOT > RECOMMENDATIONS                                 │
+├─────────────────────────────────────────────────────────────┤
+│ ┌─────────────────────────────────────────────────────────┐ │
+│ │ [NEW]  SHOW SHIPPING EARLY                              │ │
+│ │ Type: copy_change • Confidence: HIGH                    │ │
+│ │ Network: VALIDATED ON 1,240 STORES                      │ │
+│ │                                    [VIEW] [APPROVE]     │ │
+│ └─────────────────────────────────────────────────────────┘ │
+│ ┌─────────────────────────────────────────────────────────┐ │
+│ │ [MEASURING]  URGENCY TIMER ON CART                      │ │
+│ │ Type: feature_flag • Day 4 of 14                        │ │
+│ │ Current: +8.2% conversion                               │ │
+│ │                                    [VIEW] [ROLL BACK]   │ │
+│ └─────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### ChangeSet Detail View — Mandatory Blocks
+
+**1. Header Block**
+```
+┌─────────────────────────────────────────────────────────────┐
+│ CHANGESET CS-2024-0142                    [PENDING_APPROVAL]│
+│ Version: 3 • Created: 2026-01-14 09:23:41                   │
+│ ─────────────────────────────────────────────────────────── │
+│ NETWORK CONFIDENCE: ████████████████░░░░ 82%                │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**2. Hypothesis Block**
+```
+┌─────────────────────────────────────────────────────────────┐
+│ HYPOTHESIS                                                  │
+├─────────────────────────────────────────────────────────────┤
+│ PROBLEM:                                                    │
+│ Customers abandon cart when shipping costs appear late      │
+│                                                             │
+│ EXPECTED OUTCOME:                                           │
+│ +12-18% cart completion when shipping shown on product page │
+│                                                             │
+│ CONFIDENCE: HIGH                                            │
+│ EVIDENCE: 3 data points                                     │
+│   • 68% abandon at shipping step                            │
+│   • Network avg: 42% when shown early                       │
+│   • A/B test on similar stores: +15%                        │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**3. Action Plan Block**
+```
+┌─────────────────────────────────────────────────────────────┐
+│ ACTION PLAN                                                 │
+├─────────────────────────────────────────────────────────────┤
+│ TYPE: copy_change                                           │
+│ SEGMENT: all_visitors                                       │
+│ ROLLOUT: gradual (10% → 50% → 100%)                         │
+│ ─────────────────────────────────────────────────────────── │
+│ CHANGES:                                                    │
+│   1. ProductPage: Add ShippingEstimate component            │
+│   2. CartDrawer: Move shipping from step 3 to step 1        │
+│   3. Checkout: Remove duplicate shipping display            │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**4. Guardrails Block**
+```
+┌─────────────────────────────────────────────────────────────┐
+│ GUARDRAILS                                        [ARMED]   │
+├─────────────────────────────────────────────────────────────┤
+│ ┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┐ │
+│   🛡 PROFIT FLOOR: €2.50/order                              │
+│   🛡 STOCK THRESHOLD: none                                  │
+│   🛡 SLO: LCP < 2.5s, Error rate < 0.1%                     │
+│   🛡 RISK LEVEL: LOW                                        │
+│ └ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘ │
+│                                                             │
+│ DEVIATION > 5% = AUTO-KILL                                  │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**5. Rollback Plan Block**
+```
+┌─────────────────────────────────────────────────────────────┐
+│ ROLLBACK PLAN                                               │
+├─────────────────────────────────────────────────────────────┤
+│ AUTO TRIGGERS:                                              │
+│   • Conversion drops > 5%                                   │
+│   • Error rate exceeds 0.5%                                 │
+│   • Revenue per visitor drops > 10%                         │
+│                                                             │
+│ MANUAL ROLLBACK: ENABLED                                    │
+│ ESTIMATED ROLLBACK TIME: < 30 seconds                       │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**6. Proof Plan Block**
+```
+┌─────────────────────────────────────────────────────────────┐
+│ PROOF PLAN                                                  │
+├─────────────────────────────────────────────────────────────┤
+│ PRIMARY METRICS:                                            │
+│   • Cart completion rate (target: +12%)                     │
+│   • Revenue per visitor (guard: no decline)                 │
+│                                                             │
+│ METHOD: CUPED                                               │
+│ HOLDOUT: 10%                                                │
+│ MIN SAMPLE: 2,000 conversions                               │
+│ WINDOW: 14 days                                             │
+│ SIGNIFICANCE: p < 0.05                                      │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**7. Approval Block**
+```
+┌─────────────────────────────────────────────────────────────┐
+│ APPROVAL                                                    │
+├─────────────────────────────────────────────────────────────┤
+│ STATUS: PENDING_APPROVAL                                    │
+│ EXPIRES: 2026-01-21 09:23:41 (7 days)                       │
+│                                                             │
+│           [APPROVE & DEPLOY]    [REJECT]                    │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**8. Execution State Block** (when active)
+```
+┌─────────────────────────────────────────────────────────────┐
+│ EXECUTION                                       [MEASURING] │
+├─────────────────────────────────────────────────────────────┤
+│ STARTED: 2026-01-14 14:32:00                                │
+│ DAY: 4 of 14                                                │
+│ ─────────────────────────────────────────────────────────── │
+│ LIVE METRICS:                                               │
+│   Cart completion: 34.2% (+8.2%)  ████████████░░░░░░        │
+│   Revenue/visitor: €4.21 (+2.1%)  ████████████████░░        │
+│   Error rate: 0.02%               ██░░░░░░░░░░░░░░░░        │
+│ ─────────────────────────────────────────────────────────── │
+│           [PROMOTE TO PERMANENT]    [ROLL BACK NOW]         │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**9. Audit Trail Block**
+```
+┌─────────────────────────────────────────────────────────────┐
+│ AUDIT TRAIL                                                 │
+├─────────────────────────────────────────────────────────────┤
+│ 2026-01-14 14:32:00  STATUS → ACTIVE         system         │
+│ 2026-01-14 14:31:58  APPROVED                alex@store.com │
+│ 2026-01-14 09:23:41  CREATED                 autopilot      │
+│ 2026-01-13 23:00:00  ANALYSIS_COMPLETE       autopilot      │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### Cold Start Solver (Network Confidence)
+
+When local data is insufficient:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ CONFIDENCE ANALYSIS                                         │
+├───────────────────────────┬─────────────────────────────────┤
+│ LOCAL ANALYSIS            │ NETWORK ANALYSIS                │
+│ ─────────────────────────┼───────────────────────────────── │
+│ [!] INSUFFICIENT DATA     │ ✓ VALIDATED ON 1,240 STORES     │
+│                           │                                 │
+│ Your traffic: 230/day     │ Network avg uplift: +14.2%      │
+│ Min required: 2,000       │ Confidence: 94%                 │
+│                           │ Similar stores: 847             │
+│ ░░░░░░░░░░░░░░░░░░░░     │ ████████████████████            │
+└───────────────────────────┴─────────────────────────────────┘
+```
+
+Psychology: "Don't trust yourself (yet), trust the network."
+
+### 5.2 Guardrails & Auto-Rollback (The Safety Fence)
+
+Safety is a fence, not a pillow. The UI communicates certainty, not comfort.
+
+#### Guardrail Widget Variations
+
+**Armed State:**
+```
+┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┐
+  🛡 SURVEILLANCE ACTIVE
+  DEVIATION > 5% = AUTO-KILL
+  PROFIT FLOOR: €2.50/order
+└ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘
+```
+
+**Triggered State:**
+```
+┌─────────────────────────────────────────────────────────────┐
+│ 🚨 ROLLBACK TRIGGERED                           [ROLLED_BACK]│
+├─────────────────────────────────────────────────────────────┤
+│ TRIGGER: Conversion dropped 7.2% (threshold: 5%)            │
+│ DETECTED: 2026-01-15 03:42:18                               │
+│ ROLLED BACK: 2026-01-15 03:42:19 (< 1 second)               │
+│                                                             │
+│ Traffic protected: 1,247 visitors                           │
+│ Estimated revenue saved: €892                               │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 5.3 Override Kernel (Deterministic Resolution)
+
+This is a **system page**, not a settings page. It shows exactly how the runtime resolves overrides.
+
+#### Token Registry View
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ OVERRIDES > TOKEN REGISTRY                                  │
+├─────────────────────────────────────────────────────────────┤
+│ FILTER: [All] [Products] [Orders] [Payments] [Dashboard]    │
+├─────────────────────────────────────────────────────────────┤
+│ TOKEN               │ PROVIDER          │ SOURCE   │ STATUS │
+│ ───────────────────┼───────────────────┼──────────┼─────── │
+│ PRODUCT_SERVICE     │ CustomProductSvc  │ override │ ✓      │
+│ PRICING_CALCULATOR  │ CorePricingCalc   │ core     │ ✓      │
+│ PAYMENT_PROCESSOR   │ StripeProcessor   │ core     │ ✓      │
+│ INVENTORY_SERVICE   │ CustomInventorySvc│ override │ ✓      │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### Resolution Trace Drawer
+
+When clicking a token, show the resolution trace:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ RESOLUTION TRACE: PRODUCT_SERVICE                           │
+├─────────────────────────────────────────────────────────────┤
+│ STEP 1: Check trafi.config.ts                               │
+│         Found: PRODUCT_SERVICE → CustomProductService       │
+│         ✓ OVERRIDE REGISTERED                               │
+│                                                             │
+│ STEP 2: Validate override class                             │
+│         Extends: CoreProductService ✓                       │
+│         Implements: IProductService ✓                       │
+│         ✓ VALIDATION PASSED                                 │
+│                                                             │
+│ STEP 3: Register in DI container                            │
+│         Token: PRODUCT_SERVICE                              │
+│         Provider: CustomProductService                      │
+│         Scope: REQUEST                                      │
+│         ✓ REGISTERED                                        │
+│                                                             │
+│ RESULT: CustomProductService                                │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### Config Editor
+
+Monospace editor for `trafi.config.ts`:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ OVERRIDES > CONFIG EDITOR                      [VALIDATE]   │
+├─────────────────────────────────────────────────────────────┤
+│ 1  import { defineConfig } from '@trafi/core';              │
+│ 2                                                           │
+│ 3  export default defineConfig({                            │
+│ 4    overrides: {                                           │
+│ 5      providers: {                                         │
+│ 6        PRODUCT_SERVICE: CustomProductService,             │
+│ 7        INVENTORY_SERVICE: CustomInventoryService,         │
+│ 8      },                                                   │
+│ 9      dashboard: {                                         │
+│10        slots: {                                           │
+│11          'product-detail-sidebar': CustomSidebar,         │
+│12        },                                                 │
+│13      },                                                   │
+│14    },                                                     │
+│15  });                                                      │
+├─────────────────────────────────────────────────────────────┤
+│ VALIDATION: ✓ PASSED                                        │
+│ • 2 provider overrides registered                           │
+│ • 1 dashboard slot override registered                      │
+│ • No type errors                                            │
+│ • No semver conflicts                                       │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 5.4 Modules + Module Sandbox (Security Enforcement)
+
+Treat modules as untrusted input. The UI shows exactly what security checks passed or failed.
+
+#### Modules Home
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ MODULES > INSTALLED                                         │
+├─────────────────────────────────────────────────────────────┤
+│ MODULE              │ VERSION │ COMPAT    │ STATUS │        │
+│ ───────────────────┼─────────┼───────────┼────────┼─────── │
+│ @trafi/wishlist     │ 1.2.0   │ ^1.0.0 ✓  │ ACTIVE │[CONFIG]│
+│ @trafi/reviews      │ 2.0.1   │ ^1.0.0 ✓  │ ACTIVE │[CONFIG]│
+│ @trafi/promotions   │ 1.0.0   │ ^1.0.0 ✓  │ ACTIVE │[CONFIG]│
+│ custom/loyalty      │ 0.5.0   │ ^1.0.0 ✓  │ ACTIVE │[CONFIG]│
+├─────────────────────────────────────────────────────────────┤
+│                                    [INSTALL MODULE]         │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### Module Install Flow (Step-based)
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ INSTALL MODULE                              STEP 3 of 5     │
+├─────────────────────────────────────────────────────────────┤
+│ SOURCE: npm:@trafi/advanced-promotions@1.0.0                │
+│ ─────────────────────────────────────────────────────────── │
+│                                                             │
+│ SANDBOX ANALYSIS COMPLETE                                   │
+│                                                             │
+│ ┌─────────────────────────────────────────────────────────┐ │
+│ │ AST CHECKS                                    [PASSED]  │ │
+│ │ • No eval() usage                                  ✓    │ │
+│ │ • No new Function()                                ✓    │ │
+│ │ • No dynamic require()                             ✓    │ │
+│ │ • No child_process                                 ✓    │ │
+│ └─────────────────────────────────────────────────────────┘ │
+│ ┌─────────────────────────────────────────────────────────┐ │
+│ │ FS ISOLATION                                  [PASSED]  │ │
+│ │ • Read access: /modules/promotions/*               ✓    │ │
+│ │ • Write access: /modules/promotions/data/*         ✓    │ │
+│ │ • No access outside module directory               ✓    │ │
+│ └─────────────────────────────────────────────────────────┘ │
+│ ┌─────────────────────────────────────────────────────────┐ │
+│ │ NETWORK ACL                                   [PASSED]  │ │
+│ │ • Allowed: api.stripe.com                          ✓    │ │
+│ │ • Allowed: analytics.trafi.dev                     ✓    │ │
+│ │ • No other outbound requests                       ✓    │ │
+│ └─────────────────────────────────────────────────────────┘ │
+│ ┌─────────────────────────────────────────────────────────┐ │
+│ │ RUNTIME POLICY                                [PASSED]  │ │
+│ │ • Side-effect free                                 ✓    │ │
+│ │ • Observability hooks                              ✓    │ │
+│ │ • Deterministic behavior                           ✓    │ │
+│ └─────────────────────────────────────────────────────────┘ │
+│                                                             │
+│                           [BACK]    [CONTINUE TO STEP 4]    │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### Sandbox Report (Failure Case)
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ SANDBOX REPORT                                   [FAILED]   │
+├─────────────────────────────────────────────────────────────┤
+│ MODULE: sketchy-module@0.1.0                                │
+│ ─────────────────────────────────────────────────────────── │
+│                                                             │
+│ ┌─────────────────────────────────────────────────────────┐ │
+│ │ AST CHECKS                                    [FAILED]  │ │
+│ ├─────────────────────────────────────────────────────────┤ │
+│ │ ✗ CRITICAL: Dynamic code execution detected             │ │
+│ │   File: src/utils/exec.ts:42                            │ │
+│ │   Pattern: eval(userInput)                              │ │
+│ │   Fix: Remove eval() usage, use validated alternatives  │ │
+│ │                                                         │ │
+│ │ ✗ CRITICAL: Shell access attempted                      │ │
+│ │   File: src/helpers/run.ts:15                           │ │
+│ │   Pattern: require('child_process')                     │ │
+│ │   Fix: Remove child_process import                      │ │
+│ └─────────────────────────────────────────────────────────┘ │
+│                                                             │
+│ INSTALLATION BLOCKED                                        │
+│ This module violates security policies and cannot be        │
+│ installed. Contact the module author for a compliant        │
+│ version.                                                    │
+│                                                             │
+│                                              [DISMISS]      │
+└─────────────────────────────────────────────────────────────┘
+```
 
 ## UX Consistency Patterns
 
@@ -2031,3 +2715,240 @@ All status indicators include both color AND icon:
 **Testing Hooks:**
 - `data-testid` attributes for automated testing
 - Consistent naming convention: `data-testid="component-action"`
+
+---
+
+## 8. Implementation Stack & Guidelines
+
+### Reference Implementation
+
+**CSS Theme File:** `_bmad-output/planning-artifacts/ux-design-vision.tsx`
+
+This file contains the complete Tailwind CSS 4.x configuration with:
+- CSS variables for all colors (light + dark mode)
+- Brutalist utility classes (`.brutal-border`, `.text-mono`, `.bg-acid`, etc.)
+- Typography base styles (Space Grotesk + JetBrains Mono)
+- Component base styles (buttons, badges, cards, tables, inputs)
+- Grid layout patterns (`.brutalist-grid`)
+
+**Import this file in your global CSS to apply the brutalist theme.**
+
+### Core Libraries (Mandatory)
+
+| Library | Purpose | Usage |
+|---------|---------|-------|
+| **Shadcn UI** | Component primitives | Wrapped in Brutal* components, radius-zero enforced |
+| **Tailwind CSS 4.x** | Styling | With brutalist utility classes from `ux-design-vision.tsx` |
+| **GSAP** | Micro-interactions | Instant feedback, panel slides, data updates |
+| **Framer Motion** | Page transitions | Layout animations, presence animations |
+| **Lenis JS** | Smooth scroll | Storefront scroll experience |
+
+### Brutalist Tailwind Configuration
+
+```css
+@layer base {
+  * {
+    @apply border-border;
+    border-radius: 0 !important; /* Enforce radius-zero */
+  }
+
+  /* Remove all transitions by default */
+  * {
+    transition: none !important;
+  }
+
+  /* Allow only color transitions for specific elements */
+  button,
+  [role="button"],
+  .hover-transition {
+    transition: background-color 0s linear, color 0s linear, border-color 0s linear !important;
+  }
+}
+```
+
+### Brutalist Utility Classes
+
+```css
+@layer utilities {
+  .brutal-border {
+    border: 1px solid var(--border);
+  }
+
+  .text-mono {
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .bg-acid {
+    background-color: #CCFF00;
+  }
+
+  .text-acid {
+    color: #CCFF00;
+  }
+
+  .bg-success-acid {
+    background-color: #00FF94;
+  }
+
+  .bg-warning-neon {
+    background-color: #FF3366;
+  }
+
+  .radius-0 {
+    border-radius: 0px !important;
+  }
+
+  .grid-brutalist {
+    display: grid;
+    gap: 0;
+  }
+
+  .grid-brutalist > * {
+    border-right: 1px solid #333;
+    border-bottom: 1px solid #333;
+  }
+
+  .tracking-widest-plus {
+    letter-spacing: 0.1em;
+  }
+
+  .tracking-tight-plus {
+    letter-spacing: -0.02em;
+  }
+}
+```
+
+### Component Wrapper Strategy
+
+Create thin wrappers that hard-lock the spec:
+
+```typescript
+// components/brutal/BrutalButton.tsx
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+
+export function BrutalButton({ className, ...props }) {
+  return (
+    <Button
+      className={cn(
+        "rounded-none uppercase font-bold tracking-widest",
+        "border border-white bg-white text-black",
+        "hover:bg-acid hover:text-black hover:border-acid",
+        "transition-none",
+        className
+      )}
+      {...props}
+    />
+  );
+}
+```
+
+**Rule:** Devs never style from scratch on product pages. Always use Brutal* wrappers.
+
+---
+
+## 9. Copy & Tone Guidelines
+
+### Voice Characteristics
+
+- **Robotic** — Precise, not warm
+- **Confident** — Certain, not tentative
+- **Technical** — Data-driven, not emotional
+
+### Language Rules
+
+| Instead of... | Write... |
+|---------------|----------|
+| "Try this optimization" | `DEPLOY OPTIMIZATION` |
+| "This might help" | `NETWORK CONFIRMED` |
+| "Would you like to..." | `APPROVE & DEPLOY` |
+| "We think..." | `ANALYSIS COMPLETE` |
+| "It looks like..." | `DETECTED:` |
+| "Something went wrong" | `ERROR: [specific error]` |
+
+### Copy Examples
+
+**Status Messages:**
+- `SURVEILLANCE ACTIVE`
+- `PROOF WINDOW: 14D`
+- `HOLDOUT: 10%`
+- `AUTO-ROLLBACK: ARMED`
+- `DEVIATION > 5% = AUTO-KILL`
+
+**Action Labels:**
+- `APPROVE & DEPLOY`
+- `ROLL BACK NOW`
+- `PROMOTE TO PERMANENT`
+- `VALIDATE`
+- `DISMISS`
+
+**Metrics:**
+- `+12.4% CONVERSION`
+- `€4,231 REVENUE IMPACT`
+- `1,247 VISITORS PROTECTED`
+- `< 30s ROLLBACK TIME`
+
+### Forbidden Words
+
+Never use in UI copy:
+- "Maybe", "might", "perhaps"
+- "Try", "attempt"
+- "We think", "we believe"
+- "Sorry", "oops"
+- Emojis (except status icons: 🛡, 🚨, ✓, ✗)
+
+---
+
+## 10. Definition of Done (UX)
+
+A feature is "done" only if:
+
+### Visual Compliance
+
+- [ ] Uses brutal primitives (radius-zero, borders, no shadows)
+- [ ] Has visible grid structure
+- [ ] Uses monospace for all numbers and data
+- [ ] Follows color palette (void + acid signals)
+- [ ] Typography matches spec (Space Grotesk + JetBrains Mono)
+
+### Interaction Compliance
+
+- [ ] Hover states are instant (no slow transitions)
+- [ ] Focus states use acid outline (2px)
+- [ ] Touch targets are minimum 48px
+
+### Data Compliance
+
+- [ ] All numbers are monospace
+- [ ] All dates are ISO format or relative ("4 days ago")
+- [ ] All metrics show trend indicators
+
+### State Management
+
+- [ ] Has explicit status badge if it changes system state
+- [ ] Has guardrails displayed if it can affect profit/checkout
+- [ ] Has audit trail if action is recorded
+
+### Accessibility
+
+- [ ] Keyboard navigable
+- [ ] ARIA labels on interactive elements
+- [ ] Color-independent status indicators (icon + color)
+
+---
+
+## Appendix A — Status Glossary
+
+| Status | Definition | Badge Color |
+|--------|------------|-------------|
+| `DRAFT` | Exists, not ready for review | Neutral (grey) |
+| `PENDING_APPROVAL` | Waiting human sign-off | Acid (lime) |
+| `ACTIVE` | Deployed to live traffic | Acid (lime) |
+| `MEASURING` | Collecting proof window data | Acid (lime) |
+| `PROVEN` | Meets proof plan threshold | Success (green) |
+| `ROLLED_BACK` | Reverted (auto or manual) | Risk (neon red) |
+| `PERMANENT` | Promoted to default behavior | Success (green) |
+| `REJECTED` | Human declined | Neutral (grey) |
+| `EXPIRED` | Approval window closed | Neutral (grey) |
+| `BLOCKED` | Guardrails prevented execution | Risk (neon red) |
+

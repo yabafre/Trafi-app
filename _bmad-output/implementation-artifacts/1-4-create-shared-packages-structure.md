@@ -90,15 +90,14 @@ so that **I can reuse code across apps with type safety**.
    │       └── index.ts
    │
    ├── @trafi/types/                # Pure TypeScript types
-   │   └── src/
-   │       ├── product.types.ts     # Inferred from Zod + custom
-   │       ├── api.types.ts         # API response types
-   │       ├── events.types.ts      # Event payload types
-   │       └── index.ts
-   │
-   └── @trafi/db/                   # Prisma (generates types too)
        └── src/
-           └── generated/           # Prisma generated types
+           ├── product.types.ts     # Inferred from Zod + custom
+           ├── api.types.ts         # API response types
+           ├── events.types.ts      # Event payload types
+           └── index.ts
+   
+
+           
    ```
 
 2. **Type Flow (CRITICAL):**
@@ -122,12 +121,12 @@ so that **I can reuse code across apps with type safety**.
    import { CreateProductSchema, type CreateProductInput } from '@trafi/validators';
    import type { Product } from '@trafi/types';
 
-   // NEVER import from @trafi/db in dashboard (enforced by ESLint)
+   // NEVER import from db in dashboard (enforced by ESLint)
    ```
 
 4. **Frontend-Database Isolation (CRITICAL):**
    - NEVER import `@trafi/db` or Prisma in `apps/dashboard` or `apps/storefront`
-   - Prisma package (`@trafi/db`) only imported by API app
+   - Prisma only use on API app
    - ESLint rules to prevent Prisma imports in apps/dashboard
    - TypeScript project references configured to prevent cross-boundary imports
 
@@ -136,7 +135,7 @@ so that **I can reuse code across apps with type safety**.
 **Stack Versions (from project-context.md):**
 - Zod: Latest (^3.24.1 already installed)
 - TypeScript: 5.x (strict mode REQUIRED)
-- Prisma: ^6.2.1 (already installed in @trafi/db)
+- Prisma: ^7.x (latest)
 - Node.js: 20 LTS
 
 **Naming Conventions:**
@@ -230,15 +229,7 @@ packages/
 │   ├── tailwind/
 │   │   └── base.config.ts              # NEW
 │   └── package.json                    # UPDATE: exports
-│
-└── @trafi/db/
-    ├── prisma/
-    │   └── schema.prisma               # NEW: Minimal placeholder
-    ├── src/
-    │   ├── client.ts                   # NEW: PrismaClient singleton
-    │   └── index.ts                    # UPDATE
-    ├── .env.example                    # NEW
-    └── README.md                       # NEW
+
 ```
 
 ### References
@@ -297,7 +288,7 @@ packages/
 ### Anti-Patterns to AVOID
 
 1. **DO NOT** define types locally in `apps/` - ALWAYS use `@trafi/types` or `@trafi/validators`
-2. **DO NOT** import `@trafi/db` in frontend apps - ESLint must block this
+2. **DO NOT** import `prisma` in frontend apps - ESLint must block this
 3. **DO NOT** create separate DTO classes in NestJS - use Zod schemas with `z.infer<>`
 4. **DO NOT** use `class-validator` or `class-transformer` - Zod is the standard
 5. **DO NOT** duplicate schemas between packages - single source of truth in validators
@@ -350,21 +341,6 @@ module.exports = {
 };
 ```
 
-**Prisma Singleton Pattern:**
-```typescript
-// @trafi/db/src/client.ts
-import { PrismaClient } from '@prisma/client';
-
-const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
-
-export const prisma = globalForPrisma.prisma ?? new PrismaClient();
-
-if (process.env.NODE_ENV !== 'production') {
-  globalForPrisma.prisma = prisma;
-}
-
-export type { PrismaClient };
-```
 
 **Tailwind Base Config:**
 ```typescript
@@ -419,9 +395,8 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 1. **@trafi/validators completed**: Created comprehensive Zod schemas for Product, Order, Customer, and Store domains with proper base schemas (IdSchema, TimestampsSchema, TenantScopedSchema, BaseEntitySchema)
 2. **@trafi/types completed**: All domain types now re-export from validators using `z.infer<>` pattern
 3. **@trafi/config completed**: Added Tailwind base config with Trafi color tokens, created frontend-specific ESLint config with @trafi/db restriction
-4. **@trafi/db completed**: Prisma singleton pattern, minimal schema placeholder, .env.example, README documentation
-5. **Cross-package integration verified**: All imports work correctly, ESLint blocks @trafi/db in dashboard
-6. **Dependencies updated**: Added @trafi/validators and @trafi/db to apps/api, @trafi/validators and @trafi/types to apps/dashboard
+4. **Cross-package integration verified**: All imports work correctly, ESLint blocks @trafi/db in dashboard
+5. **Dependencies updated**: Added @trafi/validators and @trafi/db to apps/api, @trafi/validators and @trafi/types to apps/dashboard
 
 ### File List
 
@@ -443,21 +418,14 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 - `packages/@trafi/types/src/store.types.ts`
 - `packages/@trafi/config/eslint/frontend.js`
 - `packages/@trafi/config/tailwind/base.config.ts`
-- `packages/@trafi/db/prisma/schema.prisma`
-- `packages/@trafi/db/src/client.ts`
-- `packages/@trafi/db/.env.example`
-- `packages/@trafi/db/README.md`
 
 **Modified Files:**
 - `packages/@trafi/validators/src/common/index.ts` - Added base.schema export
 - `packages/@trafi/validators/src/index.ts` - Added domain schema exports
 - `packages/@trafi/types/src/index.ts` - Added domain type re-exports
 - `packages/@trafi/config/package.json` - Added tailwind and frontend eslint exports
-- `packages/@trafi/db/src/index.ts` - Export prisma client
-- `packages/@trafi/db/package.json` - Added @types/node
 - `apps/api/package.json` - Added @trafi/db and @trafi/validators dependencies
 - `apps/dashboard/package.json` - Added @trafi/types and @trafi/validators dependencies
-- `apps/dashboard/eslint.config.mjs` - Added @trafi/db restriction rule
 - `_bmad-output/implementation-artifacts/sprint-status.yaml` - Status: in-progress → review
 
 ### Change Log

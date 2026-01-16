@@ -6,6 +6,52 @@ DPO peut gerer les demandes GDPR (recherche, export, suppression) avec audit tra
 
 ---
 
+## Epic Implementation Guidelines
+
+### Retrospective Learnings (MANDATORY)
+- **RETRO-1:** Use Context7 MCP before implementing PDF generation, data export
+- **RETRO-2:** PrivacyService, ConsentService use `protected` methods
+- **RETRO-3:** PrivacyModule exports explicit public API for custom compliance flows
+- **RETRO-4:** Dashboard privacy components accept customization props
+- **RETRO-5:** Privacy Center uses composition pattern (wrappable sections)
+- **RETRO-6:** Code with @trafi/core override patterns (custom consent categories)
+
+### UX Design Requirements (Dashboard - Digital Brutalism v2)
+
+**Brutalist Manifesto:**
+- The interface is a machine. No decoration, only data and action.
+- Radius-zero everywhere — everything is a rectangle.
+- Visible grid — 1px borders expose structure.
+- High contrast — pure black background, pure white text.
+
+**Visual Design:**
+- **UX-1:** Dark mode default for Privacy Center
+- **UX-2:** Rail (64px) + Sidebar (240px) + Main content layout
+- **UX-3:** Breadcrumb: Dashboard > Settings > Privacy
+- **UX-4:** Status badges: pending (#CCFF00), processed (#00FF94), denied (#FF3366)
+- **UX-5:** Audit log in DataTable with filters (radius-0)
+- **UX-6:** Customer data view in expandable sections (1px borders)
+- **UX-7:** Confirmation modal for destructive actions (erasure) - high contrast warning
+- **UX-8:** Shadcn UI: DataTable, Dialog, Accordion, Badge (all radius-0)
+- **UX-COLOR-1:** Primary Acid Lime #CCFF00 for action buttons, focus states
+- **UX-COLOR-2:** Background #000000, borders #333333, text #FFFFFF
+- **UX-COLOR-3:** Success #00FF94, Risk #FF3366, Warning #EAB308 for sensitive actions
+- **UX-RADIUS:** 0px everywhere — `border-radius: 0px !important`
+- **UX-SHADOW:** None — elements sit firmly in the grid
+- **UX-TYPE:** JetBrains Mono for data fields, system font for labels
+
+### UX Design Requirements (Storefront - Consent - Digital Brutalism v2)
+
+**Visual Design:**
+- **UX-STORE-1:** Cookie banner positioned bottom, non-blocking (solid black)
+- **UX-STORE-2:** Banner uses solid black background with 1px border top
+- **UX-STORE-3:** Accept/Reject/Customize buttons clearly labeled (radius-0)
+- **UX-STORE-4:** Preference center in account settings
+- **UX-COLOR-1:** Primary Acid Lime #CCFF00 for Accept button
+- **UX-RADIUS:** 0px everywhere
+
+---
+
 ## Story 10.1: Privacy Manager Role
 
 As an **Owner/Admin**,

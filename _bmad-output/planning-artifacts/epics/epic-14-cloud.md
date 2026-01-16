@@ -6,6 +6,57 @@ Merchant peut utiliser Trafi Cloud sans gerer l'infrastructure, avec migration S
 
 ---
 
+## Epic Implementation Guidelines
+
+### Retrospective Learnings (MANDATORY)
+- **RETRO-1:** Use Context7 MCP before implementing Stripe billing, provisioning
+- **RETRO-2:** TenantService, ProvisioningService use `protected` methods
+- **RETRO-3:** CloudModule exports explicit public API for custom provisioning
+- **RETRO-4:** Dashboard cloud components accept customization props
+- **RETRO-5:** Cloud signup uses composition pattern
+- **RETRO-6:** Tenant-scoped authorization follows @trafi/core patterns
+
+### UX Design Requirements (Marketing Site - Signup - Digital Brutalism v2)
+
+**Brutalist Manifesto:**
+- The interface is a machine. No decoration, only data and action.
+- Radius-zero everywhere — everything is a rectangle.
+- Visible grid — 1px borders expose structure.
+
+**Signup Visual Design:**
+- **UX-STORE-1:** Minimal, grid-based signup flow
+- **UX-STORE-2:** Progress indicator with rectangular steps (1px borders)
+- **UX-STORE-3:** Plan comparison with clear pricing in grid layout
+- **UX-STORE-4:** Stripe Elements for payment (radius-0 styling)
+- **UX-COLOR-1:** Primary Acid Lime #CCFF00 for CTAs, focus states
+- **UX-COLOR-2:** Background #000000, borders #333333, text #FFFFFF
+- **UX-RADIUS:** 0px everywhere — `border-radius: 0px !important`
+- **UX-TYPE:** JetBrains Mono for pricing/numbers, system font for body
+
+### UX Design Requirements (Dashboard - Cloud Settings - Digital Brutalism v2)
+
+**Visual Design:**
+- **UX-1:** Dark mode default
+- **UX-2:** Rail (64px) + Sidebar (240px) + Main content layout
+- **UX-3:** Breadcrumb: Dashboard > Settings > Billing
+- **UX-4:** Plan usage visualization (rectangular progress bars, no radius)
+- **UX-5:** Domain configuration with DNS validation status badges
+- **UX-6:** Migration wizard with step-by-step progress (1px borders)
+- **UX-8:** Shadcn UI: Progress, Card, Dialog, Stepper (all radius-0)
+- **UX-COLOR-1:** Primary Acid Lime #CCFF00 for action buttons, focus states
+- **UX-COLOR-2:** Background #000000, borders #333333, text #FFFFFF
+- **UX-COLOR-3:** Success #00FF94, Warning #EAB308 for usage alerts
+- **UX-RADIUS:** 0px everywhere
+
+### Shopify Migration UX (Digital Brutalism v2)
+- **UX-MIG-1:** Connect to Shopify via OAuth (Acid Lime connect button)
+- **UX-MIG-2:** Data preview before import (DataTable, radius-0)
+- **UX-MIG-3:** Progress tracking with item counts (rectangular bars)
+- **UX-MIG-4:** Validation report with warnings/errors (badge colors: #00FF94, #FF3366)
+- **UX-MIG-5:** Side-by-side comparison for verification (1px grid borders)
+
+---
+
 ## Story 14.1: Cloud Signup Flow
 
 As a **Merchant (Sophie)**,

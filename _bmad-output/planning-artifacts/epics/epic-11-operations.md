@@ -6,6 +6,45 @@ Ops peuvent monitorer la sante systeme, gerer les jobs asynchrones BullMQ, et di
 
 ---
 
+## Epic Implementation Guidelines
+
+### Retrospective Learnings (MANDATORY)
+- **RETRO-1:** Use Context7 MCP before implementing BullMQ, monitoring libraries
+- **RETRO-2:** JobService, MonitoringService use `protected` methods
+- **RETRO-3:** JobsModule exports explicit public API for custom job types
+- **RETRO-4:** Dashboard ops components accept customization props
+- **RETRO-5:** Jobs dashboard uses composition pattern (wrappable views)
+- **RETRO-6:** Code with @trafi/core override patterns (custom metrics, alerts)
+
+### UX Design Requirements (Dashboard - Digital Brutalism v2)
+
+**Brutalist Manifesto:**
+- The interface is a machine. No decoration, only data and action.
+- Radius-zero everywhere — everything is a rectangle.
+- Visible grid — 1px borders expose structure.
+- High contrast — pure black background, pure white text.
+
+Inspired by Trigger.dev for Jobs UI architecture.
+
+**Visual Design:**
+- **UX-1:** Dark mode default for all ops pages
+- **UX-2:** Rail (64px) + Sidebar (240px) + Main content layout
+- **UX-3:** Breadcrumb: Dashboard > Operations > [section]
+- **UX-4:** Status badges: waiting (#6B7280), active (#3B82F6), completed (#00FF94), failed (#FF3366)
+- **UX-5:** Real-time logs streaming with monospace font (like Trigger.dev)
+- **UX-6:** Run timeline with duration visualization (1px grid lines)
+- **UX-7:** One-click replay for failed jobs (Acid Lime button)
+- **UX-8:** Payload inspector for job inputs/outputs (radius-0 panels)
+- **UX-9:** System health in strict rectangular grid metrics
+- **UX-COLOR-1:** Primary Acid Lime #CCFF00 for action buttons, focus states
+- **UX-COLOR-2:** Background #000000, borders #333333, text #FFFFFF
+- **UX-COLOR-3:** Success #00FF94, Error #FF3366
+- **UX-RADIUS:** 0px everywhere — `border-radius: 0px !important`
+- **UX-SHADOW:** None — elements sit firmly in the grid
+- **UX-TYPE:** JetBrains Mono for logs/data, system font for labels
+
+---
+
 ## Story 11.1: BullMQ Job Queue Setup
 
 As a **System**,

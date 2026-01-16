@@ -6,6 +6,51 @@ Systeme envoie des emails de recuperation de panier abandonne avec restauration 
 
 ---
 
+## Epic Implementation Guidelines
+
+### Retrospective Learnings (MANDATORY)
+- **RETRO-1:** Use Context7 MCP before implementing email libraries (Resend, SendGrid)
+- **RETRO-2:** RecoveryService, EmailSequenceService use `protected` methods
+- **RETRO-3:** RecoveryModule exports explicit public API for custom sequences
+- **RETRO-4:** Dashboard recovery components accept customization props
+- **RETRO-5:** Email template editor uses composition pattern
+- **RETRO-6:** Code with @trafi/core override patterns (custom recovery logic)
+
+### UX Design Requirements (Dashboard - Digital Brutalism v2)
+
+**Brutalist Manifesto:**
+- The interface is a machine. No decoration, only data and action.
+- Radius-zero everywhere — everything is a rectangle.
+- Visible grid — 1px borders expose structure.
+- High contrast — pure black background, pure white text.
+
+**Visual Design:**
+- **UX-1:** Dark mode default for recovery settings pages
+- **UX-2:** Rail (64px) + Sidebar (240px) + Main content layout
+- **UX-3:** Breadcrumb: Dashboard > Profit Engine > Cart Recovery
+- **UX-4:** Sequence timeline visualization with step indicators (radius-0)
+- **UX-5:** Recovery analytics in strict grid layout (emails sent, recovered, revenue)
+- **UX-6:** Email template preview in split view
+- **UX-8:** Shadcn UI: Tabs, Timeline, DataTable (all radius-0)
+- **UX-COLOR-1:** Primary Acid Lime #CCFF00 for action buttons, focus states
+- **UX-COLOR-2:** Background #000000, borders #333333, text #FFFFFF
+- **UX-COLOR-3:** Success #00FF94 (recovered), Risk #FF3366
+- **UX-RADIUS:** 0px everywhere — `border-radius: 0px !important`
+- **UX-SHADOW:** None — elements sit firmly in the grid
+- **UX-TYPE:** JetBrains Mono for metrics/numbers, system font for labels
+
+### UX Design Requirements (Storefront - Magic Link - Digital Brutalism v2)
+
+**Visual Design:**
+- **UX-STORE-1:** Magic link restores cart instantly
+- **UX-STORE-2:** Checkout page pre-loaded on arrival
+- **UX-STORE-3:** Loading state during cart restoration (skeleton)
+- **UX-STORE-4:** Expired link page with store redirect
+- **UX-COLOR-1:** Primary Acid Lime #CCFF00 for CTAs
+- **UX-RADIUS:** 0px everywhere
+
+---
+
 ## Story 9.1: Abandoned Cart Detection
 
 As a **System**,

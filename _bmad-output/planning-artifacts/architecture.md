@@ -4,6 +4,7 @@ inputDocuments:
   - '_bmad-output/planning-artifacts/product-brief-trafi-app-2026-01-09.md'
   - '_bmad-output/planning-artifacts/prd.md'
   - '_bmad-output/planning-artifacts/ux-design-specification.md'
+  - '_bmad-output/project-context.md'
 workflowType: 'architecture'
 project_name: 'trafi-app'
 user_name: 'Alex'
@@ -11,6 +12,15 @@ date: '2026-01-11'
 lastStep: 8
 status: 'complete'
 completedAt: '2026-01-11'
+revisedAt: '2026-01-14'
+revisionNotes: |
+  Update v1 (2026-01-14) - PRD v2 Alignment:
+  - Added 3 Planes Architecture (Data/Decision/Execution)
+  - Added Autopilot ChangeSet executable artifact specification
+  - Enhanced Override Kernel with runtime resolution details
+  - Added Module Sandbox security architecture
+  - Added Development Rules from Epic 1 retrospective
+  - Added Non-Negotiables enforcement patterns
 ---
 
 # Architecture Decision Document
@@ -217,6 +227,681 @@ This ensures implementations stay current with library updates and avoid depreca
 │  PostgreSQL       │  Redis            │  Object Storage         │
 │  (per-tenant)     │  (BullMQ/cache)   │  (media)                │
 └─────────────────────────────────────────────────────────────────┘
+```
+
+## Profit Engine: 3 Planes Architecture
+
+_Added in revision 2026-01-14 - Aligns with PRD v2 "Trafi Autopilot OS" concept_
+
+The Profit Engine (Autopilot) operates through three distinct planes that form a complete autonomous execution system:
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                         DATA PLANE                                  │
+│  Instrumentation & Profiling Layer                                  │
+│  ─────────────────────────────────────────────────────────────────  │
+│  • Standardized event instrumentation across storefront             │
+│  • Customer journey tracking (page views, cart actions, checkout)   │
+│  • Performance metrics and funnel completion rates                  │
+│  • SKU-level margin and inventory data                              │
+│  Location: modules/profit-engine/collector/                         │
+└─────────────────────────────────────────────────────────────────────┘
+                                │
+                                ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                       DECISION PLANE                                │
+│  AI + Statistical Proof Layer                                       │
+│  ─────────────────────────────────────────────────────────────────  │
+│  • Diagnosis engine: Identifies conversion bottlenecks              │
+│  • Recommendation engine: Proposes evidence-based actions           │
+│  • Statistical validation: CUPED, holdout groups, confidence        │
+│  • Profit simulation: Predicts margin impact before execution       │
+│  Location: modules/profit-engine/doctor/                            │
+└─────────────────────────────────────────────────────────────────────┘
+                                │
+                                ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                       EXECUTION PLANE                               │
+│  Feature Flags + Background Jobs Layer                              │
+│  ─────────────────────────────────────────────────────────────────  │
+│  • Feature flags for A/B testing and gradual rollout                │
+│  • BullMQ jobs for async execution (emails, webhooks, recovery)     │
+│  • Automatic rollback when metrics decline                          │
+│  • Audit logging of all executed actions                            │
+│  Location: modules/profit-engine/guardrails/ + modules/jobs/        │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### Plane Interactions
+
+| Flow | Description | Implementation |
+|------|-------------|----------------|
+| **Data → Decision** | Events flow for analysis | EventEmitter + BullMQ queues |
+| **Decision → Execution** | Approved recommendations become actions | ChangeSet → Feature Flags |
+| **Execution → Data** | Actions generate new events | Event instrumentation loop |
+| **Closed Loop** | Statistical proof determines permanent vs rollback | CUPED analysis + auto-rollback |
+
+### Why 3 Planes Matter Architecturally
+
+- **Separation of concerns:** Each plane can evolve independently
+- **Clear boundaries:** Easier to test, debug, and extend
+- **Progressive enhancement:** Stores can use Data Plane only (analytics) or full stack (Autopilot)
+- **Module isolation:** Each plane maps to specific NestJS modules
+
+## Autopilot ChangeSet: Executable Artifact
+
+_Added in revision 2026-01-14 - The standardized artifact that enables autonomous execution_
+
+Every Autopilot action is encapsulated in a **ChangeSet** — a structured, auditable, reversible artifact that transforms recommendations into executable actions.
+
+### ChangeSet Interface
+
+```typescript
+// @trafi/types/src/profit-engine/changeset.types.ts
+interface AutopilotChangeSet {
+  // Identity
+  id: string;                          // UUID (cuid)
+  version: number;                     // Increments on modification
+  createdAt: Date;
+  storeId: string;                     // Tenant scope
+
+  // Hypothesis
+  hypothesis: {
+    problem: string;                   // "42% cart abandonment at shipping step"
+    expectedOutcome: string;           // "Reduce abandonment by 15-25%"
+    confidenceLevel: 'low' | 'medium' | 'high';
+    dataEvidence: DataPoint[];         // Supporting metrics
+  };
+
+  // Action Plan
+  actionPlan: {
+    type: 'feature_flag' | 'workflow' | 'copy_change' | 'timing_change' | 'segment_target';
+    targetSegment: SegmentDefinition;  // Who sees this change
+    implementation: {
+      featureFlagKey?: string;
+      workflowId?: string;
+      changes: ChangeDetail[];         // Specific modifications
+    };
+    rolloutStrategy: 'immediate' | 'gradual' | 'holdout';
+    rolloutPercentage?: number;        // For gradual rollout
+  };
+
+  // Guardrails
+  guardrails: {
+    profitFloor: number;               // Minimum margin % to maintain
+    stockThreshold?: number;           // Don't deplete below X units
+    sloRequirements: SLOCheck[];       // System health gates
+    riskLevel: 'low' | 'medium' | 'high';
+    blockedConditions: string[];       // Conditions that block execution
+  };
+
+  // Rollback Plan
+  rollbackPlan: {
+    autoRollbackTriggers: MetricTrigger[];  // When to auto-revert
+    manualRollbackEnabled: boolean;
+    rollbackProcedure: string;              // Step-by-step instructions
+    estimatedRollbackTime: string;          // "< 5 minutes"
+  };
+
+  // Proof Plan
+  proofPlan: {
+    primaryMetrics: MetricDefinition[];     // What we're optimizing
+    secondaryMetrics: MetricDefinition[];   // Guard metrics
+    holdoutPercentage: number;              // Control group size (typically 10-20%)
+    statisticalMethod: 'cuped' | 'bayesian' | 'frequentist';
+    minimumSampleSize: number;
+    measurementWindow: string;              // "14 days"
+    significanceThreshold: number;          // p < 0.05
+  };
+
+  // Approval
+  approval: {
+    status: 'pending' | 'approved' | 'rejected' | 'expired';
+    approvedBy?: string;                    // User ID
+    approvedAt?: Date;
+    approvalNotes?: string;
+    expiresAt?: Date;                       // Auto-expire if not approved
+  };
+
+  // Execution State
+  execution: {
+    status: 'draft' | 'pending_approval' | 'active' | 'measuring' | 'proven' | 'rolled_back' | 'permanent';
+    startedAt?: Date;
+    endedAt?: Date;
+    currentMetrics?: LiveMetrics;
+    proofResult?: ProofResult;
+  };
+
+  // Audit Trail
+  auditTrail: AuditEvent[];                // All state changes logged
+}
+```
+
+### ChangeSet Lifecycle
+
+```
+┌────────────────────────────────────────────────────────────────────────────┐
+│                       CHANGESET LIFECYCLE                                  │
+│                                                                            │
+│  DRAFT → PENDING_APPROVAL → ACTIVE → MEASURING → [PROVEN | ROLLED_BACK]   │
+│                                                           ↓               │
+│                                                      PERMANENT             │
+│                                                                            │
+│  At each transition:                                                       │
+│  • Guardrails checked (profitFloor, stockThreshold, SLO gates)            │
+│  • Audit event logged (actor, timestamp, state change)                    │
+│  • Notifications sent (if configured)                                      │
+└────────────────────────────────────────────────────────────────────────────┘
+```
+
+### ChangeSet Database Schema
+
+```prisma
+// In @trafi/db/prisma/schema.prisma
+model ChangeSet {
+  id              String   @id @default(cuid())
+  storeId         String
+  version         Int      @default(1)
+
+  // Content stored as JSONB for flexibility
+  hypothesis      Json
+  actionPlan      Json
+  guardrails      Json
+  rollbackPlan    Json
+  proofPlan       Json
+
+  // Approval tracking
+  approvalStatus  ApprovalStatus @default(PENDING)
+  approvedBy      String?
+  approvedAt      DateTime?
+  expiresAt       DateTime?
+
+  // Execution state
+  executionStatus ExecutionStatus @default(DRAFT)
+  startedAt       DateTime?
+  endedAt         DateTime?
+  currentMetrics  Json?
+  proofResult     Json?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  store           Store    @relation(fields: [storeId], references: [id])
+  auditTrail      ChangeSetAudit[]
+
+  @@index([storeId])
+  @@index([executionStatus])
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  EXPIRED
+}
+
+enum ExecutionStatus {
+  DRAFT
+  PENDING_APPROVAL
+  ACTIVE
+  MEASURING
+  PROVEN
+  ROLLED_BACK
+  PERMANENT
+}
+```
+
+### ChangeSet Module Structure
+
+```
+apps/api/src/modules/profit-engine/
+├── changeset/
+│   ├── changeset.module.ts
+│   ├── changeset.service.ts        # Core CRUD + state machine
+│   ├── changeset.controller.ts     # REST API
+│   ├── changeset.router.ts         # tRPC router
+│   ├── changeset-executor.service.ts  # Executes actions
+│   ├── changeset-validator.service.ts # Validates guardrails
+│   └── __tests__/
+```
+
+## Override Kernel: Runtime Resolution System
+
+_Enhanced in revision 2026-01-14 - Detailed resolution mechanism for @trafi/core distribution_
+
+The Override Kernel is the **deterministic runtime system** that resolves which implementation (core vs override) to use. This enables the @trafi/core distribution model.
+
+### Backend: NestJS DI Resolution
+
+```typescript
+// Core service with override token
+@Injectable()
+export class CoreProductService {
+  protected calculatePrice(product: Product): number {
+    return product.basePrice;
+  }
+
+  getProduct(id: string): Product {
+    const product = this.repository.findById(id);
+    product.calculatedPrice = this.calculatePrice(product);
+    return product;
+  }
+}
+
+// Override token declaration
+export const PRODUCT_SERVICE = Symbol('PRODUCT_SERVICE');
+
+// Core module registers default
+@Module({
+  providers: [
+    {
+      provide: PRODUCT_SERVICE,
+      useClass: CoreProductService,
+    },
+  ],
+  exports: [PRODUCT_SERVICE],
+})
+export class CoreProductModule {}
+
+// Override module replaces implementation
+@Module({
+  providers: [
+    {
+      provide: PRODUCT_SERVICE,
+      useClass: CustomProductService, // Extends CoreProductService
+    },
+  ],
+})
+export class CustomProductModule {}
+```
+
+**Resolution Order:**
+1. Check `trafi.config.ts` for explicit override mapping
+2. If override module registered, use override provider
+3. Fall back to core provider
+4. **Fail fast** if token has no provider (dev error, not runtime surprise)
+
+### Dashboard: Page/Component Wrapping
+
+```typescript
+// trafi.config.ts - Dashboard overrides
+export default defineTrafiConfig({
+  dashboard: {
+    pages: {
+      '/products': {
+        override: './src/pages/products/CustomProductsPage.tsx',
+        wrapCore: true, // Wraps core, doesn't replace
+      },
+      '/products/[id]': {
+        override: './src/pages/products/CustomProductDetail.tsx',
+        wrapCore: false, // Fully replaces core
+      },
+    },
+    components: {
+      'ProductCard': {
+        override: './src/components/CustomProductCard.tsx',
+        slots: ['header', 'footer', 'actions'], // Available slot overrides
+      },
+    },
+  },
+});
+
+// Core page with slot injection
+export function CoreProductsPage({ slots }: { slots?: PageSlots }) {
+  return (
+    <PageLayout>
+      {slots?.header ?? <DefaultHeader />}
+      <ProductTable />
+      {slots?.footer ?? <DefaultFooter />}
+    </PageLayout>
+  );
+}
+
+// Override wrapping core
+export function CustomProductsPage() {
+  return (
+    <CoreProductsPage
+      slots={{
+        header: <CustomHeader showBulkActions />,
+        footer: <CustomFooter showExportButton />,
+      }}
+    />
+  );
+}
+```
+
+### Config Resolution & Validation
+
+```typescript
+// trafi.config.ts structure
+interface TrafiConfig {
+  version: string;                    // Minimum compatible @trafi/core version
+
+  api: {
+    modules: ModuleOverride[];        // Backend module overrides
+    services: ServiceOverride[];      // Individual service overrides
+    guards: GuardOverride[];          // Auth/permission guard overrides
+  };
+
+  dashboard: {
+    pages: PageOverride[];            // Page-level overrides
+    components: ComponentOverride[];  // Component-level overrides
+    theme: ThemeOverride;             // Design token overrides
+  };
+
+  sdk: {
+    interceptors: Interceptor[];      // Request/response interceptors
+    hooks: HookOverride[];            // SDK event hooks
+  };
+}
+
+// Validation at startup (FAIL FAST)
+function validateConfig(config: TrafiConfig): ValidationResult {
+  const errors: ValidationError[] = [];
+
+  // Version compatibility check
+  if (!semver.satisfies(CORE_VERSION, config.version)) {
+    errors.push({
+      type: 'version_mismatch',
+      message: `Config requires ${config.version}, running ${CORE_VERSION}`,
+    });
+  }
+
+  // Override file existence check
+  for (const override of config.api.modules) {
+    if (!fs.existsSync(override.path)) {
+      errors.push({ type: 'missing_override', path: override.path });
+    }
+  }
+
+  // Type compatibility check (via TypeScript compiler API)
+  for (const service of config.api.services) {
+    if (!extendsCore(service.override, service.core)) {
+      errors.push({
+        type: 'incompatible_override',
+        message: `${service.override} must extend ${service.core}`,
+      });
+    }
+  }
+
+  return { valid: errors.length === 0, errors };
+}
+```
+
+### Compatibility Guarantees
+
+| Surface | Versioning | Breaking Change Policy |
+|---------|------------|------------------------|
+| **Public service methods** | SemVer major | 90-day deprecation window |
+| **Protected methods** | SemVer minor | Can change in minor versions |
+| **Internal methods** | None | Can change anytime |
+| **Component props** | SemVer major | 90-day deprecation window |
+| **Slot definitions** | SemVer minor | New slots = minor, removed = major |
+| **Config schema** | SemVer major | Migration scripts provided |
+
+**Critical Rule:** Customizations must survive upgrades — or fail loudly at startup, not silently at runtime.
+
+## Module Sandbox: Security Architecture
+
+_Added in revision 2026-01-14 - Security enforcement for third-party modules_
+
+Modules and marketplace extensions represent a significant attack surface. The Module Sandbox enforces strict security boundaries.
+
+### Sandbox Architecture Layers
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                       MODULE SANDBOX LAYERS                             │
+│                                                                         │
+│  ┌─────────────────┐                                                    │
+│  │  STATIC CHECKS  │  Pre-install validation (AST analysis)            │
+│  └────────┬────────┘                                                    │
+│           ↓                                                             │
+│  ┌─────────────────┐                                                    │
+│  │   FS ISOLATION  │  Module can only access allowed paths              │
+│  └────────┬────────┘                                                    │
+│           ↓                                                             │
+│  ┌─────────────────┐                                                    │
+│  │  NETWORK ACL    │  Explicit allowlist for external requests          │
+│  └────────┬────────┘                                                    │
+│           ↓                                                             │
+│  ┌─────────────────┐                                                    │
+│  │ RUNTIME POLICY  │  CPU/memory limits, syscall restrictions           │
+│  └─────────────────┘                                                    │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### Static Analysis Checks (Pre-Install)
+
+| Check | Policy | Fail Action |
+|-------|--------|-------------|
+| **No `eval()` or `Function()`** | Block dynamic code execution | Reject module |
+| **No `require()` with variables** | Block dynamic imports | Reject module |
+| **No `child_process`** | Block shell access | Reject module |
+| **No `fs` outside sandbox** | Block arbitrary file access | Reject module |
+| **No `net` without ACL** | Block arbitrary network | Reject module |
+| **No obfuscated code** | Require readable source | Reject module |
+| **Dependency audit** | Check deps for known CVEs | Warn + require approval |
+
+```typescript
+// Static analysis configuration
+// Location: modules/plugins/sandbox/static-analyzer.ts
+const staticAnalysisRules: AnalysisRule[] = [
+  { pattern: /eval\s*\(/, severity: 'critical', message: 'Dynamic code execution not allowed' },
+  { pattern: /new\s+Function\s*\(/, severity: 'critical', message: 'Function constructor not allowed' },
+  { pattern: /require\s*\(\s*[^'"']/, severity: 'critical', message: 'Dynamic require not allowed' },
+  { pattern: /child_process/, severity: 'critical', message: 'Shell access not allowed' },
+];
+```
+
+### Filesystem Isolation
+
+```typescript
+// Module manifest declares FS permissions
+interface ModuleManifest {
+  permissions: {
+    fs: {
+      read: string[];   // Allowed read paths (relative to module root)
+      write: string[];  // Allowed write paths
+    };
+  };
+}
+
+// Example: A shipping module
+{
+  "permissions": {
+    "fs": {
+      "read": ["./config", "./templates"],
+      "write": ["./cache", "./logs"]
+    }
+  }
+}
+
+// Runtime enforcement
+class SandboxedFS {
+  constructor(private allowedPaths: FSPermissions) {}
+
+  readFile(path: string): Buffer {
+    if (!this.isAllowed(path, 'read')) {
+      throw new SecurityError(`FS read not allowed: ${path}`);
+    }
+    return fs.readFileSync(this.resolvePath(path));
+  }
+}
+```
+
+### Network ACL (Allowlist)
+
+```typescript
+// Module declares network permissions
+interface NetworkPermissions {
+  allowlist: {
+    domain: string;           // e.g., "api.stripe.com"
+    ports: number[];          // e.g., [443]
+    protocols: ('https')[];   // HTTP not allowed by default
+    reason: string;           // Why this access is needed
+  }[];
+}
+
+// Example: Payment module network permissions
+{
+  "network": {
+    "allowlist": [
+      {
+        "domain": "api.stripe.com",
+        "ports": [443],
+        "protocols": ["https"],
+        "reason": "Stripe payment API"
+      }
+    ]
+  }
+}
+```
+
+### Runtime Policy Enforcement
+
+| Resource | Limit | Enforcement |
+|----------|-------|-------------|
+| **CPU time per request** | 5 seconds | Kill process, return 503 |
+| **Memory per module** | 256MB | OOM kill, restart module |
+| **Open file handles** | 100 | Reject new opens |
+| **Network connections** | 50 concurrent | Queue or reject |
+| **Database queries** | Tenant-scoped only | Reject cross-tenant |
+
+### Security Incident Response
+
+```typescript
+interface SecurityIncident {
+  moduleId: string;
+  storeId: string;
+  violationType: 'fs' | 'network' | 'cpu' | 'memory' | 'static';
+  details: string;
+  timestamp: Date;
+  action: 'blocked' | 'terminated' | 'quarantined';
+}
+
+function handleSecurityIncident(incident: SecurityIncident): void {
+  // 1. Log to security audit trail
+  auditLog.security(incident);
+  // 2. Quarantine module (disable immediately)
+  moduleManager.quarantine(incident.moduleId);
+  // 3. Notify store owner
+  notifications.send(incident.storeId, { type: 'security_alert', ... });
+  // 4. If marketplace module, notify Trafi security team
+  if (isMarketplaceModule(incident.moduleId)) {
+    securityTeam.alert(incident);
+  }
+}
+```
+
+### Marketplace Module Tiers
+
+| Tier | Review Level | Permissions |
+|------|--------------|-------------|
+| **Verified** | Full audit + Trafi team review | Full permissions (with ACL) |
+| **Community** | Automated checks + community review | Limited permissions |
+| **Private** | Owner responsibility | Full permissions (owner risk) |
+
+## Non-Negotiable Security Rules
+
+_Added in revision 2026-01-14 - From PRD consolidated non-negotiables_
+
+These requirements are **ABSOLUTE** — no exceptions, no "we'll add it later":
+
+| Non-Negotiable | Why It's Critical | Violation Consequence | Enforcement |
+|----------------|-------------------|----------------------|-------------|
+| **Tenant Isolation** | Data leakage = catastrophic breach | Security incident, legal liability | Every query includes `storeId` |
+| **RBAC on Every Request** | Unauthorized access = data breach | Security incident | Guards on all controllers |
+| **Rate Limiting** | No limits = DoS vulnerability | Service outage, abuse | @nestjs/throttler + Redis |
+| **Audit Logging** | No audit = no forensics | GDPR violation | All sensitive operations logged |
+| **Input Validation** | Unvalidated input = injection | SQL injection, XSS, RCE | Zod schemas on all inputs |
+
+### Enforcement Patterns
+
+```typescript
+// ❌ NEVER - Query without tenant scope
+const products = await prisma.product.findMany();
+
+// ✅ ALWAYS - Explicit tenant scope
+const products = await prisma.product.findMany({
+  where: { storeId: ctx.tenant.id }
+});
+
+// ❌ NEVER - Controller without guards
+@Controller('products')
+export class ProductController { ... }
+
+// ✅ ALWAYS - Guards on controller
+@UseGuards(JwtAuthGuard, TenantGuard, RolesGuard)
+@Controller('products')
+export class ProductController { ... }
+```
+
+## Development Rules (Epic 1 Retrospective)
+
+_Added in revision 2026-01-14 - Lessons learned from Epic 1 implementation_
+
+### Context7 MCP Protocol (MANDATORY)
+
+**Before implementing with ANY library, query Context7 MCP:**
+
+```
+1. resolve-library-id → Get the library ID
+2. query-docs → Get current documentation
+3. Implement → Use up-to-date patterns, not outdated knowledge
+```
+
+**Why:** LLM training data is stale. Context7 provides current documentation. Failure to query leads to deprecated patterns and bugs.
+
+**Applies to:** NestJS, Next.js, Prisma, React Query, Shadcn, Tailwind, tRPC, BullMQ, Zod, and ALL other libraries.
+
+### Service Implementation Patterns
+
+| Rule | Pattern | Example |
+|------|---------|---------|
+| **Business logic in protected** | Methods that may need customization | `protected calculatePrice()` |
+| **Explicit public API** | Clear interface per service | `class ProductService { getById(), create() }` |
+| **Dependency injection** | NEVER instantiate manually | Use `@Injectable()` + constructor injection |
+| **Tenant isolation** | EVERY query includes storeId | `findMany({ where: { storeId } })` |
+
+### Pre-Completion Checklist
+
+Before marking any story as complete, verify:
+
+- [ ] `pnpm lint` passes with zero errors
+- [ ] `pnpm build` succeeds without warnings
+- [ ] `pnpm test` passes all tests
+- [ ] New code has appropriate test coverage
+- [ ] Context7 was consulted for library usage
+- [ ] Services follow override-ready patterns
+- [ ] Tenant isolation verified in all queries
+- [ ] Swagger decorators on all API endpoints
+
+### Type System Rules
+
+| Rule | Description |
+|------|-------------|
+| **Types from @trafi/validators** | NEVER define types locally in apps/ |
+| **Zod → TypeScript** | `z.infer<typeof Schema>` generates types |
+| **import type** | Use `import type { X }` for type-only imports |
+| **No implicit any** | All parameters must be explicitly typed |
+
+### Swagger/OpenAPI Documentation (MANDATORY)
+
+Every API endpoint MUST have complete Swagger decorators:
+
+```typescript
+@ApiTags('products')
+@Controller('products')
+export class ProductController {
+  @ApiOperation({ summary: 'Get product by ID' })
+  @ApiParam({ name: 'id', description: 'Product UUID' })
+  @ApiResponse({ status: 200, type: ProductDto })
+  @ApiResponse({ status: 404, type: ErrorDto })
+  @ApiBearerAuth('JWT-auth')
+  @Get(':id')
+  getById(@Param('id') id: string) { ... }
+}
 ```
 
 ## Core Architectural Decisions
@@ -1323,6 +2008,288 @@ import { prisma } from '@trafi/db';  // ❌ FORBIDDEN in frontend
 // ❌ Schema defined in API instead of shared
 // apps/api/src/modules/product/dto/create-product.dto.ts  <-- WRONG
 ```
+
+## UX Design System Architecture
+
+_Added in revision 2026-01-14 - From UX Design Specification v2.0 "Brutalist Overhaul"_
+
+The UX specification defines a **brutalist design system** that has direct architectural implications for component implementation and theming.
+
+### Brutalist Design Tokens
+
+The design system enforces strict visual rules through CSS variables:
+
+```css
+/* globals.css - Enforced globally */
+:root {
+  /* The Void (Base) */
+  --surface-0: #000000;
+  --surface-1: #050505;
+  --surface-2: #111111;
+  --border: #333333;
+
+  /* The Acid (Signals) */
+  --primary: #CCFF00;           /* Action, CTA */
+  --success: #00FF94;           /* Stability, profit */
+  --destructive: #FF3366;       /* Risk, errors */
+  --muted-foreground: #888888;  /* Labels */
+
+  /* Brutalist Enforcement */
+  --radius: 0px;                /* radius-zero everywhere */
+  --shadow: none;               /* no shadows */
+}
+```
+
+### Component Architecture Pattern
+
+#### Global vs Local Components
+
+```
+apps/dashboard/
+├── components/           # Global (shared across app)
+│   ├── ui/              # Shadcn primitives + Brutal wrappers
+│   │   ├── button.tsx   # BrutalButton wrapper
+│   │   ├── card.tsx     # BrutalCard wrapper
+│   │   └── ...
+│   ├── layout/          # Shell, Sidebar
+│   └── data-display/    # DataTable, Charts
+└── app/
+    └── [route]/
+        └── _components/ # Local (route-specific)
+```
+
+#### Brutal Wrapper Pattern
+
+```typescript
+// components/ui/card.tsx - Brutal enforcement
+import { cn } from '@/lib/utils';
+
+interface BrutalCardProps extends React.HTMLAttributes<HTMLDivElement> {
+  children: React.ReactNode;
+}
+
+export function Card({ className, children, ...props }: BrutalCardProps) {
+  return (
+    <div
+      className={cn(
+        // Brutalist enforcement
+        'rounded-none',        // radius-zero
+        'border border-border', // visible grid
+        'bg-surface-1',        // void background
+        'shadow-none',         // no shadows
+        className
+      )}
+      {...props}
+    >
+      {children}
+    </div>
+  );
+}
+```
+
+### Dynamic Theme System
+
+Theme configuration flows from Dashboard to Storefront via runtime CSS variable injection:
+
+```
+Dashboard (Theme Customizer)
+        │
+        ▼
+   Database (JSON config)
+        │
+        ▼
+   API (GET /stores/:id/theme)
+        │
+        ▼
+Storefront (ThemeProvider)
+        │
+        ▼
+   CSS Variables (runtime injection)
+```
+
+#### Theme Configuration Schema
+
+```typescript
+// @trafi/types/src/theme.types.ts
+interface ThemeConfig {
+  storeId: string;
+  colors: {
+    primary: string;      // Merchant brand color
+    background: string;   // #000000 (dark) or #FFFFFF (light)
+    foreground: string;   // Text color
+    muted: string;
+    border: string;
+    success: string;
+    warning: string;
+    error: string;
+  };
+  typography: {
+    fontFamily: string;   // 'Space Grotesk' default
+    monoFontFamily: string; // 'JetBrains Mono' for data
+    headingWeight: number;
+    bodyWeight: number;
+  };
+  spacing: {
+    borderRadius: string; // '0px' for brutalist
+    containerWidth: string;
+  };
+}
+```
+
+#### ThemeProvider Implementation
+
+```typescript
+// @storefront/theme-provider/index.tsx
+export function ThemeProvider({ storeId, children }: ThemeProviderProps) {
+  const { data: theme } = useQuery({
+    queryKey: ['theme', storeId],
+    queryFn: () => fetchTheme(storeId),
+  });
+
+  const cssVariables = useMemo(() => generateCSSVariables(theme), [theme]);
+
+  return (
+    <>
+      <style dangerouslySetInnerHTML={{ __html: cssVariables }} />
+      {children}
+    </>
+  );
+}
+
+function generateCSSVariables(theme: ThemeConfig): string {
+  return `:root {
+    --primary: ${theme.colors.primary};
+    --background: ${theme.colors.background};
+    --foreground: ${theme.colors.foreground};
+    --border: ${theme.colors.border};
+    --radius: ${theme.spacing.borderRadius};
+    --font-sans: ${theme.typography.fontFamily};
+    --font-mono: ${theme.typography.monoFontFamily};
+  }`;
+}
+```
+
+### Builder Architecture (P2)
+
+The Builder system enables no-code page customization:
+
+#### Component Registry
+
+```typescript
+// @storefront/builder-renderer/registry.ts
+export const componentRegistry: Record<string, ComponentType> = {
+  // Core blocks (free)
+  HeroSection: dynamic(() => import('@storefront/builder-blocks/core/hero-section')),
+  ProductGrid: dynamic(() => import('@storefront/builder-blocks/core/product-grid')),
+  CTABanner: dynamic(() => import('@storefront/builder-blocks/core/cta-banner')),
+  Testimonials: dynamic(() => import('@storefront/builder-blocks/core/testimonials')),
+  // Premium blocks registered dynamically based on store's purchases
+};
+```
+
+#### Block Schema (for Builder UI)
+
+```typescript
+// Each block defines its props schema for the visual editor
+export const heroSectionSchema: BlockSchema = {
+  type: 'HeroSection',
+  name: 'Hero Section',
+  category: 'Headers',
+  props: {
+    title: { type: 'string', label: 'Title', required: true },
+    subtitle: { type: 'string', label: 'Subtitle' },
+    ctaText: { type: 'string', label: 'Button Text', default: 'Shop Now' },
+    ctaLink: { type: 'string', label: 'Button Link' },
+    backgroundImage: { type: 'image', label: 'Background Image' },
+    alignment: { type: 'enum', options: ['left', 'center', 'right'], default: 'center' },
+  },
+};
+```
+
+### CLI Architecture
+
+The Trafi CLI is the primary developer interface:
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                        TRAFI CLI COMMANDS                           │
+├─────────────────────────────────────────────────────────────────────┤
+│  trafi init / create-trafi-app                                      │
+│  └── Interactive wizard: stack, database, modules, cloud            │
+│                                                                     │
+│  trafi module                                                       │
+│  └── list | add <name> | remove <name> | create <name>             │
+│                                                                     │
+│  trafi upgrade                                                      │
+│  └── Breaking change detection, guided migration                    │
+│                                                                     │
+│  trafi cloud                                                        │
+│  └── login | deploy | status | logs                                │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+**CLI Package Location:** `packages/cli/` (P1 deliverable)
+
+### Dashboard Information Architecture
+
+The Dashboard follows a **Console** mental model aligned with the Autopilot OS concept:
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  DASHBOARD NAVIGATION (Sidebar)                                     │
+├─────────────────────────────────────────────────────────────────────┤
+│  CONSOLE                                                            │
+│  ├── Overview (Key metrics, alerts)                                 │
+│  ├── Autopilot (ChangeSets, recommendations)                        │
+│  └── Audit Trail (All actions logged)                               │
+│                                                                     │
+│  COMMERCE                                                           │
+│  ├── Orders                                                         │
+│  ├── Products                                                       │
+│  ├── Customers                                                      │
+│  └── Inventory                                                      │
+│                                                                     │
+│  SYSTEM                                                             │
+│  ├── Modules (Installed, available)                                 │
+│  ├── Overrides (trafi.config.ts visualization)                      │
+│  ├── Jobs (BullMQ dashboard)                                        │
+│  └── Settings (Store, team, integrations)                           │
+│                                                                     │
+│  DATA                                                               │
+│  └── Analytics (Funnel, cohorts, exports)                          │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### Storefront Architecture
+
+```
+storefront/
+├── packages/
+│   ├── @storefront/ui/                 # Global UI components
+│   ├── @storefront/builder-renderer/   # JSON → React transformation
+│   ├── @storefront/builder-blocks/     # Block library (core + premium)
+│   └── @storefront/theme-provider/     # Dynamic CSS variable injection
+└── apps/web/
+    └── app/
+        ├── (shop)/                     # Public pages
+        │   ├── page.tsx               # Homepage (Builder-rendered)
+        │   ├── products/              # Product listing, detail
+        │   └── cart/                  # Cart page
+        ├── (checkout)/                # Checkout flow
+        │   └── checkout/             # Multi-step checkout
+        └── (account)/                 # Buyer account (optional)
+```
+
+### Animation Budget (GSAP)
+
+| Context | Animation Type | Timing | Performance Gate |
+|---------|---------------|--------|------------------|
+| **Dashboard** | Micro-interactions | 150-200ms | N/A (desktop) |
+| **Dashboard** | Transitions | 200-300ms | N/A |
+| **Storefront** | Scroll animations | 400-600ms | INP < 200ms |
+| **Storefront** | Product interactions | 200-300ms | CLS < 0.1 |
+
+**Rule:** All storefront animations must respect Core Web Vitals. Budget is managed via `will-change` and GPU acceleration.
 
 ## Project Structure & Boundaries
 

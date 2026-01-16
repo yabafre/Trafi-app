@@ -1,12 +1,24 @@
 ---
-stepsCompleted: [1, 2, 3]
+stepsCompleted: [1, 2, 3, 4]
+status: complete
+completedAt: '2026-01-15'
 inputDocuments:
   - '_bmad-output/planning-artifacts/prd.md'
   - '_bmad-output/planning-artifacts/architecture.md'
   - '_bmad-output/planning-artifacts/ux-design-specification.md'
 totalEpics: 14
-totalStories: 144
+totalStories: 155
 shardedFiles: true
+revisedAt: '2026-01-15'
+revisionNotes: |
+  v2.0 (2026-01-15) - PRD v2 & UX v2 Alignment:
+  - Epic 8: Added 4 stories for Autopilot ChangeSet lifecycle (8.16-8.19)
+  - Epic 8: Added 3 Planes Architecture structure
+  - Epic 13: Expanded Story 13.5 into 4-layer Module Sandbox (13.5a-d)
+  - Epic 13: Added 3 stories for Marketplace & Security (13.16-13.18)
+  - Epic 12: Added Override Kernel SDK factory pattern
+  - ALL Epics: Updated UX to Digital Brutalism v2 (#000/#FFF/#CCFF00, radius-zero)
+  Final Validation (Step 4): All 104 FRs covered, dependencies validated, ready for implementation.
 ---
 
 # trafi-app - Epic Breakdown
@@ -16,6 +28,8 @@ shardedFiles: true
 This document provides the complete epic and story breakdown for trafi-app, decomposing the requirements from the PRD, UX Design, and Architecture requirements into implementable stories.
 
 **Note:** Detailed epic stories are organized in separate files under `epics/` for better readability and LLM context management.
+
+**Revision v2.0 (2026-01-15):** Updated for PRD v2 (3 Planes Architecture, Autopilot ChangeSet, Override Kernel, Module Sandbox) and UX v2 (Digital Brutalism).
 
 ## Epic Index
 
@@ -28,12 +42,12 @@ This document provides the complete epic and story breakdown for trafi-app, deco
 | 5 | Payment Processing | 8 | [epic-05-payment.md](epics/epic-05-payment.md) |
 | 6 | Order Management & Fulfillment | 9 | [epic-06-order-fulfillment.md](epics/epic-06-order-fulfillment.md) |
 | 7 | Customer Accounts & Wishlist | 12 | [epic-07-customer-wishlist.md](epics/epic-07-customer-wishlist.md) |
-| 8 | Profit Engine - Analytics & Recommendations | 15 | [epic-08-profit-analytics.md](epics/epic-08-profit-analytics.md) |
+| 8 | Profit Engine - Analytics & Recommendations | **19** | [epic-08-profit-analytics.md](epics/epic-08-profit-analytics.md) |
 | 9 | Profit Engine - Cart Recovery | 8 | [epic-09-cart-recovery.md](epics/epic-09-cart-recovery.md) |
 | 10 | Privacy & Compliance | 9 | [epic-10-privacy.md](epics/epic-10-privacy.md) |
 | 11 | Platform Operations & Jobs | 12 | [epic-11-operations.md](epics/epic-11-operations.md) |
 | 12 | SDK & API Experience | 11 | [epic-12-sdk-api.md](epics/epic-12-sdk-api.md) |
-| 13 | Module System & Extensibility | 15 | [epic-13-modules.md](epics/epic-13-modules.md) |
+| 13 | Module System & Extensibility | **21** | [epic-13-modules.md](epics/epic-13-modules.md) |
 | 14 | Cloud & Multi-tenancy | 12 | [epic-14-cloud.md](epics/epic-14-cloud.md) |
 
 ---
@@ -232,7 +246,7 @@ This document provides the complete epic and story breakdown for trafi-app, deco
 - ARCH-1: Custom Turborepo Monorepo (NestJS + Next.js + Prisma + pnpm)
 - ARCH-2: Frontend-Database Isolation
 - ARCH-7: Shared packages: @trafi/validators, @trafi/types, @trafi/db, @trafi/config
-- ARCH-8: Local vs Global component pattern
+- ARCH-8: Local vs Global component pattern (`_components/` for local, `components/` for global)
 - ARCH-9: Zod as primary validation library
 - ARCH-13: JWT + NestJS Passport for authentication
 - ARCH-14: NestJS Guards + Custom Decorators for RBAC
@@ -242,13 +256,339 @@ This document provides the complete epic and story breakdown for trafi-app, deco
 - ARCH-25: Money always in cents, IDs as cuid with prefixes
 - ARCH-26: Events naming - domain.entity.action snake_case
 
-**UX Design Requirements**
-- UX-1: Dark mode as default identity for Dashboard
-- UX-7: Bento grid layouts for dashboard metrics
-- UX-9: Profit Engine "Propose -> Approve" workflow
-- UX-10: Guest checkout as default, shipping visible from cart
-- UX-11: Express checkout (Apple Pay/Google Pay) above fold
-- UX-12: Cart recovery email sequence (37min, 24h, 48h delays)
+---
+
+## Implementation Architecture (MANDATORY)
+
+**All epics MUST follow these architectural patterns from architecture.md.**
+
+### Dashboard Data Flow (CRITICAL)
+
+Every Dashboard feature follows this exact data flow:
+
+```
+Dashboard Page (RSC)
+  └─► Client Component
+       └─► Custom Hook (useProducts, useOrders, etc.)
+            └─► Zsa Hooks
+                 ├─► useServerActionQuery (reads)
+                 ├─► useServerActionMutation (writes)
+                 └─► useServerActionInfiniteQuery (pagination)
+                      └─► Server Action ('use server')
+                           └─► tRPC Client
+                                └─► NestJS API (tRPC Router)
+```
+
+**Example Implementation:**
+```typescript
+// 1. Server Action: app/products/_actions/product-actions.ts
+'use server'
+import { trpc } from '@/lib/trpc';
+import type { CreateProductInput } from '@trafi/validators';
+
+export async function getProducts(input: { page: number; limit: number }) {
+  return trpc.products.list.query(input);
+}
+
+export async function createProduct(input: CreateProductInput) {
+  return trpc.products.create.mutate(input);
+}
+
+// 2. Custom Hook: app/products/_hooks/useProducts.ts
+import { useServerActionQuery, useServerActionMutation } from '@/lib/hooks/server-action-hooks';
+import { getProducts, createProduct } from '../_actions/product-actions';
+
+export function useProducts(page: number, limit: number) {
+  return useServerActionQuery(getProducts, {
+    input: { page, limit },
+    queryKey: ['products', page, limit],
+  });
+}
+
+export function useCreateProduct() {
+  return useServerActionMutation(createProduct, {
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      toast.success('Produit créé');
+    },
+  });
+}
+
+// 3. Client Component: app/products/_components/ProductTable.tsx
+'use client'
+import { useProducts } from '../_hooks/useProducts';
+
+export function ProductTable() {
+  const { data, isLoading, isError } = useProducts(1, 20);
+  if (isLoading) return <ProductTableSkeleton />;
+  // ...
+}
+
+// 4. Page: app/products/page.tsx (RSC)
+import { ProductTable } from './_components/ProductTable';
+export default function ProductsPage() {
+  return <ProductTable />;
+}
+```
+
+### File Structure Convention (CRITICAL)
+
+```
+apps/dashboard/src/
+├── app/
+│   ├── (dashboard)/
+│   │   ├── products/
+│   │   │   ├── page.tsx              # RSC Page
+│   │   │   ├── _components/          # LOCAL components (underscore prefix)
+│   │   │   │   ├── ProductTable.tsx
+│   │   │   │   └── ProductFilters.tsx
+│   │   │   ├── _hooks/               # LOCAL hooks
+│   │   │   │   └── useProducts.ts
+│   │   │   ├── _actions/             # LOCAL server actions
+│   │   │   │   └── product-actions.ts
+│   │   │   └── [id]/
+│   │   │       ├── page.tsx
+│   │   │       ├── _components/
+│   │   │       └── _actions/
+│   │   └── orders/
+│   │       └── ...same pattern
+│   └── layout.tsx
+├── components/                       # GLOBAL shared (no underscore)
+│   ├── ui/                           # Shadcn primitives
+│   └── shared/                       # DataTable, PageHeader
+├── lib/
+│   ├── trpc.ts                       # tRPC client
+│   └── hooks/
+│       └── server-action-hooks.ts    # Zsa setup (GLOBAL)
+└── stores/
+    └── ui-store.ts                   # Zustand (UI state only)
+```
+
+**Underscore Rule:** `_` prefix = Local to route. No prefix = Global.
+
+### Type Flow (Zod → tRPC → Dashboard)
+
+```
+Zod Schema (@trafi/validators)
+    │
+    ├──► z.infer<typeof Schema> ──► TypeScript Type (@trafi/types)
+    │
+    ├──► tRPC Input/Output (apps/api)
+    │
+    └──► Server Action Input (apps/dashboard)
+```
+
+**Example:**
+```typescript
+// packages/@trafi/validators/src/product/create-product.schema.ts
+import { z } from 'zod';
+
+export const CreateProductSchema = z.object({
+  name: z.string().min(1).max(255),
+  price: z.number().int().positive(),  // cents
+  currency: z.enum(['EUR', 'USD', 'GBP']),
+});
+
+export type CreateProductInput = z.infer<typeof CreateProductSchema>;
+
+// apps/api/src/modules/product/product.router.ts
+import { CreateProductSchema } from '@trafi/validators';
+
+export const productRouter = router({
+  create: protectedProcedure
+    .input(CreateProductSchema)
+    .mutation(({ input }) => { ... }),
+});
+
+// apps/dashboard - import same schema
+import { CreateProductSchema, type CreateProductInput } from '@trafi/validators';
+```
+
+### State Management
+
+| Type | Tool | Example |
+|------|------|---------|
+| Server State | React Query (via Zsa) | Products, orders, users, all API data |
+| UI State | Zustand | Sidebar open/closed, modals, theme |
+
+**Zustand Usage (minimal):**
+```typescript
+// stores/ui-store.ts
+import { create } from 'zustand';
+
+interface UIState {
+  sidebarOpen: boolean;
+  activeModal: string | null;
+  toggleSidebar: () => void;
+}
+
+export const useUIStore = create<UIState>((set) => ({
+  sidebarOpen: true,
+  activeModal: null,
+  toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
+}));
+```
+
+### Backend Service Pattern
+
+```typescript
+// apps/api/src/modules/product/product.service.ts
+import { Injectable } from '@nestjs/common';
+import { PrismaService } from '@/prisma/prisma.service';
+
+@Injectable()
+export class ProductService {
+  constructor(private prisma: PrismaService) {}
+
+  // PUBLIC method
+  async create(storeId: string, data: CreateProductInput) {
+    await this.validateProduct(data);           // protected
+    return this.prisma.product.create({ ... });
+  }
+
+  // PROTECTED - can be overridden by @trafi/core consumers
+  protected async validateProduct(data: CreateProductInput) {
+    if (data.price < 0) throw new BadRequestException('INVALID_PRICE');
+  }
+}
+```
+
+### tRPC Router Pattern
+
+```typescript
+// apps/api/src/modules/product/product.router.ts
+import { router, publicProcedure, protectedProcedure } from '@/trpc';
+import { CreateProductSchema, UpdateProductSchema } from '@trafi/validators';
+
+export const productRouter = router({
+  list: publicProcedure
+    .input(ListProductsSchema)
+    .query(({ input, ctx }) => ctx.productService.list(ctx.storeId, input)),
+
+  get: publicProcedure
+    .input(z.object({ id: z.string() }))
+    .query(({ input, ctx }) => ctx.productService.get(ctx.storeId, input.id)),
+
+  create: protectedProcedure
+    .input(CreateProductSchema)
+    .mutation(({ input, ctx }) => ctx.productService.create(ctx.storeId, input)),
+
+  update: protectedProcedure
+    .input(UpdateProductSchema)
+    .mutation(({ input, ctx }) => ctx.productService.update(ctx.storeId, input)),
+
+  delete: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(({ input, ctx }) => ctx.productService.delete(ctx.storeId, input.id)),
+});
+```
+
+### Naming Conventions
+
+| Element | Convention | Example |
+|---------|------------|---------|
+| Database tables | PascalCase singular | `Product`, `OrderItem` |
+| Database columns | camelCase | `createdAt`, `storeId` |
+| tRPC procedures | resource.action | `products.list`, `orders.create` |
+| Server action files | kebab-case | `product-actions.ts` |
+| Hook files | camelCase with use | `useProducts.ts` |
+| Component files | PascalCase | `ProductTable.tsx` |
+| Directories | kebab-case | `profit-engine/` |
+| Public IDs | Prefixed cuid | `prod_clx1abc`, `ord_clx2def` |
+| Events | domain.entity.action | `commerce.product.viewed` |
+
+### Money & IDs
+
+| Type | Format | Example |
+|------|--------|---------|
+| Money | Cents (integer) | `1999` = €19.99 |
+| IDs | cuid with prefix | `prod_`, `ord_`, `cust_`, `store_` |
+| Dates API | ISO 8601 | `"2026-01-11T12:00:00.000Z"` |
+
+### Error Response Format
+
+```typescript
+interface ApiErrorResponse {
+  success: false;
+  error: {
+    code: string;           // "CHECKOUT_FAILED"
+    message: string;        // "Payment method declined"
+    type: 'validation' | 'auth' | 'payment' | 'server';
+    details?: Record<string, unknown>;
+    requestId: string;
+  };
+}
+```
+
+### Loading States Pattern
+
+```typescript
+const { data, isLoading, isRefetching, isError, error } = useServerActionQuery(...);
+
+// Always use skeleton over spinner
+{isLoading ? <ProductTableSkeleton /> : <ProductTable data={data} />}
+```
+
+---
+
+**Epic 1 Retrospective Learnings (MANDATORY for all future epics)**
+- RETRO-1: Always use Context7 MCP before implementing libraries
+- RETRO-2: Backend services use `protected` methods (not `private`) for extensibility
+- RETRO-3: Backend modules export explicit public API
+- RETRO-4: Dashboard components designed with customization props
+- RETRO-5: Dashboard pages use composition pattern for wrappable components
+- RETRO-6: Code with @trafi/core override patterns in mind (future NPM package)
+
+---
+
+**UX Design Requirements - Dashboard (Digital Brutalism v2)**
+
+_Revision v2.0: Complete overhaul to Digital Brutalism aesthetic_
+
+**Brutalist Manifesto:**
+- The interface is a machine. No decoration, only data and action.
+- Radius-zero everywhere — everything is a rectangle.
+- Visible grid — 1px borders expose structure.
+- High contrast — pure black background, pure white text.
+- Acid accents — signals for action, stability, risk.
+
+**Layout:**
+- UX-1: Pure Black (#000000) background — the interface is a machine
+- UX-2: Rail (64px) + Sidebar (240px) + Main content layout
+- UX-3: Topbar with breadcrumb navigation + action buttons
+- UX-4: Status badges: ACTIVE (#00FF94), PENDING (#CCFF00), ERROR (#FF3366)
+- UX-5: Visible grid structure with 1px borders (#333333)
+- UX-6: Instant hover states (border inversion, no slow transitions)
+- UX-7: Profit Engine "AUTOPILOT PROPOSES → MERCHANT APPROVES" workflow
+- UX-8: Guest checkout as default, shipping visible from cart
+- UX-9: Express checkout (Apple Pay/Google Pay) above fold
+- UX-10: Cart recovery email sequence (37min, 24h, 48h delays)
+
+**UX Design Requirements - Visual System (Brutalist v2)**
+- UX-COLOR-1: Primary accent: Acid Lime #CCFF00
+- UX-COLOR-2: Background: Pure Black #000000, borders: #333333
+- UX-COLOR-3: Foreground: Pure White #FFFFFF
+- UX-COLOR-4: Success: #00FF94, Warning: #CCFF00, Risk: #FF3366
+- UX-TYPE-1: JetBrains Mono for ALL numbers, metrics, data, code
+- UX-TYPE-2: System font (Inter/SF Pro) for labels, descriptions
+- UX-RADIUS: 0px EVERYWHERE — `border-radius: 0px !important`
+- UX-SHADOW: None — elements sit firmly in the grid, no floating
+
+**UX Design Requirements - Animation (Minimal Brutalist)**
+- UX-ANIM-1: Micro-interactions: instant (no slow transitions)
+- UX-ANIM-2: Hover: instant inversion
+- UX-ANIM-3: Metric counters: 200ms max
+- UX-ANIM-4: Success feedback: border flash 500ms
+- UX-ANIM-5: All animations respect `prefers-reduced-motion`
+- UX-ANIM-6: Use `transform` and `opacity` only (no layout-triggering)
+
+**UX Design Requirements - Storefront (Brutalist v2)**
+- UX-STORE-1: Pure Black background with visible grid structure
+- UX-STORE-2: Product grid with 1px borders
+- UX-STORE-3: Product cards: instant hover state (no lift, border change)
+- UX-STORE-4: Cart slide-over with solid black background
+- UX-STORE-5: Mobile-first responsive (touch targets 48x48px minimum)
+- UX-STORE-6: All text high contrast white on black
 
 ---
 

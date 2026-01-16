@@ -162,7 +162,6 @@ trafi/
 │   ├── @trafi/validators/
 │   ├── @trafi/types/
 │   ├── @trafi/config/
-│   └── @trafi/db/
 │
 ├── e2e/                        # Playwright E2E tests
 ├── package.json

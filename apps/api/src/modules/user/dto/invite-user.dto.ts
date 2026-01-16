@@ -15,6 +15,16 @@ export class InviteUserDto {
   @IsEmail()
   email!: string;
 
+  @ApiPropertyOptional({
+    description: 'Display name for the invited user',
+    example: 'John Doe',
+    maxLength: 255,
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  name?: string;
+
   @ApiProperty({
     description: 'Role to assign to the invited user',
     enum: ['OWNER', 'ADMIN', 'EDITOR', 'VIEWER'],

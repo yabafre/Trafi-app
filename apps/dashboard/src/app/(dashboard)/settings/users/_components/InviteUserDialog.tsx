@@ -49,9 +49,10 @@ export function InviteUserDialog() {
   const { mutate: inviteUser, isPending } = useInviteUser()
   const { userRole } = usePermissions()
 
-  // Filter roles based on current user's role (can only invite roles below their own)
+  // Filter roles based on current user's role (can only invite roles at or below their own)
+  // Note: Backend enforces hierarchy, frontend filters for UX
   const availableRoles = ROLE_OPTIONS.filter(
-    (option) => ROLE_HIERARCHY[option.value] < ROLE_HIERARCHY[userRole as UserRole]
+    (option) => ROLE_HIERARCHY[option.value] <= ROLE_HIERARCHY[userRole as UserRole]
   )
 
   const validateEmail = (value: string): boolean => {

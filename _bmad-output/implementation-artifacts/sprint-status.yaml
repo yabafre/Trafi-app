@@ -44,6 +44,7 @@ development_status:
   # EPIC 1: Foundation & Developer Bootstrap
   # Thomas peut creer un projet Trafi fonctionnel en 5 minutes avec CLI, monorepo configure, et seed data.
   # COMPLETED: 2026-01-12
+  # Note: Story 1.9 added post-retrospective for UX Design System alignment
   # ============================================
   epic-1: done
   1-1-initialize-turborepo-monorepo-structure: done
@@ -54,6 +55,7 @@ development_status:
   1-6-setup-test-infrastructure: done
   1-7-seed-demo-data-for-development: done
   1-8-docker-containerization-setup: done
+  1-9-design-system-brutalist-migration: done
   epic-1-retrospective: done
 
   # ============================================
@@ -62,9 +64,9 @@ development_status:
   # ============================================
   epic-2: in-progress
   2-1-admin-user-model-and-authentication: done
-  2-2-dashboard-authentication-guard: backlog
-  2-3-role-based-access-control-rbac-foundation: backlog
-  2-4-admin-user-management: backlog
+  2-2-dashboard-authentication-guard: done
+  2-3-role-based-access-control-rbac-foundation: done
+  2-4-admin-user-management: review
   2-5-api-key-management: backlog
   2-6-tenant-scoped-authorization: backlog
   2-7-store-settings-configuration: backlog
@@ -172,6 +174,11 @@ development_status:
   8-13-profit-guardrails-configuration: backlog
   8-14-guardrails-enforcement: backlog
   8-15-profit-attribution-dashboard: backlog
+  # PRD v2 Additions - Autopilot ChangeSet Stories
+  8-16-changeset-data-model-and-service: backlog
+  8-17-changeset-lifecycle-state-machine: backlog
+  8-18-changeset-dashboard-ui: backlog
+  8-19-changeset-audit-trail-and-compliance: backlog
   epic-8-retrospective: optional
 
   # ============================================
@@ -251,7 +258,11 @@ development_status:
   13-2-module-cli-install: backlog
   13-3-module-cli-list-and-status: backlog
   13-4-module-enable-disable: backlog
-  13-5-module-validation-and-safety: backlog
+  # PRD v2 Expansion - Module Sandbox 4-Layer Security (replaces 13-5)
+  13-5a-module-sandbox-static-analysis: backlog
+  13-5b-module-sandbox-filesystem-isolation: backlog
+  13-5c-module-sandbox-network-acl: backlog
+  13-5d-module-sandbox-runtime-policy: backlog
   13-6-module-discovery-and-loading: backlog
   13-7-module-hot-reload-development: backlog
   13-8-backend-extension-services: backlog
@@ -262,6 +273,10 @@ development_status:
   13-13-module-update-and-compatibility: backlog
   13-14-module-rollback-and-removal: backlog
   13-15-module-custom-metrics: backlog
+  # PRD v2 Additions - Module Security & Marketplace
+  13-16-security-incident-response: backlog
+  13-17-marketplace-module-tiers: backlog
+  13-18-module-permissions-dashboard-ui: backlog
   epic-13-retrospective: optional
 
   # ============================================

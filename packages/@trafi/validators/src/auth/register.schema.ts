@@ -45,6 +45,7 @@ export const InviteUserSchema = z.object({
   name: z.string().min(1).max(255).optional(),
   role: UserRoleSchema.optional().default('EDITOR'),
   storeId: IdSchema,
+  message: z.string().max(500).optional(),
 });
 
 export type InviteUserInput = z.infer<typeof InviteUserSchema>;

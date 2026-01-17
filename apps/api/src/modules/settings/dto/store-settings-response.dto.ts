@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import type { Currency, WeightUnit } from '@trafi/validators';
 
 /**
  * Address structure for store contact info
@@ -70,8 +71,9 @@ export class StoreSettingsResponseDto {
   @ApiProperty({
     description: 'Default currency code (ISO 4217)',
     example: 'EUR',
+    enum: ['EUR', 'USD', 'GBP'],
   })
-  defaultCurrency!: string;
+  defaultCurrency!: Currency;
 
   @ApiProperty({
     description: 'Default locale',
@@ -90,7 +92,7 @@ export class StoreSettingsResponseDto {
     example: 'g',
     enum: ['g', 'kg', 'lb', 'oz'],
   })
-  weightUnit!: string;
+  weightUnit!: WeightUnit;
 
   // Business
   @ApiProperty({

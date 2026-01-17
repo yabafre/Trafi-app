@@ -8,9 +8,9 @@ interface ApiKeyStatusIndicatorProps {
 type Status = 'active' | 'expired' | 'revoked'
 
 const STATUS_STYLES: Record<Status, string> = {
-  active: 'bg-[#00FF94]/20 text-[#00FF94] border-[#00FF94]',
-  expired: 'bg-[#FF3366]/20 text-[#FF3366] border-[#FF3366]',
-  revoked: 'bg-neutral-800 text-neutral-500 border-neutral-600',
+  active: 'bg-success text-success-foreground border-success font-bold',
+  expired: 'bg-destructive text-destructive-foreground border-destructive font-bold',
+  revoked: 'bg-muted text-muted-foreground border-border font-bold',
 }
 
 const STATUS_LABELS: Record<Status, string> = {

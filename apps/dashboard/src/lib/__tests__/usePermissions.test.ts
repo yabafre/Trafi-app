@@ -72,7 +72,7 @@ describe('usePermissions', () => {
     email: 'test@example.com',
     name: 'Test User',
     role,
-    tenantId: 'store-123',
+    storeId: 'store-123',
     permissions: [],
   })
 

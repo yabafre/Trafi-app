@@ -16,3 +16,4 @@ export * from './store';
 export * from './auth';
 export * from './user';
 export * from './api-key';
+export * from './ownership';

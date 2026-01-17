@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '@database/prisma.service';
 import type { StoreSettings } from '@generated/prisma/client';
+import type { Currency, WeightUnit } from '@trafi/validators';
 import type { UpdateStoreSettingsDto, StoreSettingsResponseDto } from './dto';
 
 /**
@@ -216,10 +217,10 @@ export class SettingsService {
       name: settings.name,
       description: settings.description,
       slug: settings.slug,
-      defaultCurrency: settings.defaultCurrency,
+      defaultCurrency: settings.defaultCurrency as Currency,
       defaultLocale: settings.defaultLocale,
       timezone: settings.timezone,
-      weightUnit: settings.weightUnit,
+      weightUnit: settings.weightUnit as WeightUnit,
       taxIncluded: settings.taxIncluded,
       autoArchiveOrders: settings.autoArchiveOrders,
       orderNumberPrefix: settings.orderNumberPrefix,

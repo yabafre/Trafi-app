@@ -1,0 +1,37 @@
+// =============================================================================
+// Ownership Transfer Domain Schema
+// =============================================================================
+// Tracks ownership transfer requests between users.
+// Transfers have 72-hour expiration and require password confirmation.
+// All queries MUST be scoped by storeId for multi-tenancy (CRITICAL).
+// =============================================================================
+
+enum TransferStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
+
+model OwnershipTransfer {
+  id          String         @id @default(cuid())
+  storeId     String         @map("store_id")
+  fromUserId  String         @map("from_user_id")
+  toUserId    String         @map("to_user_id")
+  status      TransferStatus @default(PENDING)
+  reason      String?
+
+  expiresAt   DateTime       @map("expires_at")
+  completedAt DateTime?      @map("completed_at")
+  createdAt   DateTime       @default(now()) @map("created_at")
+  updatedAt   DateTime       @updatedAt @map("updated_at")
+
+  // Relations
+  store    Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  fromUser User  @relation("TransferFrom", fields: [fromUserId], references: [id])
+  toUser   User  @relation("TransferTo", fields: [toUserId], references: [id])
+
+  // Indexes for efficient queries
+  @@index([storeId, status])
+  @@index([toUserId, status])
+  @@map("ownership_transfers")
+}

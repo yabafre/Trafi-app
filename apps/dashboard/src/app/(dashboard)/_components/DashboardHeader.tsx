@@ -49,10 +49,9 @@ export function DashboardHeader() {
             </div>
           </div>
 
-          {/* Center: Search - Component ready but disabled pending future story */}
-          {/* TODO: Enable SearchCommand in future search feature story */}
+          {/* Center: Search */}
           <div className="flex-1 max-w-md mx-4 hidden md:block">
-            {/* SearchCommand component is ready at @/components/layout/SearchCommand */}
+            <SearchCommand placeholder="SEARCH (CMD+K)" />
           </div>
 
           {/* Right side: Notifications & Theme */}

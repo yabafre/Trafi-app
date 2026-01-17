@@ -13,12 +13,15 @@
  * @see Story 2.6 - Tenant-Scoped Authorization (AC#3, AC#5)
  */
 import type { Request, Response } from 'express';
-import type { AuthenticatedUser, Permission, Role } from '@trafi/types';
+import type { AuthenticatedUser, JwtPayload, Permission, Role } from '@trafi/types';
 import { ROLE_PERMISSIONS } from '@trafi/types';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import type { JwtService } from '@nestjs/jwt';
 import type { AuthService } from '../modules/auth/auth.service';
 import type { UserService } from '../modules/user/user.service';
-import { getTenantContext } from '@common/context';
+import type { SettingsService } from '../modules/settings/settings.service';
+import type { ApiKeysService } from '../modules/api-keys/api-keys.service';
+import type { OwnershipService } from '../modules/ownership/ownership.service';
 
 /**
  * Services injected from NestJS DI container
@@ -26,6 +29,10 @@ import { getTenantContext } from '@common/context';
 export interface TRPCServices {
   authService: AuthService;
   userService: UserService;
+  settingsService: SettingsService;
+  apiKeysService: ApiKeysService;
+  ownershipService: OwnershipService;
+  jwtService: JwtService;
 }
 
 /**
@@ -67,6 +74,17 @@ export interface Context {
 }
 
 /**
+ * Extract Bearer token from Authorization header
+ */
+function extractTokenFromHeader(req: Request): string | undefined {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return undefined;
+  }
+  return authHeader.slice(7);
+}
+
+/**
  * Create tRPC context from Express request
  *
  * Extracts user from JWT if present in Authorization header.
@@ -78,11 +96,33 @@ export async function createContext({
   res,
   services,
 }: CreateContextOptions): Promise<Context> {
-  // Extract user from request if authenticated (set by JWT middleware)
-  const user = (req as Request & { user?: AuthenticatedUser }).user ?? null;
+  // Try to extract and validate JWT from Authorization header
+  let user: AuthenticatedUser | null = null;
+  let tenantCtx: { storeId?: string; userId?: string; role?: string; requestId?: string } | null = null;
 
-  // Get tenant context from AsyncLocalStorage
-  const tenantCtx = getTenantContext();
+  const token = extractTokenFromHeader(req);
+  if (token) {
+    try {
+      // Verify and decode the JWT
+      const payload = services.jwtService.verify<JwtPayload>(token);
+
+      // Validate the payload and get the user
+      user = await services.authService.validateJwtPayload(payload);
+
+      if (user) {
+        // Create tenant context from JWT payload
+        tenantCtx = {
+          storeId: payload.tenantId,
+          userId: payload.sub,
+          role: payload.role,
+          requestId: req.headers['x-request-id'] as string | undefined,
+        };
+      }
+    } catch {
+      // Token invalid or expired - user remains null
+      user = null;
+    }
+  }
 
   return {
     req,
@@ -90,7 +130,7 @@ export async function createContext({
     user,
     services,
 
-    // Tenant context from AsyncLocalStorage
+    // Tenant context from JWT validation
     storeId: tenantCtx?.storeId,
     userId: tenantCtx?.userId,
     role: tenantCtx?.role,
@@ -105,7 +145,7 @@ export async function createContext({
      * @throws ForbiddenException if not authenticated or lacks permission
      */
     requirePermission: (permission: Permission): void => {
-      if (!tenantCtx) {
+      if (!user || !tenantCtx) {
         throw new ForbiddenException('Authentication required');
       }
 

@@ -13,7 +13,7 @@ export interface AuthUser {
   email: string
   name: string | null
   role: string
-  tenantId: string
+  storeId: string
   permissions: string[]
 }
 
@@ -151,7 +151,16 @@ async function fetchCurrentUser(accessToken: string): Promise<AuthUser | null> {
       return null
     }
 
-    return response.json()
+    const json = await response.json()
+
+    // API wraps responses in { success: true, data: {...} } format
+    // Extract the actual user data
+    if (json.success && json.data) {
+      return json.data
+    }
+
+    // Fallback for direct response format
+    return json
   } catch {
     return null
   }

@@ -8,6 +8,10 @@
  */
 import { router } from '../trpc';
 import { authRouter } from './auth.router';
+import { usersRouter } from './users.router';
+import { settingsRouter } from './settings.router';
+import { apiKeysRouter } from './api-keys.router';
+import { ownershipRouter } from './ownership.router';
 
 /**
  * Main application router
@@ -17,10 +21,10 @@ import { authRouter } from './auth.router';
  */
 export const appRouter = router({
   auth: authRouter,
-  // Add more routers here as the application grows:
-  // users: usersRouter,
-  // products: productsRouter,
-  // orders: ordersRouter,
+  users: usersRouter,
+  settings: settingsRouter,
+  apiKeys: apiKeysRouter,
+  ownership: ownershipRouter,
 });
 
 /**

@@ -78,14 +78,14 @@ export function ApiKeyCreatedModal({ open, onClose, keyValue, keyName }: ApiKeyC
               VOTRE CLE API
             </label>
             <div className="relative">
-              <code className="block w-full overflow-x-auto border border-border bg-neutral-900 p-4 font-mono text-sm break-all">
+              <code className="block w-full overflow-x-auto border border-border bg-black text-white p-4 font-mono text-sm break-all font-bold">
                 {keyValue}
               </code>
               <Button
                 type="button"
                 variant="ghost"
                 size="icon-sm"
-                className="absolute right-2 top-2"
+                className="absolute right-2 top-2 text-white hover:text-white hover:bg-white/20"
                 onClick={handleCopy}
                 data-testid="copy-api-key-button"
               >

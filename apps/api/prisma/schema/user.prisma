@@ -33,8 +33,10 @@ model User {
   updatedAt        DateTime    @updatedAt @map("updated_at")
 
   // Relations
-  store       Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  createdKeys ApiKey[]
+  store              Store               @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  createdKeys        ApiKey[]
+  transfersInitiated OwnershipTransfer[] @relation("TransferFrom")
+  transfersReceived  OwnershipTransfer[] @relation("TransferTo")
 
   // Indexes for multi-tenancy queries
   @@index([storeId])

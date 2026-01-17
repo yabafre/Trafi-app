@@ -16,13 +16,13 @@ export function ApiKeyScopesBadges({ scopes, maxDisplay = 3 }: ApiKeyScopesBadge
       {displayScopes.map((scope) => (
         <span
           key={scope}
-          className="inline-flex px-2 py-0.5 bg-neutral-900 border border-neutral-700 font-mono text-xs"
+          className="inline-flex px-2 py-0.5 bg-foreground text-background border border-border font-mono text-xs font-bold"
         >
           {scope}
         </span>
       ))}
       {remainingCount > 0 && (
-        <span className="inline-flex px-2 py-0.5 bg-neutral-800 border border-neutral-600 font-mono text-xs text-muted-foreground">
+        <span className="inline-flex px-2 py-0.5 bg-foreground text-background border border-border font-mono text-xs font-bold">
           +{remainingCount}
         </span>
       )}

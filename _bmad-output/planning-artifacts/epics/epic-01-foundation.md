@@ -15,7 +15,7 @@ These learnings emerged during Epic 1 implementation and are **MANDATORY** for a
 ### Key Learnings
 1. **Context7 MCP is essential** - Always query for up-to-date docs before implementing
 2. **Root-first monorepo** - All commands executable from project root improves DX
-3. **Architecture evolves** - Be ready to adapt (e.g., @trafi/db → apps/api/prisma)
+3. **Architecture evolves** - Be ready to adapt (Prisma is in apps/api, not a shared package)
 4. **Code for extensibility** - Use `protected` methods, composition patterns
 5. **Adversarial reviews catch issues** - Every story benefited from thorough review
 
@@ -108,7 +108,7 @@ So that **I can reuse code across apps with type safety**.
 - `packages/validators` (@trafi/validators) with Zod schemas
 - `packages/types` (@trafi/types) with shared TypeScript types
 - `packages/config` (@trafi/config) with shared configuration
-- `packages/db` (@trafi/db) with Prisma client
+- Prisma configured directly in `apps/api` (not as shared package)
 **And** packages are properly exported and importable by apps
 
 ---

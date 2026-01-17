@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from '@trafi/zod';
 import { ApiKeyScopeSchema } from './api-key-scope.schema';
 
 /**

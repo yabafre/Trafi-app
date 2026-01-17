@@ -50,7 +50,7 @@ Epic 1 successfully established the foundation for Trafi with 100% story complet
 - Quality gates enforced
 
 ### 5. Frontend-Database Isolation
-- ESLint rules block `@trafi/db` imports in Dashboard
+- ESLint rules block `@prisma/client` imports in Dashboard (Prisma is API-only)
 - Architectural boundary enforced automatically
 - Prevents accidental data leaks
 
@@ -198,7 +198,7 @@ trafi db:push  # Database operations
 
 1. **Context7 MCP is essential** - Always query for up-to-date docs before implementing
 2. **Root-first monorepo** - All commands executable from project root improves DX
-3. **Architecture evolves** - Be ready to adapt (e.g., @trafi/db → apps/api/prisma)
+3. **Architecture evolves** - Be ready to adapt (Prisma is in apps/api, not a shared package)
 4. **Code for extensibility** - Use `protected` methods, composition patterns
 5. **Adversarial reviews catch issues** - Every story benefited from thorough review
 

@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from '@trafi/zod';
 import { IdSchema, TimestampsSchema, TenantScopedSchema, EmailSchema, StatusSchema } from '../common';
 import { AddressSchema } from '../order/order.schema';
 

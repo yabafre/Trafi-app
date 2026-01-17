@@ -1,84 +1,111 @@
 'use server'
 
-import type { z } from 'zod'
+/**
+ * Auth Server Actions
+ *
+ * Server Actions for authentication using zsa + tRPC.
+ *
+ * Data Flow:
+ * Client Component → useServerActionMutation → Server Action → tRPC Client → NestJS API
+ *
+ * @see Epic-02 for architecture documentation
+ */
+import { createServerAction } from 'zsa'
 import { LoginSchema } from '@trafi/validators'
+import { trpc } from '@/lib/trpc'
 import { setAuthCookies, deleteSession } from '@/lib/auth'
 import { generateCsrfToken } from '@/lib/csrf'
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
-
-type LoginInput = z.infer<typeof LoginSchema>
-
-interface LoginResult {
-  success: boolean
-  error?: string
-}
-
 /**
- * Login server action - authenticates user and sets session cookies
+ * Login Server Action
+ *
+ * Authenticates user via tRPC and sets session cookies.
+ * Returns user data on success.
  */
-export async function login(input: LoginInput): Promise<LoginResult> {
-  // Validate input
-  const validationResult = LoginSchema.safeParse(input)
-  if (!validationResult.success) {
-    return {
-      success: false,
-      error: 'Invalid email or password format',
-    }
-  }
+export const loginAction = createServerAction()
+  .input(LoginSchema)
+  .handler(async ({ input }) => {
+    const { email, password } = input
 
-  const { email, password } = validationResult.data
+    try {
+      // Call tRPC auth.login mutation
+      const result = await trpc.auth.login.mutate({ email, password })
 
-  try {
-    const response = await fetch(`${API_URL}/auth/login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ email, password }),
-    })
-
-    if (!response.ok) {
-      // API returns 401 for invalid credentials
-      if (response.status === 401) {
-        return {
-          success: false,
-          error: 'Invalid credentials',
-        }
+      if (!result.success) {
+        throw new Error('Login failed')
       }
 
-      // Other errors
+      // Generate CSRF token for this session
+      const csrfToken = generateCsrfToken()
+
+      // Set auth cookies
+      await setAuthCookies(result.accessToken, result.refreshToken, csrfToken)
+
       return {
-        success: false,
-        error: 'An error occurred during login',
+        success: true as const,
+        user: result.user,
       }
+    } catch (error) {
+      // Re-throw with user-friendly message
+      if (error instanceof Error && error.message.includes('UNAUTHORIZED')) {
+        throw new Error('Invalid credentials')
+      }
+      throw new Error('Unable to connect to the server')
     }
-
-    const data = await response.json()
-
-    // Generate CSRF token for this session
-    const csrfToken = generateCsrfToken()
-
-    // Set auth cookies
-    await setAuthCookies(data.accessToken, data.refreshToken, csrfToken)
-
-    return { success: true }
-  } catch {
-    return {
-      success: false,
-      error: 'Unable to connect to the server',
-    }
-  }
-}
+  })
 
 /**
- * Logout server action - clears session cookies
+ * Logout Server Action
+ *
+ * Clears session cookies. Does not call tRPC logout
+ * since we're using cookie-based auth.
  */
-export async function logout(): Promise<{ success: boolean }> {
-  try {
+export const logoutAction = createServerAction()
+  .handler(async () => {
     await deleteSession()
-    return { success: true }
-  } catch {
-    return { success: false }
-  }
-}
+    return { success: true as const }
+  })
+
+/**
+ * Alias for backward compatibility
+ */
+export const logout = logoutAction
+
+/**
+ * Refresh Token Server Action
+ *
+ * Refreshes access token via tRPC and updates cookies.
+ */
+export const refreshTokenAction = createServerAction()
+  .handler(async () => {
+    const { cookies } = await import('next/headers')
+    const cookieStore = await cookies()
+    const refreshToken = cookieStore.get('trafi_refresh_token')?.value
+
+    if (!refreshToken) {
+      throw new Error('No refresh token available')
+    }
+
+    try {
+      const result = await trpc.auth.refresh.mutate({ refreshToken })
+
+      if (!result.success) {
+        throw new Error('Refresh failed')
+      }
+
+      // Generate new CSRF token
+      const csrfToken = generateCsrfToken()
+
+      // Update cookies with new tokens
+      await setAuthCookies(result.accessToken, result.refreshToken, csrfToken)
+
+      return {
+        success: true as const,
+        user: result.user,
+      }
+    } catch {
+      // Clear session on refresh failure
+      await deleteSession()
+      throw new Error('Session expired')
+    }
+  })

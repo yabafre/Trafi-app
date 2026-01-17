@@ -6,7 +6,7 @@ const ACCESS_TOKEN_COOKIE = 'trafi_access_token'
 const REFRESH_TOKEN_COOKIE = 'trafi_refresh_token'
 const CSRF_TOKEN_COOKIE = 'trafi_csrf_token'
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'
 
 export interface AuthUser {
   id: string

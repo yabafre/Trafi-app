@@ -4,7 +4,8 @@
   "pnpm": {
     "overrides": {
       "pathe": "1.1.2",
-      "effect": "3.16.0"
+      "effect": "3.16.0",
+      "zod": "^3.24.1"
     }
   },
   "scripts": {

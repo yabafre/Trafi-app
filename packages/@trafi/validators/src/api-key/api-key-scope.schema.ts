@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from '@trafi/zod';
 
 /**
  * API Key Scopes - defines what resources the API key can access.

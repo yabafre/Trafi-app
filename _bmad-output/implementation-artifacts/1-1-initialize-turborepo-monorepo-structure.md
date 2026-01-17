@@ -58,7 +58,7 @@ so that **I can start developing immediately with a properly structured monorepo
   - [x] 6.1: Create `packages/@trafi/validators/` with Zod setup (empty schemas for now)
   - [x] 6.2: Create `packages/@trafi/types/` for shared TypeScript types
   - [x] 6.3: Create `packages/@trafi/config/` for shared configurations
-  - [x] 6.4: Create `packages/@trafi/db/` placeholder (Prisma setup in Story 1.5)
+  - [x] 6.4: ~~Create `packages/@trafi/db/` placeholder~~ **REVISED**: Prisma configured in `apps/api/prisma/`
   - [x] 6.5: Configure package exports and tsconfig for each package
 
 - [x] **Task 7**: Verify monorepo functionality (AC: all)
@@ -83,12 +83,12 @@ so that **I can start developing immediately with a properly structured monorepo
        ├── @trafi/validators/      # Shared Zod schemas
        ├── @trafi/types/           # Shared TypeScript types
        ├── @trafi/config/          # Shared configs
-       └── @trafi/db/              # Prisma client (API-only)
+       └── @trafi/zod/             # Shared Zod instance
    ```
 
 2. **Fundamental Rule - Frontend-Database Isolation (CRITICAL):**
-   - `@trafi/db` package must ONLY be imported by `apps/api`
-   - ESLint rules must prevent Prisma imports in dashboard/storefront
+   - Prisma is configured only in `apps/api` (not a shared package)
+   - ESLint rules must prevent `@prisma/client` imports in dashboard/storefront
    - All data access flows: Frontend -> tRPC/REST -> API -> Prisma -> PostgreSQL
 
 ### Technical Requirements
@@ -197,7 +197,7 @@ so that **I can start developing immediately with a properly structured monorepo
 - Story 1.2: Setup NestJS API Application (depends on `apps/api/` directory)
 - Story 1.3: Setup Next.js Dashboard Application (depends on `apps/dashboard/` directory)
 - Story 1.4: Create Shared Packages Structure (depends on `packages/` structure)
-- Story 1.5: Configure Prisma (depends on `@trafi/db` package)
+- Story 1.5: Configure Prisma (in `apps/api/prisma/`)
 
 **DO NOT implement in this story:**
 - NestJS API setup (Story 1.2)
@@ -252,9 +252,8 @@ N/A
 - `packages/@trafi/config/package.json` - Config package config
 - `packages/@trafi/config/eslint/index.js` - Shared ESLint flat config
 - `packages/@trafi/config/typescript/base.json` - Base TypeScript config
-- `packages/@trafi/db/package.json` - DB package placeholder
-- `packages/@trafi/db/tsconfig.json` - DB TypeScript config
-- `packages/@trafi/db/src/index.ts` - DB barrel export placeholder
+- `packages/@trafi/zod/package.json` - Shared Zod instance package
+- `packages/@trafi/zod/src/index.ts` - Shared Zod re-export
 - `packages/@trafi/validators/src/common/index.ts` - Common schemas barrel export
 
 ## Senior Developer Review (AI)

@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from '@trafi/zod';
 import { EmailSchema } from '../common/base.schema';
 
 /**

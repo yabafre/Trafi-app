@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from '@trafi/zod';
 import { IdSchema } from '../common/base.schema';
 import { UserRoleSchema } from './register.schema';
 

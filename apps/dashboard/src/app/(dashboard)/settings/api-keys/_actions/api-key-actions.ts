@@ -9,7 +9,7 @@ import {
   type ApiKeyCreatedResponse,
   type ApiKeyResponse,
 } from '@trafi/validators'
-import { z } from 'zod'
+import { z } from '@trafi/zod'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
 const ACCESS_TOKEN_COOKIE = 'trafi_access_token'

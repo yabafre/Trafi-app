@@ -140,7 +140,7 @@ npm init -y && npx prisma@latest init
 **Code Organization:**
 - Monorepo with apps/ and packages/ separation
 - Shared configs in packages/@trafi/config
-- Database layer isolated in packages/@trafi/db (API-only access)
+- Database layer isolated in apps/api (Prisma) (API-only access)
 - API versioning via URL path (/v1/, /v2/)
 
 **Development Experience:**
@@ -171,7 +171,7 @@ External Clients ──SDK/REST──► API (NestJS) ──Prisma──► Post
 - No database connection strings in frontend environment variables
 
 **Enforced via:**
-- Prisma package (`@trafi/db`) only imported by API app
+- Prisma package (`apps/api` (Prisma is API-only)) only imported by API app
 - ESLint rules to prevent Prisma imports in apps/dashboard and apps/storefront
 - TypeScript project references configured to prevent cross-boundary imports
 
@@ -397,7 +397,7 @@ interface AutopilotChangeSet {
 ### ChangeSet Database Schema
 
 ```prisma
-// In @trafi/db/prisma/schema.prisma
+// In apps/api/prisma/schema.prisma
 model ChangeSet {
   id              String   @id @default(cuid())
   storeId         String
@@ -1643,7 +1643,7 @@ packages/
 │       ├── events.types.ts      # Event payload types
 │       └── index.ts
 │
-└── @trafi/db/                   # Prisma (generates types too)
+└── apps/api/                   # Prisma (generates types too)
     └── src/
         └── generated/           # Prisma generated types
 ```
@@ -1759,7 +1759,7 @@ trafi/
     │   │   └── index.ts
     │   └── package.json
     │
-    ├── @trafi/db/                        # Prisma
+    ├── apps/api/                        # Prisma
     │   ├── prisma/
     │   │   └── schema.prisma
     │   ├── src/
@@ -1784,7 +1784,7 @@ import type { ApiResponse } from '@trafi/types';
 import { CreateProductSchema, type CreateProductInput } from '@trafi/validators';
 import type { Product } from '@trafi/types';
 
-// NEVER import from @trafi/db in dashboard (enforced by ESLint)
+// NEVER import Prisma in dashboard (Prisma is API-only in apps/api)
 ```
 
 ### Format Patterns
@@ -1958,7 +1958,7 @@ const { mutate, isPending } = useServerActionMutation(createProduct, {
 
 1. Use `_` prefix for route-local components, hooks, and actions
 2. Import types/schemas from `@trafi/validators` or `@trafi/types`, never define locally
-3. Never import from `@trafi/db` in frontend apps
+3. Never import from `apps/api` (Prisma is API-only) in frontend apps
 4. Follow naming conventions exactly (PascalCase, camelCase, kebab-case as specified)
 5. Use Zod schemas from shared package for all input validation
 6. Query Context7 MCP before implementing with any library
@@ -2002,8 +2002,8 @@ export async function getProducts() { ... }
 // ❌ Component without underscore prefix in route
 // app/products/components/  <-- WRONG, should be _components/
 
-// ❌ Importing Prisma in dashboard
-import { prisma } from '@trafi/db';  // ❌ FORBIDDEN in frontend
+// ❌ Importing Prisma in dashboard (Prisma is API-only in apps/api)
+import { prisma } from '@database';  // ❌ FORBIDDEN in frontend
 
 // ❌ Schema defined in API instead of shared
 // apps/api/src/modules/product/dto/create-product.dto.ts  <-- WRONG
@@ -2504,7 +2504,7 @@ trafi/
     │       ├── organization.types.ts           # P1
     │       └── index.ts
     │
-    ├── @trafi/db/
+    ├── apps/api/
     │   ├── prisma/
     │   │   └── schema.prisma
     │   └── src/
@@ -2675,7 +2675,7 @@ export interface TranslationHelpers {
 | **Resend** | Transactional email | `notification/providers/resend` | API |
 | **S3/R2** | Media storage | `common/storage` | SDK |
 | **Redis** | Cache + BullMQ | `common/redis` | Client |
-| **PostgreSQL** | Per-tenant data | `@trafi/db` | Prisma |
+| **PostgreSQL** | Per-tenant data | `apps/api` (Prisma is API-only) | Prisma |
 
 ### Data Flow Complete
 
@@ -2833,7 +2833,7 @@ All 104 FRs across 9 commerce domains have dedicated modules:
 2. Use implementation patterns consistently across all components
 3. Respect project structure and boundaries
 4. Import types from `@trafi/validators` and `@trafi/types` only
-5. Never import `@trafi/db` in frontend apps
+5. Never import `apps/api` (Prisma is API-only) in frontend apps
 6. Query Context7 MCP before implementing with any library
 7. Use `_` prefix for route-local components, hooks, actions
 

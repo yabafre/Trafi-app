@@ -20,7 +20,7 @@ so that **I can reuse code across apps with type safety**.
 
 5. **AC5**: All packages are properly exported and importable by both `apps/api` and `apps/dashboard`
 
-6. **AC6**: ESLint rules prevent importing `@trafi/db` or `@prisma/client` in frontend apps (dashboard/storefront)
+6. **AC6**: ESLint rules prevent importing `@prisma/client` in frontend apps (dashboard/storefront) - Prisma is API-only
 
 ## Tasks / Subtasks
 
@@ -44,7 +44,7 @@ so that **I can reuse code across apps with type safety**.
 - [x] **Task 3**: Complete @trafi/config package (AC: 3)
   - [x] 3.1: Add Tailwind CSS base configuration at `tailwind/base.config.ts`
   - [x] 3.2: Add Trafi color tokens to Tailwind config (from architecture/UX spec)
-  - [x] 3.3: Enhance ESLint config with `@trafi/db` import restriction rule for frontend apps
+  - [x] 3.3: Enhance ESLint config with `@prisma/client` import restriction rule for frontend apps
   - [x] 3.4: Add base TypeScript config for strict mode with path mappings
   - [x] 3.5: Update package.json exports for all configs
   - [x] 3.6: Verify configs are correctly referenced in apps/api and apps/dashboard

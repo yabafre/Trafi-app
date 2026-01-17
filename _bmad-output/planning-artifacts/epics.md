@@ -245,7 +245,7 @@ This document provides the complete epic and story breakdown for trafi-app, deco
 **Architecture Requirements**
 - ARCH-1: Custom Turborepo Monorepo (NestJS + Next.js + Prisma + pnpm)
 - ARCH-2: Frontend-Database Isolation
-- ARCH-7: Shared packages: @trafi/validators, @trafi/types, @trafi/db, @trafi/config
+- ARCH-7: Shared packages: @trafi/validators, @trafi/types, @trafi/zod, @trafi/config (Prisma in apps/api only)
 - ARCH-8: Local vs Global component pattern (`_components/` for local, `components/` for global)
 - ARCH-9: Zod as primary validation library
 - ARCH-13: JWT + NestJS Passport for authentication

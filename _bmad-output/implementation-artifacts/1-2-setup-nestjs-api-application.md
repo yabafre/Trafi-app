@@ -194,7 +194,7 @@ OTEL_EXPORTER_ENABLED=false
 1. Turborepo monorepo structure is complete with `apps/` and `packages/` directories
 2. TypeScript strict mode is configured in root `tsconfig.json`
 3. ESLint uses flat config format (`eslint.config.js`)
-4. Shared packages exist: `@trafi/validators`, `@trafi/types`, `@trafi/config`, `@trafi/db`
+4. Shared packages exist: `@trafi/validators`, `@trafi/types`, `@trafi/config`, `@trafi/zod` (Prisma in apps/api)
 5. pnpm workspaces configured for `apps/*` and `packages/@trafi/*`
 6. `pnpm build` must run before `pnpm typecheck` due to declaration file generation
 

@@ -1,7 +1,17 @@
 'use client'
 
+/**
+ * LoginForm Component
+ *
+ * Client component for user authentication.
+ * Uses useLogin hook which wraps zsa-react-query mutations.
+ *
+ * Data Flow:
+ * LoginForm → useLogin → useServerActionMutation → loginAction → tRPC → API
+ *
+ * @see Epic-02 for architecture documentation
+ */
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { LoginSchema } from '@trafi/validators'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -14,7 +24,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { login } from '../_actions/login'
+import { useLogin } from '../_hooks/useLogin'
 
 interface FormState {
   email: string
@@ -28,8 +38,8 @@ interface FormErrors {
 }
 
 export function LoginForm() {
-  const router = useRouter()
-  const [isLoading, setIsLoading] = useState(false)
+  const { login, isLoading, error, isError } = useLogin()
+
   const [formData, setFormData] = useState<FormState>({
     email: '',
     password: '',
@@ -55,30 +65,18 @@ export function LoginForm() {
     return true
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
 
     if (!validateForm()) {
       return
     }
 
-    setIsLoading(true)
+    // Clear previous errors
     setErrors({})
 
-    try {
-      const result = await login(formData)
-
-      if (result.success) {
-        router.push('/')
-        router.refresh()
-      } else {
-        setErrors({ general: result.error ?? 'Invalid credentials' })
-      }
-    } catch {
-      setErrors({ general: 'An unexpected error occurred. Please try again.' })
-    } finally {
-      setIsLoading(false)
-    }
+    // Execute login mutation via useLogin hook
+    login({ email: formData.email, password: formData.password })
   }
 
   const handleChange = (field: keyof FormState) => (
@@ -90,6 +88,9 @@ export function LoginForm() {
     }
   }
 
+  // Combine local validation errors with mutation errors
+  const displayError = errors.general || (isError ? error : null)
+
   return (
     <Card className="p-0">
       <CardHeader className="p-6 border-b border-border">
@@ -100,9 +101,9 @@ export function LoginForm() {
       </CardHeader>
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-6 p-6">
-          {errors.general && (
+          {displayError && (
             <div className="bg-destructive/10 border border-destructive p-4 text-sm text-destructive font-mono">
-              {errors.general}
+              {displayError}
             </div>
           )}
 

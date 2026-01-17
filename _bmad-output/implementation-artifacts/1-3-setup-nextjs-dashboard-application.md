@@ -82,7 +82,7 @@ so that **I can build the admin interface with modern React patterns**.
    ```
 
 2. **Frontend-Database Isolation (CRITICAL):**
-   - NEVER import `@trafi/db` or Prisma in `apps/dashboard`
+   - NEVER import Prisma or `@prisma/client` in `apps/dashboard` (Prisma is API-only in apps/api)
    - NEVER put database connection strings in frontend env vars
    - ALL data access goes through API (tRPC or REST)
 
@@ -253,7 +253,7 @@ NEXT_PUBLIC_ENABLE_PROFIT_ENGINE=true
 1. NestJS 11.x API is running on port 3001 at `apps/api/`
 2. TypeScript strict mode is configured throughout the monorepo
 3. ESLint uses flat config format (`eslint.config.mjs`)
-4. Shared packages exist: `@trafi/validators`, `@trafi/types`, `@trafi/config`, `@trafi/db`
+4. Shared packages exist: `@trafi/validators`, `@trafi/types`, `@trafi/config`, `@trafi/zod` (Prisma in apps/api)
 5. Standardized API response format is implemented (success/error with requestId)
 6. `nest-cli.json` uses `deleteOutDir: false` to avoid race conditions
 7. Health endpoint at `/health` is available for API health checks
@@ -279,7 +279,7 @@ NEXT_PUBLIC_ENABLE_PROFIT_ENGINE=true
 
 ### Anti-Patterns to AVOID
 
-1. **DO NOT** import anything from `@trafi/db` in dashboard - all data through tRPC/API
+1. **DO NOT** import Prisma or `@prisma/client` in dashboard - all data through tRPC/API
 2. **DO NOT** create types locally in `apps/dashboard/` - import from `@trafi/types`
 3. **DO NOT** put components directly in `app/` routes without `_` prefix for local components
 4. **DO NOT** use `pages/` directory - App Router only

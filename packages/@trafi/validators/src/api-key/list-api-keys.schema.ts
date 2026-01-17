@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from '@trafi/zod';
 
 /**
  * Schema for listing API keys with pagination and filtering.

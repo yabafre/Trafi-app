@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from '@trafi/zod';
 import { IdSchema, TimestampsSchema, EmailSchema, StatusSchema, SlugSchema } from '../common';
 import { CurrencySchema } from '../common/money.schema';
 

@@ -1,6 +1,10 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { jwtVerify } from 'jose'
 
+// Debug: log JWT_SECRET presence in Edge Runtime
+console.log('[proxy.ts] process.env.JWT_SECRET exists:', !!process.env.JWT_SECRET)
+console.log('[proxy.ts] JWT_SECRET first 10 chars:', process.env.JWT_SECRET?.slice(0, 10))
+
 const JWT_SECRET = new TextEncoder().encode(
   process.env.JWT_SECRET ?? 'development-secret-min-32-characters-long'
 )
@@ -33,7 +37,7 @@ async function verifyToken(token: string): Promise<boolean> {
   }
 }
 
-export async function proxy(request: NextRequest) {
+export default async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // Check if it's a public route

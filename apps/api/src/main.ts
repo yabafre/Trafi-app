@@ -1,14 +1,16 @@
 import { NestFactory } from '@nestjs/core';
 import { Logger } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter, RequestIdInterceptor } from '@common';
+import { TRPCService } from './trpc/trpc.module';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
 
   try {
-    const app = await NestFactory.create(AppModule, {
+    const app = await NestFactory.create<NestExpressApplication>(AppModule, {
       logger: ['error', 'warn', 'log', 'debug', 'verbose'],
     });
 
@@ -23,6 +25,17 @@ async function bootstrap() {
 
     // Enable graceful shutdown
     app.enableShutdownHooks();
+
+    // Enable CORS for dashboard
+    app.enableCors({
+      origin: process.env.DASHBOARD_URL ?? 'http://localhost:3000',
+      credentials: true,
+    });
+
+    // tRPC Middleware Setup
+    const trpcService = app.get(TRPCService);
+    app.use('/trpc', trpcService.createMiddleware());
+    logger.log('tRPC endpoint available at: /trpc');
 
     // Swagger/OpenAPI Setup
     const config = new DocumentBuilder()
@@ -61,6 +74,7 @@ async function bootstrap() {
     logger.log(`Trafi API is running on: http://localhost:${port}`);
     logger.log(`Health check available at: http://localhost:${port}/health`);
     logger.log(`Swagger docs available at: http://localhost:${port}/docs`);
+    logger.log(`tRPC endpoint available at: http://localhost:${port}/trpc`);
   } catch (error) {
     logger.error('Failed to start Trafi API', error);
     process.exit(1);

@@ -29,7 +29,7 @@
       "@trafi/validators": ["./packages/@trafi/validators/src"],
       "@trafi/types": ["./packages/@trafi/types/src"],
       "@trafi/config": ["./packages/@trafi/config"],
-      "@trafi/db": ["./packages/@trafi/db/src"]
+      "@trafi/zod": ["./packages/@trafi/zod/src"]
     }
   },
   "exclude": ["node_modules", "dist", ".next", "coverage"]

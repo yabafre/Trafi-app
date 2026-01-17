@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from '@trafi/zod';
 import { CreateProductSchema } from './create-product.schema';
 
 /**

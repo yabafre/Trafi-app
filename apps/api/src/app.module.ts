@@ -7,6 +7,7 @@ import { ObservabilityModule } from './observability';
 import { AuthModule } from '@modules/auth/auth.module';
 import { UserModule } from '@modules/user/user.module';
 import { ApiKeysModule } from '@modules/api-keys/api-keys.module';
+import { TRPCModule } from './trpc/trpc.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { ApiKeysModule } from '@modules/api-keys/api-keys.module';
     AuthModule,
     UserModule,
     ApiKeysModule,
+    TRPCModule,
   ],
   controllers: [],
   providers: [],

@@ -46,7 +46,10 @@ _This file contains critical rules and patterns that AI agents must follow when 
 - **Zod:** Latest (validation schemas)
 - **@trafi/validators:** Shared Zod schemas
 - **@trafi/types:** Shared TypeScript types
-- **@trafi/db:** Prisma client (API-only)
+- **@trafi/zod:** Shared Zod instance (single instance across monorepo)
+
+### Database (apps/api only)
+- **Prisma:** Configured directly in `apps/api` - NOT a shared package
 
 ### Testing
 - **Vitest:** Latest (unit tests)
@@ -368,7 +371,7 @@ pnpm db:generate  # Generate Prisma client
 #### ABSOLUTE PROHIBITIONS ❌
 
 1. **Frontend-Database Isolation**
-   - NEVER import `@trafi/db` or Prisma in `apps/dashboard` or `apps/storefront`
+   - NEVER import Prisma in `apps/dashboard` or `apps/storefront` (Prisma is API-only in `apps/api`)
    - NEVER put database connection strings in frontend env vars
    - ALL data access goes through API (tRPC or REST)
 

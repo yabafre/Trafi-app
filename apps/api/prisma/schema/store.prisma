@@ -15,6 +15,7 @@ model Store {
   // Relations
   users    User[]
   products Product[]
+  apiKeys  ApiKey[]
 
   @@map("stores")
 }

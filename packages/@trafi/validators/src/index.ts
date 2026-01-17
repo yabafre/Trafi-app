@@ -15,3 +15,4 @@ export * from './customer';
 export * from './store';
 export * from './auth';
 export * from './user';
+export * from './api-key';

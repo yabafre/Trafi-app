@@ -6,6 +6,7 @@ import { HealthModule } from './health';
 import { ObservabilityModule } from './observability';
 import { AuthModule } from '@modules/auth/auth.module';
 import { UserModule } from '@modules/user/user.module';
+import { ApiKeysModule } from '@modules/api-keys/api-keys.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { UserModule } from '@modules/user/user.module';
     HealthModule,
     AuthModule,
     UserModule,
+    ApiKeysModule,
   ],
   controllers: [],
   providers: [],

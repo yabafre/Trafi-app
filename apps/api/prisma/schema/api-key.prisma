@@ -1,0 +1,33 @@
+// =============================================================================
+// ApiKey Domain Schema
+// =============================================================================
+// API keys for SDK authentication with scoped permissions.
+// Key format: trafi_sk_{64 hex chars from randomBytes(32)}
+// Keys are stored as SHA256 hashes - plain key is ONLY shown on creation.
+// All queries MUST be scoped by storeId for multi-tenancy (CRITICAL).
+// =============================================================================
+
+model ApiKey {
+  id            String    @id @default(cuid())
+  storeId       String    @map("store_id")
+  createdById   String    @map("created_by_id")
+  name          String
+  keyHash       String    @unique @map("key_hash")
+  keyPrefix     String    @map("key_prefix") // "trafi_sk_" + first 8 hex chars
+  lastFourChars String    @map("last_four_chars")
+  scopes        String[]  // Array of scope strings (e.g., "products:read")
+  expiresAt     DateTime? @map("expires_at")
+  lastUsedAt    DateTime? @map("last_used_at")
+  revokedAt     DateTime? @map("revoked_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  store     Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  createdBy User  @relation(fields: [createdById], references: [id], onDelete: Cascade)
+
+  // Indexes for efficient queries
+  @@index([storeId])
+  @@index([keyHash])
+  @@map("api_keys")
+}

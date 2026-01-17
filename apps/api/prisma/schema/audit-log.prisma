@@ -1,0 +1,34 @@
+// =============================================================================
+// Audit Log Domain Schema
+// =============================================================================
+// Captures all state-changing operations for security auditing and compliance.
+// Implements NFR-SEC-7 requirements for comprehensive audit trail.
+// =============================================================================
+
+model AuditLog {
+  id           String   @id @default(cuid())
+  storeId      String   @map("store_id")
+  userId       String   @map("user_id")
+  requestId    String   @unique @map("request_id")
+  action       String   // "POST /api/products", "DELETE /api/users/usr_123"
+  resource     String   // "products", "users", "orders"
+  status       String   // "success" | "error"
+  durationMs   Int      @map("duration_ms")
+  ipAddress    String?  @map("ip_address")
+  userAgent    String?  @map("user_agent")
+  errorMessage String?  @map("error_message")
+  metadata     Json?    // Additional context (params, query, etc.)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  // Relations
+  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  // Indexes for common query patterns
+  @@index([storeId])
+  @@index([requestId])
+  @@index([createdAt])
+  @@index([storeId, createdAt])
+  @@index([userId, createdAt])
+
+  @@map("audit_logs")
+}

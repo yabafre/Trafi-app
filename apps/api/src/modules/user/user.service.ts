@@ -28,8 +28,15 @@ const ROLE_HIERARCHY: Record<Role, number> = {
  * IMPORTANT: Use `protected` methods (not `private`) to support
  * merchant overrides in @trafi/core distribution model.
  *
+ * Tenant Isolation (Defense-in-Depth):
+ * - Public methods take explicit storeId for clear API contract (primary enforcement)
+ * - TenantInterceptor provides context via AsyncLocalStorage for audit logging
+ * - PrismaService.validateTenantOwnership() helper validates resource ownership
+ * - Note: Prisma 7 deprecated $use() middleware, so we use explicit storeId + helpers
+ *
  * @see epic-1-retrospective.md#Trafi-Core-Override-Pattern
  * @see epic-02-admin-auth.md#Story-2.4
+ * @see Story 2.6 - Tenant-Scoped Authorization
  */
 @Injectable()
 export class UserService {

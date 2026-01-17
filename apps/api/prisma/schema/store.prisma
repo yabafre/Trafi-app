@@ -13,9 +13,10 @@ model Store {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   // Relations
-  users    User[]
-  products Product[]
-  apiKeys  ApiKey[]
+  users     User[]
+  products  Product[]
+  apiKeys   ApiKey[]
+  auditLogs AuditLog[]
 
   @@map("stores")
 }

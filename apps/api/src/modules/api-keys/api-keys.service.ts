@@ -22,7 +22,14 @@ import type {
  * Key format: trafi_sk_{64 hex chars from randomBytes(32)}
  * Keys are stored as SHA256 hashes - plain key is ONLY returned on creation.
  *
+ * Tenant Isolation (Defense-in-Depth):
+ * - Public methods take explicit storeId for clear API contract (primary enforcement)
+ * - TenantInterceptor provides context via AsyncLocalStorage for audit logging
+ * - PrismaService.validateTenantOwnership() helper validates resource ownership
+ * - validateKey() intentionally bypasses tenant filtering (pre-auth context)
+ *
  * @see epic-02-admin-auth.md#Story-2.5
+ * @see Story 2.6 - Tenant-Scoped Authorization
  */
 @Injectable()
 export class ApiKeysService {

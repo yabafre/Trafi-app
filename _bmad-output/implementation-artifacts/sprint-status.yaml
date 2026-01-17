@@ -68,7 +68,7 @@ development_status:
   2-3-role-based-access-control-rbac-foundation: done
   2-4-admin-user-management: done
   2-5-api-key-management: done
-  2-6-tenant-scoped-authorization: ready-for-dev
+  2-6-tenant-scoped-authorization: done
   2-7-store-settings-configuration: backlog
   2-8-ownership-transfer: backlog
   epic-2-retrospective: optional

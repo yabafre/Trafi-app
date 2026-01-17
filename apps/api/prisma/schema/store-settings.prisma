@@ -1,0 +1,50 @@
+// =============================================================================
+// Store Settings Domain Schema
+// =============================================================================
+// Configuration settings for each store - localization, branding, business rules.
+// One-to-one relationship with Store (unique constraint on storeId).
+// ID prefix pattern: stset_ (implemented in service layer)
+// =============================================================================
+
+model StoreSettings {
+  id        String @id @default(cuid())
+  storeId   String @unique @map("store_id")
+
+  // General
+  name        String  @default("My Store")
+  description String?
+  slug        String?
+
+  // Localization
+  defaultCurrency String @default("EUR") @map("default_currency")
+  defaultLocale   String @default("en") @map("default_locale")
+  timezone        String @default("UTC")
+  weightUnit      String @default("g") @map("weight_unit")
+
+  // Business
+  taxIncluded       Boolean @default(true) @map("tax_included")
+  autoArchiveOrders Boolean @default(false) @map("auto_archive_orders")
+  orderNumberPrefix String  @default("ORD-") @map("order_number_prefix")
+  lowStockThreshold Int     @default(5) @map("low_stock_threshold")
+
+  // Contact (JSONB for flexibility)
+  contactEmail String? @map("contact_email")
+  supportEmail String? @map("support_email")
+  phoneNumber  String? @map("phone_number")
+  address      Json? // { street, city, postalCode, country }
+
+  // Brand
+  primaryColor String  @default("#CCFF00") @map("primary_color")
+  logoUrl      String? @map("logo_url")
+  faviconUrl   String? @map("favicon_url")
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@index([storeId])
+  @@map("store_settings")
+}

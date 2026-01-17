@@ -17,6 +17,7 @@ model Store {
   products  Product[]
   apiKeys   ApiKey[]
   auditLogs AuditLog[]
+  settings  StoreSettings?
 
   @@map("stores")
 }

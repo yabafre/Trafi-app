@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_INTERCEPTOR } from '@nestjs/core';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { envValidationSchema } from './config';
 import { DatabaseModule } from './database';
 import { HealthModule } from './health';
@@ -8,6 +9,7 @@ import { ObservabilityModule } from './observability';
 import { AuthModule } from '@modules/auth/auth.module';
 import { UserModule } from '@modules/user/user.module';
 import { ApiKeysModule } from '@modules/api-keys/api-keys.module';
+import { SettingsModule } from '@modules/settings/settings.module';
 import { TRPCModule } from './trpc/trpc.module';
 import { TenantInterceptor, AuditInterceptor } from '@common/interceptors';
 
@@ -30,12 +32,14 @@ import { TenantInterceptor, AuditInterceptor } from '@common/interceptors';
         abortEarly: false,
       },
     }),
+    EventEmitterModule.forRoot(),
     DatabaseModule,
     ObservabilityModule,
     HealthModule,
     AuthModule,
     UserModule,
     ApiKeysModule,
+    SettingsModule,
     TRPCModule,
   ],
   controllers: [],

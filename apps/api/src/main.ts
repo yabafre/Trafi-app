@@ -1,5 +1,5 @@
 import { NestFactory } from '@nestjs/core';
-import { Logger } from '@nestjs/common';
+import { Logger, ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
@@ -16,6 +16,16 @@ async function bootstrap() {
 
     // Get port from environment or default to 3001
     const port = process.env.PORT ?? 3001;
+
+    // Global validation pipe with transformation enabled
+    app.useGlobalPipes(
+      new ValidationPipe({
+        transform: true,
+        transformOptions: { enableImplicitConversion: true },
+        whitelist: true,
+        forbidNonWhitelisted: false,
+      })
+    );
 
     // Global exception filter for standardized error responses
     app.useGlobalFilters(new HttpExceptionFilter());

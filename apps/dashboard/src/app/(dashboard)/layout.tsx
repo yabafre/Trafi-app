@@ -1,20 +1,22 @@
-import { getSession } from '@/lib/auth'
-import { AuthProvider } from '@/lib/providers/AuthProvider'
-import { DashboardHeader } from './_components/DashboardHeader'
+import { getSession } from '@/lib/auth';
+import { AuthProvider } from '@/lib/providers/AuthProvider';
+import { DashboardShell } from '@/components/layout';
+import { DashboardHeader } from './_components/DashboardHeader';
+import { DashboardContent } from './_components/DashboardContent';
 
 export default async function DashboardLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
-  const session = await getSession()
+  const session = await getSession();
 
   return (
     <AuthProvider initialUser={session?.user ?? null}>
-      <div className="flex min-h-screen flex-col bg-background">
+      <DashboardShell>
         <DashboardHeader />
-        <main className="flex-1">{children}</main>
-      </div>
+        <DashboardContent>{children}</DashboardContent>
+      </DashboardShell>
     </AuthProvider>
-  )
+  );
 }

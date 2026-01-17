@@ -35,7 +35,10 @@ export function ApiKeysTable({ onRevoke }: ApiKeysTableProps) {
     )
   }
 
-  if (!data || data.data.length === 0) {
+  // Safely access the data array - ensure it's actually an array
+  const apiKeys = Array.isArray(data?.data) ? data.data : []
+
+  if (apiKeys.length === 0) {
     return (
       <div className="border border-border p-8 text-center">
         <p className="font-mono text-muted-foreground text-sm">
@@ -82,7 +85,7 @@ export function ApiKeysTable({ onRevoke }: ApiKeysTableProps) {
       </div>
 
       {/* Rows */}
-      {data.data.map((apiKey) => (
+      {apiKeys.map((apiKey) => (
         <div
           key={apiKey.id}
           className={`flex border-b border-border last:border-b-0 hover:bg-secondary/20 transition-colors ${
@@ -123,7 +126,7 @@ export function ApiKeysTable({ onRevoke }: ApiKeysTableProps) {
 
                   {openDropdown === apiKey.id && (
                     <div
-                      className="absolute right-4 top-12 z-10 w-48 border border-border bg-background shadow-lg"
+                      className="absolute right-4 top-12 z-10 w-48 border border-border bg-background"
                       onMouseLeave={() => setOpenDropdown(null)}
                     >
                       <button
@@ -146,14 +149,16 @@ export function ApiKeysTable({ onRevoke }: ApiKeysTableProps) {
       ))}
 
       {/* Footer - Pagination Info */}
-      <div className="flex items-center justify-between border-t border-border px-4 py-3 bg-secondary/30">
-        <span className="font-mono text-xs text-muted-foreground">
-          {data.meta.total} cle{data.meta.total > 1 ? 's' : ''} API
-        </span>
-        <span className="font-mono text-xs text-muted-foreground">
-          Page {data.meta.page}/{data.meta.totalPages}
-        </span>
-      </div>
+      {data?.meta && (
+        <div className="flex items-center justify-between border-t border-border px-4 py-3 bg-secondary/30">
+          <span className="font-mono text-xs text-muted-foreground">
+            {data.meta.total} cle{data.meta.total > 1 ? 's' : ''} API
+          </span>
+          <span className="font-mono text-xs text-muted-foreground">
+            Page {data.meta.page}/{data.meta.totalPages}
+          </span>
+        </div>
+      )}
     </div>
   )
 }

@@ -71,6 +71,8 @@ development_status:
   2-6-tenant-scoped-authorization: done
   2-7-store-settings-configuration: done
   2-8-ownership-transfer: backlog
+  # Note: Story 2.9 added to fill gap - Dashboard Shell was specified in UX but never implemented
+  2-9-dashboard-shell-navigation: done
   epic-2-retrospective: optional
 
   # ============================================

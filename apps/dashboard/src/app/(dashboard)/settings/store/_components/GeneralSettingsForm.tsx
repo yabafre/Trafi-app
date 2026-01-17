@@ -124,7 +124,7 @@ export function GeneralSettingsForm() {
           onChange={(e) => handleChange('name', e.target.value)}
           placeholder="My Awesome Store"
           disabled={isPending}
-          className="border-[#333333] bg-transparent rounded-none focus:border-[#CCFF00] focus:ring-[#CCFF00]"
+          className="border-border bg-transparent rounded-none focus:border-primary focus:ring-primary"
           data-testid="settings-name-input"
         />
       </div>
@@ -140,7 +140,7 @@ export function GeneralSettingsForm() {
           onChange={(e) => handleChange('description', e.target.value)}
           placeholder="The best products at the best prices"
           disabled={isPending}
-          className="flex min-h-[100px] w-full border border-[#333333] bg-transparent px-3 py-2 text-sm font-mono rounded-none focus:border-[#CCFF00] focus:ring-[#CCFF00] focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex min-h-[100px] w-full border border-border bg-transparent px-3 py-2 text-sm font-mono rounded-none focus:border-primary focus:ring-primary focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
           data-testid="settings-description-input"
         />
       </div>
@@ -157,7 +157,7 @@ export function GeneralSettingsForm() {
           onBlur={handleSlugBlur}
           placeholder="my-awesome-store"
           disabled={isPending}
-          className="border-[#333333] bg-transparent rounded-none focus:border-[#CCFF00] focus:ring-[#CCFF00]"
+          className="border-border bg-transparent rounded-none focus:border-primary focus:ring-primary"
           data-testid="settings-slug-input"
         />
         {errors.slug && (
@@ -174,7 +174,7 @@ export function GeneralSettingsForm() {
       <Button
         type="submit"
         disabled={isPending || !isDirty || !isValid}
-        className="bg-[#CCFF00] text-black hover:bg-[#CCFF00]/90 font-mono uppercase rounded-none"
+        className="bg-primary text-primary-foreground hover:bg-primary/90 font-mono uppercase rounded-none"
         data-testid="settings-save-button"
       >
         {isPending ? 'ENREGISTREMENT...' : 'ENREGISTRER'}

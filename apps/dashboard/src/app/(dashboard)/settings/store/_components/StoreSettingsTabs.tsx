@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { cn } from '@/lib/utils'
 import { GeneralSettingsForm } from './GeneralSettingsForm'
 import { LocalizationSettingsForm } from './LocalizationSettingsForm'
 import { ContactSettingsForm } from './ContactSettingsForm'
@@ -30,21 +31,18 @@ export function StoreSettingsTabs() {
   return (
     <div className="space-y-6">
       {/* Tab Navigation */}
-      <div className="border-b border-[#333333]">
+      <div className="border-b border-border">
         <nav className="flex gap-0 -mb-px" aria-label="Settings tabs">
           {TABS.map((tab) => (
             <button
               key={tab.value}
               onClick={() => setActiveTab(tab.value)}
-              className={`
-                px-6 py-3 font-mono text-xs uppercase tracking-wider
-                border-b-2 transition-colors
-                ${
-                  activeTab === tab.value
-                    ? 'border-[#CCFF00] text-[#CCFF00]'
-                    : 'border-transparent text-muted-foreground hover:text-foreground hover:border-[#333333]'
-                }
-              `}
+              className={cn(
+                'px-6 py-3 font-mono text-xs uppercase tracking-wider border-b-2 transition-colors',
+                activeTab === tab.value
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
+              )}
               data-testid={`tab-${tab.value}`}
             >
               {tab.label}

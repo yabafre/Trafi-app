@@ -7,7 +7,7 @@ inputDocuments:
   - '_bmad-output/planning-artifacts/architecture.md'
   - '_bmad-output/planning-artifacts/ux-design-specification.md'
 totalEpics: 14
-totalStories: 155
+totalStories: 156
 shardedFiles: true
 revisedAt: '2026-01-15'
 revisionNotes: |
@@ -36,7 +36,7 @@ This document provides the complete epic and story breakdown for trafi-app, deco
 | Epic | Title | Stories | File |
 |------|-------|---------|------|
 | 1 | Foundation & Developer Bootstrap | 8 | [epic-01-foundation.md](epics/epic-01-foundation.md) |
-| 2 | Admin Authentication & Store Setup | 8 | [epic-02-admin-auth.md](epics/epic-02-admin-auth.md) |
+| 2 | Admin Authentication & Store Setup | 9 | [epic-02-admin-auth.md](epics/epic-02-admin-auth.md) |
 | 3 | Product Catalog & Inventory | 8 | [epic-03-product-catalog.md](epics/epic-03-product-catalog.md) |
 | 4 | Shopping Cart & Checkout | 9 | [epic-04-cart-checkout.md](epics/epic-04-cart-checkout.md) |
 | 5 | Payment Processing | 8 | [epic-05-payment.md](epics/epic-05-payment.md) |

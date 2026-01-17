@@ -36,7 +36,10 @@ export function UsersTable({ onEditRole, onDeactivate }: UsersTableProps) {
     )
   }
 
-  if (!data || data.users.length === 0) {
+  // Safely access the users array - ensure it's actually an array
+  const users = Array.isArray(data?.users) ? data.users : []
+
+  if (users.length === 0) {
     return (
       <div className="border border-border p-8 text-center">
         <p className="font-mono text-muted-foreground text-sm">
@@ -80,7 +83,7 @@ export function UsersTable({ onEditRole, onDeactivate }: UsersTableProps) {
       </div>
 
       {/* Rows */}
-      {data.users.map((user) => (
+      {users.map((user) => (
         <div
           key={user.id}
           className="flex border-b border-border last:border-b-0 hover:bg-secondary/20 transition-colors"
@@ -147,14 +150,16 @@ export function UsersTable({ onEditRole, onDeactivate }: UsersTableProps) {
       ))}
 
       {/* Footer - Pagination Info */}
-      <div className="flex items-center justify-between border-t border-border px-4 py-3 bg-secondary/30">
-        <span className="font-mono text-xs text-muted-foreground">
-          {data.total} utilisateur{data.total > 1 ? 's' : ''}
-        </span>
-        <span className="font-mono text-xs text-muted-foreground">
-          Page {data.page}/{data.totalPages}
-        </span>
-      </div>
+      {data && (
+        <div className="flex items-center justify-between border-t border-border px-4 py-3 bg-secondary/30">
+          <span className="font-mono text-xs text-muted-foreground">
+            {data.total} utilisateur{data.total > 1 ? 's' : ''}
+          </span>
+          <span className="font-mono text-xs text-muted-foreground">
+            Page {data.page}/{data.totalPages}
+          </span>
+        </div>
+      )}
     </div>
   )
 }

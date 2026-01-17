@@ -2398,3 +2398,153 @@ export function TransferConfirmationDialog({ open, onClose, targetUser }: Props)
 - **Security:** Password re-confirmation required for both initiate and confirm
 - **Expiration:** 72h countdown displayed for pending transfers
 - **Email notifications:** Sent to both parties on initiate and complete
+
+---
+
+## Story 2.9: Dashboard Shell & Navigation
+
+> **Note:** This story was added to fill a gap - the dashboard shell layout (UX-2, UX-3) was specified in UX Design but never implemented in any story.
+
+As a **Dashboard User (Admin/Owner)**,
+I want **a complete dashboard shell with Rail, Sidebar, and Breadcrumb navigation**,
+So that **I can efficiently navigate between all dashboard sections with a consistent, professional interface**.
+
+**Acceptance Criteria:**
+
+**Given** a user accesses any dashboard route
+**When** the page loads
+**Then** a consistent shell layout is displayed with Rail (64px), Sidebar (240px collapsible), Main content, and Breadcrumb navigation
+**And** the Rail shows icon-only navigation for main sections
+**And** the Sidebar shows text labels with expandable sub-navigation
+**And** clicking navigation items routes to the correct section with active state (#CCFF00)
+**And** the Sidebar collapse state persists via Zustand store
+**And** responsive layouts adapt: Desktop (Rail+Sidebar), Tablet (Rail only), Mobile (Bottom nav)
+
+---
+
+### Technical Implementation
+
+#### File Structure
+```
+apps/dashboard/src/
+├── components/
+│   └── layout/                          # Global layout components
+│       ├── index.ts                     # Exports
+│       ├── DashboardShell.tsx           # Main shell wrapper
+│       ├── Rail.tsx                     # Icon navigation (64px)
+│       ├── Sidebar.tsx                  # Full navigation (240px)
+│       ├── SidebarHeader.tsx            # Store name + collapse toggle
+│       ├── SidebarNav.tsx               # Navigation items
+│       ├── Breadcrumb.tsx               # Path breadcrumb
+│       └── MobileNav.tsx                # Bottom nav + drawer
+├── config/
+│   └── navigation.ts                    # Nav structure config
+├── stores/
+│   └── ui-store.ts                      # Zustand UI state
+```
+
+#### Navigation Configuration
+```typescript
+// config/navigation.ts
+import { Home, Package, ShoppingCart, Users, Settings, Store, Key, UserCog } from 'lucide-react';
+
+export interface NavItem {
+  id: string;
+  label: string;
+  href: string;
+  icon: LucideIcon;
+  children?: NavItem[];
+}
+
+export const navigationConfig: NavItem[] = [
+  { id: 'dashboard', label: 'Dashboard', href: '/dashboard', icon: Home },
+  { id: 'products', label: 'Products', href: '/products', icon: Package },
+  { id: 'orders', label: 'Orders', href: '/orders', icon: ShoppingCart },
+  { id: 'customers', label: 'Customers', href: '/customers', icon: Users },
+  {
+    id: 'settings',
+    label: 'Settings',
+    href: '/settings',
+    icon: Settings,
+    children: [
+      { id: 'settings-store', label: 'Store', href: '/settings/store', icon: Store },
+      { id: 'settings-users', label: 'Users', href: '/settings/users', icon: UserCog },
+      { id: 'settings-api-keys', label: 'API Keys', href: '/settings/api-keys', icon: Key },
+    ],
+  },
+];
+```
+
+#### Zustand UI Store
+```typescript
+// stores/ui-store.ts
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
+
+interface UIState {
+  sidebarOpen: boolean;
+  sidebarCollapsed: boolean;
+  toggleSidebar: () => void;
+  setSidebarCollapsed: (collapsed: boolean) => void;
+}
+
+export const useUIStore = create<UIState>()(
+  persist(
+    (set) => ({
+      sidebarOpen: false,
+      sidebarCollapsed: false,
+      toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
+      setSidebarCollapsed: (collapsed) => set({ sidebarCollapsed: collapsed }),
+    }),
+    { name: 'trafi-ui-store', partialize: (state) => ({ sidebarCollapsed: state.sidebarCollapsed }) }
+  )
+);
+```
+
+#### Shell Layout Component
+```typescript
+// components/layout/DashboardShell.tsx
+'use client'
+
+import { Rail } from './Rail';
+import { Sidebar } from './Sidebar';
+import { useUIStore } from '@/stores/ui-store';
+import { cn } from '@/lib/utils';
+
+export function DashboardShell({ children }: { children: React.ReactNode }) {
+  const { sidebarCollapsed } = useUIStore();
+
+  return (
+    <div className="flex min-h-screen bg-background">
+      {/* Rail - Always visible on desktop */}
+      <Rail className="hidden lg:flex" />
+
+      {/* Sidebar - Collapsible on desktop */}
+      <Sidebar className={cn(
+        "hidden lg:flex transition-all duration-200",
+        sidebarCollapsed && "w-0 overflow-hidden"
+      )} />
+
+      {/* Main Content */}
+      <main className="flex-1 flex flex-col">
+        {children}
+      </main>
+    </div>
+  );
+}
+```
+
+---
+
+### UX Implementation
+
+- **Layout:** Rail (64px) + Sidebar (240px) + Main content (UX-2)
+- **Topbar:** Breadcrumb + action buttons (UX-3)
+- **Rail:** Fixed, icon-only, always visible, main sections
+- **Sidebar:** Collapsible, text labels, sub-navigation
+- **Breadcrumb:** font-mono uppercase text-xs, "/" separator
+- **Active state:** border-l-2 border-primary (#CCFF00) + text-primary
+- **Hover:** Instant state change (no slow transitions per UX-ANIM-1)
+- **Collapse animation:** 200ms ease-out
+- **Store name:** Displayed at top of Sidebar, updates via React Query cache
+- **Responsive:** Desktop (1280px+) full layout, Tablet (1024px) Rail only, Mobile (<768px) bottom nav

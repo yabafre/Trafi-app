@@ -12,5 +12,6 @@ import { getStoreSettingsAction } from '../_actions/settings-actions'
 export function useStoreSettings() {
   return useServerActionQuery(getStoreSettingsAction, {
     queryKey: ['store-settings'],
+    input: undefined,
   })
 }

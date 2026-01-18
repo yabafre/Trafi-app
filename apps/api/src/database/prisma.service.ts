@@ -108,6 +108,18 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
   get ownershipTransfer() {
     return this.client.ownershipTransfer;
   }
+  get country() {
+    return this.client.country;
+  }
+  get currency() {
+    return this.client.currency;
+  }
+  get storeCounter() {
+    return this.client.storeCounter;
+  }
+  get domainEvent() {
+    return this.client.domainEvent;
+  }
 
   // Delegate transaction and other methods with proper typing
   // Using bind to preserve 'this' context while forwarding calls

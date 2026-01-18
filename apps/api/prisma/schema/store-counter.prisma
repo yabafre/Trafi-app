@@ -1,0 +1,17 @@
+// =============================================================================
+// StoreCounter Domain Schema
+// =============================================================================
+// Atomic counters for sequential identifiers (orderNumber, invoiceNumber).
+// Uses compound primary key (storeId, key) for tenant isolation.
+// Per Principle #5: Sequential identifiers MUST use atomic counters.
+// @see Story M-1 - V3 Architectural Retroactive Fixes (AC4)
+// =============================================================================
+
+model StoreCounter {
+  storeId String @map("store_id")
+  key     String // Counter type: "order", "invoice", "return", "purchase_order"
+  value   BigInt @default(0) // Current counter value
+
+  @@id([storeId, key])
+  @@map("store_counters")
+}

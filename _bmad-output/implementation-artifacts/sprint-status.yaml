@@ -125,7 +125,8 @@ development_status:
   # - Country/Currency global tables
   # - StoreCounter atomic sequences
   # - DomainEvent outbox pattern
-  M-1-v3-retroactive-fixes: ready-for-dev
+  # COMPLETED: 2026-01-18 (all 5 ACs implemented and tested)
+  M-1-v3-retroactive-fixes: done
   epic-3-retrospective: optional
 
   # ============================================

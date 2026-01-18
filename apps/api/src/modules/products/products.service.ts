@@ -87,10 +87,13 @@ export class ProductsService {
    * Validate that a slug is unique within a store.
    * Protected for merchant override.
    *
+   * Only checks against active (non-deleted) products.
+   *
    * @param storeId - Store ID for tenant scoping
    * @param slug - Slug to validate
    * @param excludeId - Product ID to exclude (for updates)
    * @throws ConflictException if slug already exists
+   * @see Story M-1 - V3 Architectural Retroactive Fixes (AC2)
    */
   protected async validateSlugUnique(
     storeId: string,
@@ -101,6 +104,7 @@ export class ProductsService {
       where: {
         storeId,
         slug,
+        deletedAt: null, // Only check against active products
         ...(excludeId && { NOT: { id: excludeId } }),
       },
     });
@@ -167,9 +171,9 @@ export class ProductsService {
     productId: string,
     input: UpdateProductInput,
   ): Promise<ProductResponseDto> {
-    // Find existing product (with tenant check)
+    // Find existing product (with tenant check, exclude deleted)
     const existing = await this.prisma.product.findFirst({
-      where: { id: productId, storeId },
+      where: { id: productId, storeId, deletedAt: null },
     });
 
     if (!existing) {
@@ -206,24 +210,30 @@ export class ProductsService {
   }
 
   /**
-   * Delete a product.
+   * Soft delete a product (sets deletedAt timestamp).
+   *
+   * Per Principle #9: High-value business data uses deletedAt for soft deletes.
+   * Products are referenced by order history and analytics, so they should
+   * never be truly deleted.
    *
    * @param storeId - Store ID for tenant isolation
    * @param productId - Product ID to delete
+   * @see Story M-1 - V3 Architectural Retroactive Fixes (AC2)
    */
   async delete(storeId: string, productId: string): Promise<void> {
-    // Find existing product (with tenant check)
+    // Find existing product (with tenant check, exclude already deleted)
     const existing = await this.prisma.product.findFirst({
-      where: { id: productId, storeId },
+      where: { id: productId, storeId, deletedAt: null },
     });
 
     if (!existing) {
       throw new NotFoundException('Product not found');
     }
 
-    // Delete product
-    await this.prisma.product.delete({
+    // Soft delete: set deletedAt timestamp instead of hard delete
+    await this.prisma.product.update({
       where: { id: productId },
+      data: { deletedAt: new Date() },
     });
 
     // Emit event
@@ -233,17 +243,42 @@ export class ProductsService {
       timestamp: new Date().toISOString(),
     });
 
-    this.logger.log(`Product deleted: ${productId} from store ${storeId}`);
+    this.logger.log(`Product soft-deleted: ${productId} from store ${storeId}`);
   }
 
   /**
    * Get a product by ID.
    *
+   * Filters out soft-deleted products by default.
+   *
    * @param storeId - Store ID for tenant isolation
    * @param productId - Product ID
    * @returns Product or throws NotFoundException
+   * @see Story M-1 - V3 Architectural Retroactive Fixes (AC2)
    */
   async findById(storeId: string, productId: string): Promise<ProductResponseDto> {
+    const product = await this.prisma.product.findFirst({
+      where: { id: productId, storeId, deletedAt: null },
+    });
+
+    if (!product) {
+      throw new NotFoundException('Product not found');
+    }
+
+    return this.toProductResponse(product);
+  }
+
+  /**
+   * Get a product by ID including soft-deleted products.
+   *
+   * Admin-only method for viewing/restoring deleted products.
+   *
+   * @param storeId - Store ID for tenant isolation
+   * @param productId - Product ID
+   * @returns Product (including deleted) or throws NotFoundException
+   * @see Story M-1 - V3 Architectural Retroactive Fixes (AC2)
+   */
+  async findByIdIncludingDeleted(storeId: string, productId: string): Promise<ProductResponseDto & { deletedAt: Date | null }> {
     const product = await this.prisma.product.findFirst({
       where: { id: productId, storeId },
     });
@@ -251,6 +286,51 @@ export class ProductsService {
     if (!product) {
       throw new NotFoundException('Product not found');
     }
+
+    return {
+      ...this.toProductResponse(product),
+      deletedAt: product.deletedAt,
+    };
+  }
+
+  /**
+   * Restore a soft-deleted product.
+   *
+   * Admin-only method for restoring deleted products.
+   *
+   * @param storeId - Store ID for tenant isolation
+   * @param productId - Product ID to restore
+   * @returns Restored product
+   * @see Story M-1 - V3 Architectural Retroactive Fixes (AC2)
+   */
+  async restore(storeId: string, productId: string): Promise<ProductResponseDto> {
+    // Find product (including deleted)
+    const existing = await this.prisma.product.findFirst({
+      where: { id: productId, storeId },
+    });
+
+    if (!existing) {
+      throw new NotFoundException('Product not found');
+    }
+
+    if (!existing.deletedAt) {
+      throw new ConflictException('Product is not deleted');
+    }
+
+    // Restore: clear deletedAt
+    const product = await this.prisma.product.update({
+      where: { id: productId },
+      data: { deletedAt: null },
+    });
+
+    // Emit event
+    this.eventEmitter.emit('product.restored', {
+      product: this.toProductResponse(product),
+      storeId,
+      timestamp: new Date().toISOString(),
+    });
+
+    this.logger.log(`Product restored: ${productId} in store ${storeId}`);
 
     return this.toProductResponse(product);
   }
@@ -295,6 +375,9 @@ export class ProductsService {
   /**
    * Build Prisma where clause for list query.
    * Protected for merchant override.
+   *
+   * Always filters out soft-deleted products (deletedAt: null).
+   * @see Story M-1 - V3 Architectural Retroactive Fixes (AC2)
    */
   protected buildWhereClause(
     storeId: string,
@@ -306,7 +389,8 @@ export class ProductsService {
       tags?: string[];
     },
   ) {
-    const where: Record<string, unknown> = { storeId };
+    // Always exclude soft-deleted products
+    const where: Record<string, unknown> = { storeId, deletedAt: null };
 
     if (filters.status) {
       where.status = this.toPrismaStatus(filters.status);

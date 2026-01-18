@@ -27,6 +27,7 @@ model Product {
   tags         String[]      @default([]) // Array of tags for filtering
   createdAt    DateTime      @default(now()) @map("created_at")
   updatedAt    DateTime      @updatedAt @map("updated_at")
+  deletedAt    DateTime?     @map("deleted_at") // Soft delete (Principle #9)
 
   // Relations
   store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
@@ -35,5 +36,6 @@ model Product {
   @@unique([storeId, slug])
   @@index([storeId])
   @@index([storeId, status])
+  @@index([storeId, deletedAt]) // For efficient soft-delete filtering
   @@map("products")
 }

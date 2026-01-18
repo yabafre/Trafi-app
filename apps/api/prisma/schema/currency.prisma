@@ -1,0 +1,16 @@
+// =============================================================================
+// Currency Domain Schema (Global Reference Table)
+// =============================================================================
+// ISO 4217 currency codes. This is a GLOBAL table - NO storeId.
+// Per Principle #1 Exception: Global reference tables are shared across all stores.
+// @see Story M-1 - V3 Architectural Retroactive Fixes (AC3)
+// =============================================================================
+
+model Currency {
+  code          String @id                   // ISO 4217 code: "USD", "EUR", "CAD"
+  name          String                       // Currency name: "US Dollar"
+  symbol        String                       // Currency symbol: "$", "€"
+  decimalDigits Int    @map("decimal_digits") // Decimal places: 2 for USD, 0 for JPY
+
+  @@map("currencies")
+}

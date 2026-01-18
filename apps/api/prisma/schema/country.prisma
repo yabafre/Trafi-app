@@ -1,0 +1,16 @@
+// =============================================================================
+// Country Domain Schema (Global Reference Table)
+// =============================================================================
+// ISO 3166-1 country codes. This is a GLOBAL table - NO storeId.
+// Per Principle #1 Exception: Global reference tables are shared across all stores.
+// @see Story M-1 - V3 Architectural Retroactive Fixes (AC3)
+// =============================================================================
+
+model Country {
+  iso2      String  @id               // ISO 3166-1 alpha-2: "US", "FR", "CA"
+  iso3      String                    // ISO 3166-1 alpha-3: "USA", "FRA", "CAN"
+  name      String                    // Country name: "United States"
+  phoneCode String? @map("phone_code") // Phone code: "+1", "+33"
+
+  @@map("countries")
+}

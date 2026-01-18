@@ -18,6 +18,8 @@ import { PrismaClient, UserRole, UserStatus, ProductStatus } from '../src/genera
 import { PrismaPg } from '@prisma/adapter-pg';
 import * as bcrypt from 'bcrypt';
 import { prefixedIdsExtension } from '../src/database/prefixed-ids.extension';
+import { seedCountries } from './seed/countries.seed';
+import { seedCurrencies } from './seed/currencies.seed';
 
 // Validate DATABASE_URL is set before proceeding
 const databaseUrl = process.env.DATABASE_URL;
@@ -270,6 +272,11 @@ async function main() {
   console.log('='.repeat(LOG_SEPARATOR_WIDTH));
   console.log('Trafi Database Seed');
   console.log('='.repeat(LOG_SEPARATOR_WIDTH));
+
+  // Seed global reference tables first (no storeId dependency)
+  // @see Story M-1 - V3 Architectural Retroactive Fixes (AC3)
+  await seedCountries(basePrisma);
+  await seedCurrencies(basePrisma);
 
   // Seed in proper order: Store -> Users -> Products
   const storeId = await seedStore();

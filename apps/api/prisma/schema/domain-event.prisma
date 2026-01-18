@@ -1,0 +1,32 @@
+// =============================================================================
+// DomainEvent Domain Schema (Outbox Pattern)
+// =============================================================================
+// Transactional outbox for reliable async operations (emails, webhooks, analytics).
+// Per Principle #6: Async operations MUST use outbox for reliability.
+// @see Story M-1 - V3 Architectural Retroactive Fixes (AC5)
+// =============================================================================
+
+enum EventStatus {
+  PENDING
+  PROCESSING
+  PROCESSED
+  FAILED
+  DEAD_LETTER
+}
+
+model DomainEvent {
+  id           String      @id @default(cuid()) // evt_xxx
+  storeId      String      @map("store_id")
+  type         String      // Event type: "order.created", "payment.succeeded"
+  payload      Json        // Event data payload
+  status       EventStatus @default(PENDING)
+  attempts     Int         @default(0) // Retry count
+  createdAt    DateTime    @default(now()) @map("created_at")
+  processedAt  DateTime?   @map("processed_at") // When successfully processed
+  errorMessage String?     @map("error_message") // Last error (for debugging)
+
+  // Indexes for efficient worker polling
+  @@index([storeId, status, createdAt])
+  @@index([status, createdAt]) // Global polling index
+  @@map("domain_events")
+}

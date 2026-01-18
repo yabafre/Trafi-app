@@ -19,12 +19,10 @@ describe('@trafi/types Type Inference', () => {
         slug: 'test-product',
         description: 'A test product',
         status: 'active',
-        price: 1999,
-        currency: 'EUR',
-        inventoryQuantity: 100,
-        trackInventory: true,
-        allowBackorder: false,
-        taxable: true,
+        priceInCents: 1999, // $19.99 stored as cents (ARCH-25)
+        productType: 'Physical',
+        vendor: 'Test Vendor',
+        tags: ['featured', 'new'],
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -32,6 +30,7 @@ describe('@trafi/types Type Inference', () => {
       expect(product.id).toBeDefined();
       expect(product.name).toBe('Test Product');
       expect(product.status).toBe('active');
+      expect(product.priceInCents).toBe(1999);
     });
 
     it('should correctly type ProductStatus', () => {
@@ -41,21 +40,18 @@ describe('@trafi/types Type Inference', () => {
 
     it('should correctly type CreateProductInput', () => {
       const input: CreateProductInput = {
-        storeId: 'store_456',
         name: 'New Product',
         slug: 'new-product',
         description: 'Product description',
-        price: 2999,
-        currency: 'USD',
+        priceInCents: 2999, // $29.99 stored as cents (ARCH-25)
         status: 'draft',
-        inventoryQuantity: 50,
-        trackInventory: true,
-        allowBackorder: false,
-        taxable: true,
+        productType: 'Digital',
+        vendor: 'My Brand',
+        tags: ['sale'],
       };
 
       expect(input.name).toBe('New Product');
-      expect(input.price).toBe(2999);
+      expect(input.priceInCents).toBe(2999);
     });
   });
 

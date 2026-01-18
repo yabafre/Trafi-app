@@ -20,6 +20,7 @@
     "typecheck": "dotenv -- turbo typecheck",
     "db:generate": "dotenv -- pnpm --filter @trafi/api db:generate",
     "db:push": "dotenv -- pnpm --filter @trafi/api db:push",
+    "db:push:force": "dotenv -- pnpm --filter @trafi/api db:push:force",
     "db:migrate:dev": "dotenv -- pnpm --filter @trafi/api db:migrate:dev",
     "db:migrate:deploy": "dotenv -- pnpm --filter @trafi/api db:migrate:deploy",
     "db:studio": "dotenv -- pnpm --filter @trafi/api db:studio",

@@ -138,6 +138,8 @@ export function getPathLabel(segment: string): string {
   const labels: Record<string, string> = {
     dashboard: 'Dashboard',
     products: 'Products',
+    new: 'Nouveau',
+    edit: 'Modifier',
     orders: 'Orders',
     customers: 'Customers',
     settings: 'Settings',

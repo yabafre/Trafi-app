@@ -61,8 +61,9 @@ development_status:
   # ============================================
   # EPIC 2: Admin Authentication & Store Setup
   # Admin peut se connecter au dashboard, configurer le store, et gerer les acces utilisateurs avec RBAC.
+  # COMPLETED: 2026-01-17
   # ============================================
-  epic-2: in-progress
+  epic-2: done
   2-1-admin-user-model-and-authentication: done
   2-2-dashboard-authentication-guard: done
   2-3-role-based-access-control-rbac-foundation: done
@@ -73,14 +74,15 @@ development_status:
   2-8-ownership-transfer: done
   # Note: Story 2.9 added to fill gap - Dashboard Shell was specified in UX but never implemented
   2-9-dashboard-shell-navigation: done
-  epic-2-retrospective: optional
+  epic-2-retrospective: done
 
   # ============================================
   # EPIC 3: Product Catalog & Inventory
   # Merchant peut creer, editer, et organiser son catalogue produits complet avec gestion d'inventaire.
+  # STARTED: 2026-01-17
   # ============================================
-  epic-3: backlog
-  3-1-product-model-and-basic-crud: backlog
+  epic-3: in-progress
+  3-1-product-model-and-basic-crud: done
   3-2-product-variants-management: backlog
   3-3-product-media-upload: backlog
   3-4-categories-management: backlog

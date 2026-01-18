@@ -22,6 +22,7 @@ import type { UserService } from '../modules/user/user.service';
 import type { SettingsService } from '../modules/settings/settings.service';
 import type { ApiKeysService } from '../modules/api-keys/api-keys.service';
 import type { OwnershipService } from '../modules/ownership/ownership.service';
+import type { ProductsService } from '../modules/products/products.service';
 
 /**
  * Services injected from NestJS DI container
@@ -32,6 +33,7 @@ export interface TRPCServices {
   settingsService: SettingsService;
   apiKeysService: ApiKeysService;
   ownershipService: OwnershipService;
+  productsService: ProductsService;
   jwtService: JwtService;
 }
 

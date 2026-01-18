@@ -13,11 +13,13 @@ import { UserModule } from '../modules/user/user.module';
 import { SettingsModule } from '../modules/settings/settings.module';
 import { ApiKeysModule } from '../modules/api-keys/api-keys.module';
 import { OwnershipModule } from '../modules/ownership/ownership.module';
+import { ProductsModule } from '../modules/products/products.module';
 import { AuthService } from '../modules/auth/auth.service';
 import { UserService } from '../modules/user/user.service';
 import { SettingsService } from '../modules/settings/settings.service';
 import { ApiKeysService } from '../modules/api-keys/api-keys.service';
 import { OwnershipService } from '../modules/ownership/ownership.service';
+import { ProductsService } from '../modules/products/products.service';
 import { appRouter } from './routers/_app';
 import { createContext, type TRPCServices } from './context';
 
@@ -36,6 +38,7 @@ export class TRPCMiddleware implements NestMiddleware {
     private readonly settingsService: SettingsService,
     private readonly apiKeysService: ApiKeysService,
     private readonly ownershipService: OwnershipService,
+    private readonly productsService: ProductsService,
     private readonly jwtService: JwtService
   ) {
     const services: TRPCServices = {
@@ -44,6 +47,7 @@ export class TRPCMiddleware implements NestMiddleware {
       settingsService: this.settingsService,
       apiKeysService: this.apiKeysService,
       ownershipService: this.ownershipService,
+      productsService: this.productsService,
       jwtService: this.jwtService,
     };
 
@@ -69,6 +73,7 @@ export class TRPCService {
     private readonly settingsService: SettingsService,
     private readonly apiKeysService: ApiKeysService,
     private readonly ownershipService: OwnershipService,
+    private readonly productsService: ProductsService,
     private readonly jwtService: JwtService
   ) {}
 
@@ -82,6 +87,7 @@ export class TRPCService {
       settingsService: this.settingsService,
       apiKeysService: this.apiKeysService,
       ownershipService: this.ownershipService,
+      productsService: this.productsService,
       jwtService: this.jwtService,
     };
   }
@@ -100,7 +106,7 @@ export class TRPCService {
 }
 
 @Module({
-  imports: [AuthModule, UserModule, SettingsModule, ApiKeysModule, OwnershipModule],
+  imports: [AuthModule, UserModule, SettingsModule, ApiKeysModule, OwnershipModule, ProductsModule],
   providers: [TRPCService, TRPCMiddleware],
   exports: [TRPCService, TRPCMiddleware],
 })

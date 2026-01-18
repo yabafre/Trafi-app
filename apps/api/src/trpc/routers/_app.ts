@@ -12,6 +12,7 @@ import { usersRouter } from './users.router';
 import { settingsRouter } from './settings.router';
 import { apiKeysRouter } from './api-keys.router';
 import { ownershipRouter } from './ownership.router';
+import { productsRouter } from './products.router';
 
 /**
  * Main application router
@@ -25,6 +26,7 @@ export const appRouter = router({
   settings: settingsRouter,
   apiKeys: apiKeysRouter,
   ownership: ownershipRouter,
+  products: productsRouter,
 });
 
 /**

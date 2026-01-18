@@ -25,9 +25,7 @@ export async function verifyToken(token: string): Promise<SessionPayload | null>
 
     // Validate required fields
     if (
-      !payload.sub ||
-      typeof payload.sub !== 'string' ||
-      !payload.tenantId ||
+      !payload.sub || !payload.tenantId ||
       typeof payload.tenantId !== 'string'
     ) {
       return null

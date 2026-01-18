@@ -37,7 +37,7 @@ export const navigationConfig: NavItem[] = [
   {
     id: 'dashboard',
     label: 'Dashboard',
-    href: '/dashboard',
+    href: '/',
     icon: Home,
   },
   {

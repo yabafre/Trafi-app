@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useMemo, useEffect } from 'react'
+import React, { useState, useCallback, useMemo, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { AuthContext, type AuthContextValue } from '../hooks/useAuth'
 import type { AuthUser } from '../auth'

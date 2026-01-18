@@ -35,9 +35,7 @@ export class StorageService implements OnModuleInit {
     this.config = this.configService.get<StorageConfig>('storage') ?? null;
 
     if (!this.config?.accessKeyId || !this.config?.secretAccessKey) {
-      this.logger.warn(
-        'Storage credentials not configured. File uploads will be disabled.',
-      );
+      this.logger.warn('Storage credentials not configured. File uploads will be disabled.');
       return;
     }
 
@@ -74,11 +72,7 @@ export class StorageService implements OnModuleInit {
    * @param contentType - MIME type of the file
    * @returns The public URL of the uploaded file
    */
-  async upload(
-    key: string,
-    buffer: Buffer,
-    contentType: string,
-  ): Promise<UploadResult> {
+  async upload(key: string, buffer: Buffer, contentType: string): Promise<UploadResult> {
     if (!this.s3Client || !this.config) {
       throw new Error('Storage service not configured');
     }

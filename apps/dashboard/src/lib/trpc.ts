@@ -17,7 +17,7 @@ import type { AppRouter } from '@api/trpc/routers/_app';
 /**
  * API URL for tRPC endpoint
  */
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
 const ACCESS_TOKEN_COOKIE = 'trafi_access_token';
 
 /**

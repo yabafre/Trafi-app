@@ -2,6 +2,7 @@ import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/commo
 import { PrismaClient } from '@generated/prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { getTenantContext, type TenantContextData } from '@common/context';
+import { prefixedIdsExtension } from './prefixed-ids.extension';
 
 /**
  * Models that require tenant scoping
@@ -20,7 +21,24 @@ export const TENANT_SCOPED_MODELS = [
   'AuditLog',
 ] as const;
 
-export type TenantScopedModel = typeof TENANT_SCOPED_MODELS[number];
+export type TenantScopedModel = (typeof TENANT_SCOPED_MODELS)[number];
+
+/**
+ * Extended Prisma Client type with prefixed IDs
+ * @see Story 3.R2 - Prefixed IDs Foundation
+ */
+type ExtendedPrismaClient = ReturnType<typeof createExtendedClient>;
+
+/**
+ * Factory function to create Prisma client with extensions
+ */
+function createExtendedClient() {
+  const adapter = new PrismaPg({
+    connectionString: process.env.DATABASE_URL as string,
+  });
+  const baseClient = new PrismaClient({ adapter });
+  return baseClient.$extends(prefixedIdsExtension);
+}
 
 /**
  * PrismaService - NestJS wrapper for Prisma Client (Prisma 7)
@@ -29,27 +47,88 @@ export type TenantScopedModel = typeof TENANT_SCOPED_MODELS[number];
  * Implements proper lifecycle hooks for NestJS integration.
  * This is the ONLY place Prisma should be instantiated in the API.
  *
+ * Features:
+ * - Automatic prefixed ID generation for all models (Story 3.R2)
+ * - Tenant isolation helpers (Story 2.6)
+ *
  * Tenant Isolation Strategy (Defense in Depth):
  * 1. Services explicitly pass storeId to all queries (primary enforcement)
  * 2. TenantInterceptor provides tenant context via AsyncLocalStorage
  * 3. Helper methods validate tenant ownership before returning data
  * 4. tRPC context helpers (requirePermission, ensureTenantOwnership) add extra validation
  *
+ * ID Generation:
+ * - All create operations automatically get prefixed IDs
+ * - Format: {prefix}_{nanoid} (e.g., prod_abc123xyz...)
+ * - Prefixes defined in id-prefixes.config.ts
+ *
  * Usage:
  *   constructor(private readonly prisma: PrismaService) {}
  *   await this.prisma.product.findMany({ where: { storeId } });
  *
  * @see Story 2.6 - Tenant-Scoped Authorization
+ * @see Story 3.R2 - Prefixed IDs Foundation
  */
 @Injectable()
-export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
+export class PrismaService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(PrismaService.name);
+  private readonly client: ExtendedPrismaClient;
 
   constructor() {
-    const adapter = new PrismaPg({
-      connectionString: process.env.DATABASE_URL as string,
-    });
-    super({ adapter });
+    this.client = createExtendedClient();
+  }
+
+  /**
+   * Get the underlying Prisma client
+   * Use this for direct database operations
+   */
+  get $client() {
+    return this.client;
+  }
+
+  // Delegate all Prisma model accessors to the extended client
+  get store() {
+    return this.client.store;
+  }
+  get user() {
+    return this.client.user;
+  }
+  get product() {
+    return this.client.product;
+  }
+  get storeSettings() {
+    return this.client.storeSettings;
+  }
+  get apiKey() {
+    return this.client.apiKey;
+  }
+  get auditLog() {
+    return this.client.auditLog;
+  }
+  get ownershipTransfer() {
+    return this.client.ownershipTransfer;
+  }
+
+  // Delegate transaction and other methods with proper typing
+  // Using bind to preserve 'this' context while forwarding calls
+  get $transaction() {
+    return this.client.$transaction.bind(this.client);
+  }
+
+  get $queryRaw() {
+    return this.client.$queryRaw.bind(this.client);
+  }
+
+  get $executeRaw() {
+    return this.client.$executeRaw.bind(this.client);
+  }
+
+  get $queryRawUnsafe() {
+    return this.client.$queryRawUnsafe.bind(this.client);
+  }
+
+  get $executeRawUnsafe() {
+    return this.client.$executeRawUnsafe.bind(this.client);
   }
 
   /**
@@ -105,12 +184,12 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   }
 
   async onModuleInit() {
-    await this.$connect();
-    this.logger.log('Prisma connected to database');
+    await this.client.$connect();
+    this.logger.log('Prisma connected to database (with prefixed IDs extension)');
   }
 
   async onModuleDestroy() {
-    await this.$disconnect();
+    await this.client.$disconnect();
     this.logger.log('Prisma disconnected from database');
   }
 }

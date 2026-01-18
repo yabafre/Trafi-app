@@ -14,9 +14,10 @@
 
 // Import PrismaClient from the custom generated location (Prisma 7)
 // Uses @prisma/adapter-pg for PostgreSQL connection (same as PrismaService)
-import { PrismaClient, UserRole, UserStatus } from '../src/generated/prisma/client';
+import { PrismaClient, UserRole, UserStatus, ProductStatus } from '../src/generated/prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import * as bcrypt from 'bcrypt';
+import { prefixedIdsExtension } from '../src/database/prefixed-ids.extension';
 
 // Validate DATABASE_URL is set before proceeding
 const databaseUrl = process.env.DATABASE_URL;
@@ -27,10 +28,12 @@ if (!databaseUrl) {
 }
 
 // Initialize Prisma with PostgreSQL adapter (Prisma 7 requirement)
+// Uses prefixedIdsExtension for automatic ID generation (Story 3.R2)
 const adapter = new PrismaPg({
   connectionString: databaseUrl,
 });
-const prisma = new PrismaClient({ adapter });
+const basePrisma = new PrismaClient({ adapter });
+const prisma = basePrisma.$extends(prefixedIdsExtension);
 
 // =============================================================================
 // Constants
@@ -88,83 +91,90 @@ const DEMO_USERS: Array<{
 ];
 
 // Products with prices in cents (ARCH-25)
-const DEMO_PRODUCTS = [
+// Status: DRAFT, ACTIVE, ARCHIVED
+const DEMO_PRODUCTS: Array<{
+  name: string;
+  slug: string;
+  description: string;
+  priceInCents: number;
+  status: ProductStatus;
+}> = [
   {
     name: 'Premium T-Shirt',
     slug: 'premium-tshirt',
     description: 'High-quality cotton t-shirt with a comfortable fit.',
     priceInCents: 2999, // $29.99
-    isActive: true,
+    status: 'ACTIVE',
   },
   {
     name: 'Classic Hoodie',
     slug: 'classic-hoodie',
     description: 'Cozy fleece hoodie perfect for cooler days.',
     priceInCents: 5999, // $59.99
-    isActive: true,
+    status: 'ACTIVE',
   },
   {
     name: 'Wireless Earbuds',
     slug: 'wireless-earbuds',
     description: 'Bluetooth 5.0 earbuds with noise cancellation.',
     priceInCents: 8999, // $89.99
-    isActive: true,
+    status: 'ACTIVE',
   },
   {
     name: 'Smart Watch',
     slug: 'smart-watch',
     description: 'Fitness tracking watch with heart rate monitor and GPS.',
     priceInCents: 19999, // $199.99
-    isActive: true,
+    status: 'ACTIVE',
   },
   {
     name: 'Laptop Stand',
     slug: 'laptop-stand',
     description: 'Adjustable aluminum laptop stand for better ergonomics.',
     priceInCents: 4999, // $49.99
-    isActive: true,
+    status: 'ACTIVE',
   },
   {
     name: 'USB-C Hub',
     slug: 'usb-c-hub',
     description: '7-in-1 USB-C dock with HDMI, USB-A, and SD card reader.',
     priceInCents: 3499, // $34.99
-    isActive: true,
+    status: 'ACTIVE',
   },
   {
     name: 'Coffee Mug',
     slug: 'coffee-mug',
     description: 'Ceramic 12oz mug with ergonomic handle.',
     priceInCents: 1499, // $14.99
-    isActive: true,
+    status: 'ACTIVE',
   },
   {
     name: 'Desk Lamp',
     slug: 'desk-lamp',
     description: 'LED desk lamp with adjustable brightness and USB charging.',
     priceInCents: 3999, // $39.99
-    isActive: true,
+    status: 'ACTIVE',
   },
   {
     name: 'Notebook Set',
     slug: 'notebook-set',
     description: '3-pack of ruled notebooks with premium paper.',
     priceInCents: 999, // $9.99
-    isActive: true,
+    status: 'DRAFT',
   },
   {
     name: 'Discontinued Item',
     slug: 'discontinued-item',
     description: 'This product is no longer available.',
     priceInCents: 1999, // $19.99
-    isActive: false,
+    status: 'ARCHIVED',
   },
   {
     name: 'Limited Edition Cap',
     slug: 'limited-edition-cap',
     description: 'Special release cap with embroidered logo.',
     priceInCents: 2499, // $24.99
-    isActive: true,
+    status: 'ACTIVE',
   },
 ];
 
@@ -240,13 +250,13 @@ async function seedProducts(storeId: string): Promise<void> {
         slug: productData.slug,
         description: productData.description,
         priceInCents: productData.priceInCents,
-        isActive: productData.isActive,
+        status: productData.status,
       },
     });
 
     const priceFormatted = `$${(product.priceInCents / 100).toFixed(2)}`;
-    const statusIcon = product.isActive ? '✓' : '✗';
-    console.log(`  [${statusIcon}] ${product.name}: ${priceFormatted}`);
+    const statusIcon = product.status === 'ACTIVE' ? '✓' : product.status === 'DRAFT' ? '○' : '✗';
+    console.log(`  [${statusIcon}] ${product.name}: ${priceFormatted} (${product.status})`);
   }
 
   console.log(`  Total: ${DEMO_PRODUCTS.length} products`);
@@ -274,11 +284,11 @@ async function main() {
 // Execute seed
 main()
   .then(async () => {
-    await prisma.$disconnect();
+    await basePrisma.$disconnect();
   })
   .catch(async (e) => {
     console.error('\nSeed failed with error:');
     console.error(e);
-    await prisma.$disconnect();
+    await basePrisma.$disconnect();
     process.exit(1);
   });

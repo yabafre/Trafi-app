@@ -18,6 +18,7 @@ import type {
   BulkCreateVariantsInput,
   WeightUnit,
   VariantResponse,
+  UpdateVariantPricingInput,
 } from '@trafi/types';
 
 /**
@@ -429,6 +430,73 @@ export class VariantsService {
   }
 
   /**
+   * Update only the pricing fields of a variant.
+   *
+   * @param storeId - Store ID for tenant isolation
+   * @param input - Pricing update data
+   * @returns Updated variant
+   * @see Story 3.6 - Product Pricing and Tax Rules
+   */
+  async updatePricing(
+    storeId: string,
+    input: UpdateVariantPricingInput,
+  ): Promise<VariantResponseDto> {
+    // Find variant and verify tenant via product
+    const variant = await this.prisma.productVariant.findUnique({
+      where: { id: input.variantId },
+      include: { product: true },
+    });
+
+    if (!variant || variant.product.storeId !== storeId) {
+      throw new NotFoundException('Variant not found');
+    }
+
+    // If taxRuleId is provided, validate it belongs to the store
+    if (input.taxRuleId) {
+      const taxRule = await this.prisma.taxRule.findFirst({
+        where: { id: input.taxRuleId, storeId },
+      });
+      if (!taxRule) {
+        throw new BadRequestException('Tax rule not found');
+      }
+    }
+
+    // Build update data (only pricing fields)
+    const updateData: Record<string, unknown> = {};
+    if (input.priceInCents !== undefined) updateData.priceInCents = input.priceInCents;
+    if (input.compareAtPriceInCents !== undefined)
+      updateData.compareAtPriceInCents = input.compareAtPriceInCents;
+    if (input.costPriceInCents !== undefined)
+      updateData.costPriceInCents = input.costPriceInCents;
+    if (input.taxRuleId !== undefined) updateData.taxRuleId = input.taxRuleId;
+
+    // Update variant
+    const updated = await this.prisma.productVariant.update({
+      where: { id: input.variantId },
+      data: updateData,
+    });
+
+    const response = this.toVariantResponse(updated);
+
+    // Emit event
+    this.eventEmitter.emit('variant.pricing_updated', {
+      variant: response,
+      previousValues: {
+        priceInCents: variant.priceInCents,
+        compareAtPriceInCents: variant.compareAtPriceInCents,
+        costPriceInCents: variant.costPriceInCents,
+        taxRuleId: variant.taxRuleId,
+      },
+      storeId,
+      timestamp: new Date().toISOString(),
+    });
+
+    this.logger.log(`Variant pricing updated: ${input.variantId} in store ${storeId}`);
+
+    return response;
+  }
+
+  /**
    * Build update data from input, only including provided fields.
    * Protected for merchant override.
    */
@@ -467,6 +535,7 @@ export class VariantsService {
       priceInCents: variant.priceInCents,
       compareAtPriceInCents: variant.compareAtPriceInCents,
       costPriceInCents: variant.costPriceInCents,
+      taxRuleId: variant.taxRuleId,
       quantity: variant.quantity,
       trackInventory: variant.trackInventory,
       weight: variant.weight,

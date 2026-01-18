@@ -20,6 +20,7 @@ export * from './variant.types';
 export * from './media.types';
 export * from './category.types';
 export * from './collection.types';
+export * from './pricing.types';
 
 // Common types from validators
 export type {

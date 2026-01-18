@@ -23,3 +23,7 @@ export { DeleteMediaDialog } from './DeleteMediaDialog'
 
 // Category Components
 export { CategoriesSection } from './CategoriesSection'
+
+// Pricing Components (Story 3.6)
+export { PricingSection, PricingSectionSkeleton } from './PricingSection'
+export { EditVariantPricingDialog } from './EditVariantPricingDialog'

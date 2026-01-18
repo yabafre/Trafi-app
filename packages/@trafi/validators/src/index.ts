@@ -21,3 +21,4 @@ export * from './variant';
 export * from './media';
 export * from './category';
 export * from './collection';
+export * from './pricing';

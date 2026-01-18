@@ -23,6 +23,7 @@ model ProductVariant {
   priceInCents          Int        @map("price_in_cents") // Money as cents (ARCH-25): $19.99 = 1999
   compareAtPriceInCents Int?       @map("compare_at_price_in_cents") // Original price for "sale" display
   costPriceInCents      Int?       @map("cost_price_in_cents") // Cost for profit calculation
+  taxRuleId             String?    @map("tax_rule_id") // Story 3.6 - Tax rule assignment
   quantity              Int        @default(0) // Available stock (not including reservations)
   trackInventory        Boolean    @default(true) @map("track_inventory")
   weight                Float?     // For shipping calculations
@@ -32,10 +33,12 @@ model ProductVariant {
 
   // Relations
   product Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
+  taxRule TaxRule?       @relation(fields: [taxRuleId], references: [id]) // Story 3.6
   media   ProductMedia[] // Story 3.3 - Variant-specific images
 
   // Indexes for efficient lookups
   @@unique([productId, sku]) // SKU unique within a product
   @@index([productId]) // Fast variant listing for a product
+  @@index([taxRuleId]) // Story 3.6 - Fast lookup by tax rule
   @@map("product_variants")
 }

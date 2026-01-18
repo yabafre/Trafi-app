@@ -12,3 +12,11 @@ export { useProduct } from './useProduct'
 export { useCreateProduct } from './useCreateProduct'
 export { useUpdateProduct } from './useUpdateProduct'
 export { useDeleteProduct } from './useDeleteProduct'
+
+// Pricing hooks (Story 3.6)
+export {
+  useUpdateVariantPricing,
+  useCalculateTax,
+  useCalculateMargin,
+  useTaxRulesForSelect,
+} from './useVariantPricing'

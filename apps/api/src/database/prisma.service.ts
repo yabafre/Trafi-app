@@ -20,6 +20,7 @@ export const TENANT_SCOPED_MODELS = [
   'ApiKey',
   'Setting',
   'AuditLog',
+  'TaxRule',
 ] as const;
 
 export type TenantScopedModel = (typeof TENANT_SCOPED_MODELS)[number];
@@ -141,6 +142,9 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
   }
   get collectionProduct() {
     return this.client.collectionProduct;
+  }
+  get taxRule() {
+    return this.client.taxRule;
   }
 
   // Delegate transaction and other methods with proper typing

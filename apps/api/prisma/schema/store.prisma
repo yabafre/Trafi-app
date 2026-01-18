@@ -20,6 +20,7 @@ model Store {
   products           Product[]
   categories         Category[]
   collections        Collection[]
+  taxRules           TaxRule[]
   apiKeys            ApiKey[]
   auditLogs          AuditLog[]
   settings           StoreSettings?

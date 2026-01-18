@@ -14,6 +14,7 @@ import {
   UpdateVariantSchema,
   BulkCreateVariantsSchema,
   ListVariantsSchema,
+  UpdateVariantPricingSchema,
 } from '@trafi/validators';
 
 export const variantsRouter = router({
@@ -203,6 +204,47 @@ export const variantsRouter = router({
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
           message: error instanceof Error ? error.message : 'Failed to list variants',
+        });
+      }
+    }),
+
+  /**
+   * Update only the pricing fields of a variant.
+   * Requires `products:update` permission.
+   * @see Story 3.6 - Product Pricing and Tax Rules
+   */
+  updatePricing: publicProcedure
+    .use(isAuthed)
+    .input(UpdateVariantPricingSchema)
+    .mutation(async ({ input, ctx }) => {
+      try {
+        ctx.requirePermission('products:update');
+
+        if (!ctx.storeId) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Store context required',
+          });
+        }
+
+        return await ctx.services.variantsService.updatePricing(ctx.storeId, input);
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        if (error instanceof Error && error.message === 'Variant not found') {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Variant not found',
+          });
+        }
+        if (error instanceof Error && error.message === 'Tax rule not found') {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: error.message,
+          });
+        }
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: error instanceof Error ? error.message : 'Failed to update variant pricing',
         });
       }
     }),

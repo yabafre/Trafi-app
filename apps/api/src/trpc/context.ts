@@ -27,6 +27,7 @@ import type { VariantsService } from '@modules/variants';
 import type { MediaService } from '@modules/media';
 import type { CategoriesService } from '@modules/categories';
 import type { CollectionsService } from '@modules/collections';
+import type { TaxRulesService, PricingService } from '@modules/pricing';
 
 /**
  * Services injected from NestJS DI container
@@ -42,6 +43,8 @@ export interface TRPCServices {
   mediaService: MediaService;
   categoriesService: CategoriesService;
   collectionsService: CollectionsService;
+  taxRulesService: TaxRulesService;
+  pricingService: PricingService;
   jwtService: JwtService;
 }
 

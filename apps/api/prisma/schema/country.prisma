@@ -12,5 +12,8 @@ model Country {
   name      String                    // Country name: "United States"
   phoneCode String? @map("phone_code") // Phone code: "+1", "+33"
 
+  // Relations
+  taxRules TaxRule[]
+
   @@map("countries")
 }

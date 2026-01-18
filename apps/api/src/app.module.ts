@@ -16,6 +16,7 @@ import { VariantsModule } from '@modules/variants';
 import { MediaModule } from '@modules/media';
 import { CategoriesModule } from '@modules/categories';
 import { CollectionsModule } from '@modules/collections';
+import { PricingModule } from '@modules/pricing';
 import { TRPCModule } from './trpc/trpc.module';
 import { TenantInterceptor, AuditInterceptor } from '@common/interceptors';
 
@@ -52,6 +53,7 @@ import { TenantInterceptor, AuditInterceptor } from '@common/interceptors';
     MediaModule,
     CategoriesModule,
     CollectionsModule,
+    PricingModule,
     TRPCModule,
   ],
   controllers: [],

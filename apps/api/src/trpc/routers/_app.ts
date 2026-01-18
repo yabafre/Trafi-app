@@ -17,6 +17,8 @@ import { variantsRouter } from './variants.router';
 import { mediaRouter } from './media.router';
 import { categoriesRouter } from './categories.router';
 import { collectionsRouter } from './collections.router';
+import { taxRulesRouter } from './tax-rules.router';
+import { pricingRouter } from './pricing.router';
 
 /**
  * Main application router
@@ -35,6 +37,8 @@ export const appRouter = router({
   media: mediaRouter,
   categories: categoriesRouter,
   collections: collectionsRouter,
+  taxRules: taxRulesRouter,
+  pricing: pricingRouter,
 });
 
 /**

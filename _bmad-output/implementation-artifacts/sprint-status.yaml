@@ -107,7 +107,11 @@ development_status:
   # COMPLETED: 2026-01-18 (all 10 tasks, 34 unit tests, full UI implementation)
   # REVIEWED: 2026-01-18 (code-review workflow, all fixes applied + media upload fix)
   3-5-collections-management: done
-  3-6-product-pricing-and-tax-rules: backlog
+  # CREATED: 2026-01-18 (create-story workflow, comprehensive developer guide)
+  # STARTED: 2026-01-18 (dev-story workflow)
+  # COMPLETED: 2026-01-19 (all 13 tasks, 61 unit tests, code review fixes applied)
+  # REVIEWED: 2026-01-19 (code-review workflow, 7 issues found and fixed)
+  3-6-product-pricing-and-tax-rules: done
   3-7-inventory-tracking: backlog
   3-8-oversell-prevention: backlog
   # New stories added 2026-01-18 for Promotions, Gift Cards, Foundation Reinforcement

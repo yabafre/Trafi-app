@@ -15,3 +15,11 @@ export {
   deleteProductAction,
   type PaginatedProductsResponse,
 } from './product-actions'
+
+// Pricing actions (Story 3.6)
+export {
+  updateVariantPricingAction,
+  calculateTaxAction,
+  calculateMarginAction,
+  formatPriceAction,
+} from './pricing-actions'

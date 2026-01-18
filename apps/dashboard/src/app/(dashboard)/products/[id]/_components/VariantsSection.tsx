@@ -21,6 +21,7 @@ import { VariantRow } from './VariantRow'
 import { CreateVariantDialog } from './CreateVariantDialog'
 import { BulkVariantGenerator } from './BulkVariantGenerator'
 import { DeleteVariantDialog } from './DeleteVariantDialog'
+import { EditVariantPricingDialog } from './EditVariantPricingDialog'
 import type { VariantResponse } from '@trafi/validators'
 
 interface VariantsSectionProps {
@@ -37,6 +38,7 @@ export function VariantsSection({ productId }: VariantsSectionProps) {
   const [showCreateDialog, setShowCreateDialog] = useState(false)
   const [showBulkGenerator, setShowBulkGenerator] = useState(false)
   const [variantToDelete, setVariantToDelete] = useState<VariantResponse | null>(null)
+  const [variantToEditPricing, setVariantToEditPricing] = useState<VariantResponse | null>(null)
 
   if (isLoading) {
     return <VariantsSectionSkeleton />
@@ -127,6 +129,7 @@ export function VariantsSection({ productId }: VariantsSectionProps) {
               variant={variant}
               productId={productId}
               onDelete={setVariantToDelete}
+              onEditPricing={setVariantToEditPricing}
               canEdit={canEdit}
               canDelete={canDelete}
             />
@@ -153,6 +156,14 @@ export function VariantsSection({ productId }: VariantsSectionProps) {
         open={!!variantToDelete}
         onOpenChange={(open) => !open && setVariantToDelete(null)}
         isLastVariant={isLastVariant}
+      />
+
+      <EditVariantPricingDialog
+        variant={variantToEditPricing}
+        productId={productId}
+        open={!!variantToEditPricing}
+        onOpenChange={(open) => !open && setVariantToEditPricing(null)}
+        canEdit={canEdit}
       />
     </div>
   )

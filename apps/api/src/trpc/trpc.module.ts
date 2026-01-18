@@ -18,6 +18,7 @@ import { VariantsModule } from '@modules/variants';
 import { MediaModule } from '@modules/media';
 import { CategoriesModule } from '@modules/categories';
 import { CollectionsModule } from '@modules/collections';
+import { PricingModule } from '@modules/pricing';
 import { AuthService } from '@modules/auth/auth.service';
 import { UserService } from '@modules/user';
 import { SettingsService } from '@modules/settings';
@@ -28,6 +29,7 @@ import { VariantsService } from '@modules/variants';
 import { MediaService } from '@modules/media';
 import { CategoriesService } from '@modules/categories';
 import { CollectionsService } from '@modules/collections';
+import { TaxRulesService, PricingService } from '@modules/pricing';
 import { appRouter } from './routers/_app';
 import { createContext, type TRPCServices } from './context';
 
@@ -51,6 +53,8 @@ export class TRPCMiddleware implements NestMiddleware {
     private readonly mediaService: MediaService,
     private readonly categoriesService: CategoriesService,
     private readonly collectionsService: CollectionsService,
+    private readonly taxRulesService: TaxRulesService,
+    private readonly pricingService: PricingService,
     private readonly jwtService: JwtService
   ) {
     const services: TRPCServices = {
@@ -64,6 +68,8 @@ export class TRPCMiddleware implements NestMiddleware {
       mediaService: this.mediaService,
       categoriesService: this.categoriesService,
       collectionsService: this.collectionsService,
+      taxRulesService: this.taxRulesService,
+      pricingService: this.pricingService,
       jwtService: this.jwtService,
     };
 
@@ -94,6 +100,8 @@ export class TRPCService {
     private readonly mediaService: MediaService,
     private readonly categoriesService: CategoriesService,
     private readonly collectionsService: CollectionsService,
+    private readonly taxRulesService: TaxRulesService,
+    private readonly pricingService: PricingService,
     private readonly jwtService: JwtService
   ) {}
 
@@ -112,6 +120,8 @@ export class TRPCService {
       mediaService: this.mediaService,
       categoriesService: this.categoriesService,
       collectionsService: this.collectionsService,
+      taxRulesService: this.taxRulesService,
+      pricingService: this.pricingService,
       jwtService: this.jwtService,
     };
   }
@@ -141,6 +151,7 @@ export class TRPCService {
     MediaModule,
     CategoriesModule,
     CollectionsModule,
+    PricingModule,
   ],
   providers: [TRPCService, TRPCMiddleware],
   exports: [TRPCService, TRPCMiddleware],

@@ -12,6 +12,7 @@ import {
   ArrowLeftRight,
   FolderTree,
   LayoutGrid,
+  Receipt,
   type LucideIcon,
 } from 'lucide-react';
 import { usePathname } from 'next/navigation';
@@ -102,6 +103,12 @@ export const navigationConfig: NavItem[] = [
         href: '/settings/ownership',
         icon: ArrowLeftRight,
       },
+      {
+        id: 'settings-tax-rules',
+        label: 'Tax Rules',
+        href: '/settings/tax-rules',
+        icon: Receipt,
+      },
     ],
   },
 ];
@@ -165,6 +172,7 @@ export function getPathLabel(segment: string): string {
     users: 'Users',
     'api-keys': 'API Keys',
     ownership: 'Ownership',
+    'tax-rules': 'Tax Rules',
   };
 
   return labels[segment] || segment.charAt(0).toUpperCase() + segment.slice(1);

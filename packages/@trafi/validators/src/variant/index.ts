@@ -107,6 +107,7 @@ export const VariantResponseSchema = z.object({
   priceInCents: z.number(),
   compareAtPriceInCents: z.number().nullable(),
   costPriceInCents: z.number().nullable(),
+  taxRuleId: z.string().nullable(), // Story 3.6 - Tax rule assignment
   quantity: z.number(),
   trackInventory: z.boolean(),
   weight: z.number().nullable(),

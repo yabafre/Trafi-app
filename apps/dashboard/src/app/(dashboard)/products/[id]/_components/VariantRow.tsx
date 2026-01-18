@@ -10,7 +10,7 @@
  */
 
 import { useState, useRef, useEffect } from 'react'
-import { Trash2 } from 'lucide-react'
+import { Trash2, DollarSign } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { formatPrice } from '@/lib/utils'
 import { VariantOptionChip } from './VariantOptionChip'
@@ -21,6 +21,7 @@ interface VariantRowProps {
   variant: VariantResponse
   productId: string
   onDelete: (variant: VariantResponse) => void
+  onEditPricing: (variant: VariantResponse) => void
   canEdit: boolean
   canDelete: boolean
 }
@@ -121,7 +122,7 @@ function EditableCell({
   )
 }
 
-export function VariantRow({ variant, productId, onDelete, canEdit, canDelete }: VariantRowProps) {
+export function VariantRow({ variant, productId, onDelete, onEditPricing, canEdit, canDelete }: VariantRowProps) {
   const { mutate: updateVariant, isPending } = useUpdateVariant({ productId })
 
   const options = variant.options as VariantOption[]
@@ -208,7 +209,19 @@ export function VariantRow({ variant, productId, onDelete, canEdit, canDelete }:
       </div>
 
       {/* Actions */}
-      <div className="w-16 px-4 py-3 flex items-center justify-center">
+      <div className="w-16 px-4 py-3 flex items-center justify-center gap-1">
+        {canEdit && (
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={() => onEditPricing(variant)}
+            disabled={isPending}
+            className="text-muted-foreground hover:text-primary"
+            title="Edit Pricing"
+          >
+            <DollarSign className="size-4" />
+          </Button>
+        )}
         {canDelete && (
           <Button
             variant="ghost"
@@ -216,6 +229,7 @@ export function VariantRow({ variant, productId, onDelete, canEdit, canDelete }:
             onClick={() => onDelete(variant)}
             disabled={isPending}
             className="text-muted-foreground hover:text-destructive"
+            title="Delete"
           >
             <Trash2 className="size-4" />
           </Button>

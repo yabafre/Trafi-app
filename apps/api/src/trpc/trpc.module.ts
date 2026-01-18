@@ -17,6 +17,7 @@ import { ProductsModule } from '../modules/products/products.module';
 import { VariantsModule } from '../modules/variants/variants.module';
 import { MediaModule } from '../modules/media/media.module';
 import { CategoriesModule } from '../modules/categories/categories.module';
+import { CollectionsModule } from '../modules/collections/collections.module';
 import { AuthService } from '../modules/auth/auth.service';
 import { UserService } from '../modules/user/user.service';
 import { SettingsService } from '../modules/settings/settings.service';
@@ -26,6 +27,7 @@ import { ProductsService } from '../modules/products/products.service';
 import { VariantsService } from '../modules/variants/variants.service';
 import { MediaService } from '../modules/media/media.service';
 import { CategoriesService } from '../modules/categories/categories.service';
+import { CollectionsService } from '../modules/collections/collections.service';
 import { appRouter } from './routers/_app';
 import { createContext, type TRPCServices } from './context';
 
@@ -48,6 +50,7 @@ export class TRPCMiddleware implements NestMiddleware {
     private readonly variantsService: VariantsService,
     private readonly mediaService: MediaService,
     private readonly categoriesService: CategoriesService,
+    private readonly collectionsService: CollectionsService,
     private readonly jwtService: JwtService
   ) {
     const services: TRPCServices = {
@@ -60,6 +63,7 @@ export class TRPCMiddleware implements NestMiddleware {
       variantsService: this.variantsService,
       mediaService: this.mediaService,
       categoriesService: this.categoriesService,
+      collectionsService: this.collectionsService,
       jwtService: this.jwtService,
     };
 
@@ -89,6 +93,7 @@ export class TRPCService {
     private readonly variantsService: VariantsService,
     private readonly mediaService: MediaService,
     private readonly categoriesService: CategoriesService,
+    private readonly collectionsService: CollectionsService,
     private readonly jwtService: JwtService
   ) {}
 
@@ -106,6 +111,7 @@ export class TRPCService {
       variantsService: this.variantsService,
       mediaService: this.mediaService,
       categoriesService: this.categoriesService,
+      collectionsService: this.collectionsService,
       jwtService: this.jwtService,
     };
   }
@@ -124,7 +130,7 @@ export class TRPCService {
 }
 
 @Module({
-  imports: [AuthModule, UserModule, SettingsModule, ApiKeysModule, OwnershipModule, ProductsModule, VariantsModule, MediaModule, CategoriesModule],
+  imports: [AuthModule, UserModule, SettingsModule, ApiKeysModule, OwnershipModule, ProductsModule, VariantsModule, MediaModule, CategoriesModule, CollectionsModule],
   providers: [TRPCService, TRPCMiddleware],
   exports: [TRPCService, TRPCMiddleware],
 })

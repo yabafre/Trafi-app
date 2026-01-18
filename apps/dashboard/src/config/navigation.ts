@@ -11,6 +11,7 @@ import {
   UserCog,
   ArrowLeftRight,
   FolderTree,
+  LayoutGrid,
   type LucideIcon,
 } from 'lucide-react';
 import { usePathname } from 'next/navigation';
@@ -50,6 +51,12 @@ export const navigationConfig: NavItem[] = [
         label: 'Categories',
         href: '/products/categories',
         icon: FolderTree,
+      },
+      {
+        id: 'products-collections',
+        label: 'Collections',
+        href: '/products/collections',
+        icon: LayoutGrid,
       },
     ],
   },
@@ -148,6 +155,7 @@ export function getPathLabel(segment: string): string {
     dashboard: 'Dashboard',
     products: 'Products',
     categories: 'Categories',
+    collections: 'Collections',
     new: 'Nouveau',
     edit: 'Modifier',
     orders: 'Orders',

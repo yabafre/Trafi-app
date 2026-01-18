@@ -14,10 +14,10 @@
 
 // Import PrismaClient from the custom generated location (Prisma 7)
 // Uses @prisma/adapter-pg for PostgreSQL connection (same as PrismaService)
-import { PrismaClient, UserRole, UserStatus, ProductStatus, MembershipStatus } from '../src/generated/prisma/client';
+import { PrismaClient, UserRole, UserStatus, ProductStatus } from '../src/generated/prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import * as bcrypt from 'bcrypt';
-import { prefixedIdsExtension } from '../src/database/prefixed-ids.extension';
+import { prefixedIdsExtension } from '../src/database';
 import { seedCountries } from './seed/countries.seed';
 import { seedCurrencies } from './seed/currencies.seed';
 

@@ -15,6 +15,7 @@ export const TENANT_SCOPED_MODELS = [
   'Order',
   'Customer',
   'Category',
+  'Collection',
   'User',
   'ApiKey',
   'Setting',
@@ -134,6 +135,12 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
   }
   get productCategory() {
     return this.client.productCategory;
+  }
+  get collection() {
+    return this.client.collection;
+  }
+  get collectionProduct() {
+    return this.client.collectionProduct;
   }
 
   // Delegate transaction and other methods with proper typing

@@ -19,6 +19,7 @@ model Store {
   memberships        StoreMembership[]
   products           Product[]
   categories         Category[]
+  collections        Collection[]
   apiKeys            ApiKey[]
   auditLogs          AuditLog[]
   settings           StoreSettings?

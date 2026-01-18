@@ -102,7 +102,11 @@ development_status:
   # COMPLETED: 2026-01-18 (all 11 tasks, 23 unit tests, inline edit AC10)
   # REVIEWED: 2026-01-18 (code-review workflow, all fixes applied)
   3-4-categories-management: done
-  3-5-collections-management: backlog
+  # CREATED: 2026-01-18 (create-story workflow, comprehensive developer guide)
+  # STARTED: 2026-01-18 (dev-story workflow)
+  # COMPLETED: 2026-01-18 (all 10 tasks, 34 unit tests, full UI implementation)
+  # REVIEWED: 2026-01-18 (code-review workflow, all fixes applied + media upload fix)
+  3-5-collections-management: done
   3-6-product-pricing-and-tax-rules: backlog
   3-7-inventory-tracking: backlog
   3-8-oversell-prevention: backlog

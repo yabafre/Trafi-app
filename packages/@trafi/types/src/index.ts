@@ -19,6 +19,7 @@ export * from './permissions.types';
 export * from './variant.types';
 export * from './media.types';
 export * from './category.types';
+export * from './collection.types';
 
 // Common types from validators
 export type {

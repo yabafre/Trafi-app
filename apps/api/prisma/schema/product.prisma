@@ -30,10 +30,11 @@ model Product {
   deletedAt    DateTime?     @map("deleted_at") // Soft delete (Principle #9)
 
   // Relations
-  store      Store             @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  variants   ProductVariant[]
-  media      ProductMedia[]    // Story 3.3 - Product images
-  categories ProductCategory[] // Story 3.4 - Product categories
+  store       Store               @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  variants    ProductVariant[]
+  media       ProductMedia[]      // Story 3.3 - Product images
+  categories  ProductCategory[]   // Story 3.4 - Product categories
+  collections CollectionProduct[] // Story 3.5 - Product collections
 
   // Indexes for multi-tenancy and lookup queries
   @@unique([storeId, slug])

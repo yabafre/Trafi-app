@@ -16,6 +16,7 @@ import { productsRouter } from './products.router';
 import { variantsRouter } from './variants.router';
 import { mediaRouter } from './media.router';
 import { categoriesRouter } from './categories.router';
+import { collectionsRouter } from './collections.router';
 
 /**
  * Main application router
@@ -33,6 +34,7 @@ export const appRouter = router({
   variants: variantsRouter,
   media: mediaRouter,
   categories: categoriesRouter,
+  collections: collectionsRouter,
 });
 
 /**

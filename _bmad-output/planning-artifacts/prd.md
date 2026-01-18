@@ -1574,6 +1574,53 @@ The true differentiator in MVP is not just "abandoned cart recovery" — it's th
 - FR103: Module can register custom metrics for observability
 - FR104: Developer can list installed modules with status and version info
 
+### Promotions & Discounts
+
+- FR105: Merchant can create promotions with percentage or fixed amount discounts
+- FR106: Merchant can set promotion rules (min purchase, product/category restrictions)
+- FR107: Merchant can generate unique coupon codes (single or bulk)
+- FR108: Merchant can set promotion start/end dates and usage limits
+- FR109: System tracks promotion usage per customer and globally
+
+### Gift Cards
+
+- FR110: Merchant can create gift card templates with denominations
+- FR111: Merchant can issue gift cards manually or via purchase
+- FR112: System tracks gift card balances and transactions
+- FR113: Buyer can use gift card as payment method at checkout
+
+### Regions & Multi-Currency
+
+- FR114: Merchant can create geographic regions with currency settings
+- FR115: Merchant can assign countries to regions
+- FR116: System can detect customer region automatically
+- FR117: Merchant can create price lists for regional or segment pricing
+- FR118: System can convert prices between currencies using exchange rates
+
+### Payment Enhancements
+
+- FR119: System tracks complete payment lifecycle with audit logs
+- FR120: System supports partial refunds with reason tracking
+
+### Fulfillment & Returns Enhancements
+
+- FR121: System tracks fulfillment with carrier and tracking events
+- FR122: System supports return requests with RMA workflow
+- FR123: Merchant can configure return policies per store
+
+### Customer Segmentation
+
+- FR124: Merchant can create customer groups (VIP, Wholesale, B2B)
+- FR125: Merchant can assign group-specific discounts and price lists
+
+### Suppliers & Purchase Orders
+
+- FR126: Merchant can manage suppliers with contact info and payment terms
+- FR127: Merchant can link products to suppliers with cost information
+- FR128: Merchant can create and submit purchase orders
+- FR129: Merchant can record goods receipt and update inventory
+- FR130: System auto-generates PO numbers and tracks order status
+
 ### Module Sandbox: Security Enforcement System
 
 Modules and marketplace extensions represent a significant attack surface. Without proper sandboxing, a malicious module can compromise the entire platform. The Module Sandbox enforces strict security boundaries.

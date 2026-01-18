@@ -465,6 +465,110 @@ apps/api/src/modules/profit-engine/
 │   └── __tests__/
 ```
 
+## Data Model Reference
+
+_Added in revision 2026-01-18 - Comprehensive database schema overview_
+
+This section provides a complete reference of all Prisma models across the platform, organized by domain.
+
+### Model Summary by Domain
+
+| Domain | Models | ID Prefix | Primary Epic |
+|--------|--------|-----------|--------------|
+| **Foundation** | Store, StoreSettings | `store_`, `stset_` | Epic 1, 2 |
+| **Auth/Users** | User, ApiKey, AuditLog | `usr_`, `apikey_` | Epic 2 |
+| **Catalog** | Product, ProductVariant, ProductMedia, Category, Collection | `prod_`, `var_`, `med_`, `cat_`, `col_` | Epic 3 |
+| **Inventory** | InventoryHistory, TaxRule | `invh_`, `tax_` | Epic 3 |
+| **Marketing** | Promotion, PromotionRule, Coupon, GiftCard, GiftCardTransaction | `promo_`, `coup_`, `gc_`, `gctx_` | Epic 3 |
+| **Cart/Checkout** | Cart, CartItem, CheckoutSession | `cart_`, `citem_`, `chk_` | Epic 4 |
+| **Shipping** | ShippingZone, ShippingMethod, ShippingRate | `szone_`, `smeth_`, `srate_` | Epic 4 |
+| **Localization** | Region, Country, Currency, ExchangeRate, PriceList | `reg_`, `ctry_`, `curr_`, `exr_`, `plist_` | Epic 4 |
+| **Payment** | StripeConnection, Payment, Refund, PaymentAuditLog | `sconn_`, `pay_`, `ref_`, `palog_` | Epic 5 |
+| **Orders** | Order, OrderItem, OrderAddress, OrderTimelineEvent | `ord_`, `oli_`, `oadr_`, `ote_` | Epic 6 |
+| **Fulfillment** | Fulfillment, FulfillmentItem, FulfillmentTrackingEvent | `ful_`, `fuli_` | Epic 6 |
+| **Returns** | Return, ReturnItem, ReturnPolicy | `ret_`, `reti_`, `rpol_` | Epic 6 |
+| **Customers** | Customer, CustomerSession, CustomerAddress, CustomerGroup, Wishlist | `cst_`, `csess_`, `cadr_`, `cgrp_`, `wl_` | Epic 7 |
+| **Suppliers** | Supplier, SupplierContact, SupplierProduct, PurchaseOrder | `supp_`, `scon_`, `spprod_`, `po_` | Epic 15 |
+| **Profit Engine** | ChangeSet, ChangeSetAudit | `cs_` | Epic 8 |
+
+### Naming Conventions (ARCH-22)
+
+```
+Prisma Model:     PascalCase singular    → Product, OrderItem
+Database Table:   snake_case plural      → products, order_items
+Prisma Field:     camelCase              → createdAt, priceInCents
+Database Column:  snake_case             → created_at, price_in_cents
+ID Prefix:        lowercase + underscore → prod_, ord_, usr_
+```
+
+### Money Fields (ARCH-25)
+
+All monetary values stored as **INTEGER cents** for precision:
+
+```prisma
+priceInCents        Int    @map("price_in_cents")    // $19.99 = 1999
+discountAmountCents Int    @map("discount_amount_cents")
+totalCents          Int    @map("total_cents")
+```
+
+### Multi-Tenancy (ARCH-20)
+
+Every tenant-scoped model includes `storeId` with cascade delete:
+
+```prisma
+model Product {
+  id        String   @id @default(cuid())
+  storeId   String   @map("store_id")
+  // ... fields
+
+  store     Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@index([storeId])
+  @@map("products")
+}
+```
+
+### Schema File Organization
+
+```
+apps/api/prisma/schema/
+├── base.prisma           # Generator, datasource, conventions
+├── store.prisma          # Store (tenant root)
+├── user.prisma           # User, roles
+├── store-settings.prisma # Store configuration
+├── api-key.prisma        # SDK authentication
+├── audit-log.prisma      # Security audit trail
+├── product.prisma        # Product catalog
+├── promotion.prisma      # Promotions & coupons (Epic 3)
+├── gift-card.prisma      # Gift cards (Epic 3)
+├── cart.prisma           # Shopping cart (Epic 4)
+├── region.prisma         # Regions & currencies (Epic 4)
+├── payment.prisma        # Payment processing (Epic 5)
+├── order.prisma          # Orders (Epic 6)
+├── fulfillment.prisma    # Shipping & fulfillment (Epic 6)
+├── return.prisma         # Returns & RMA (Epic 6)
+├── customer.prisma       # Customer accounts (Epic 7)
+├── supplier.prisma       # Suppliers & POs (Epic 15)
+└── changeset.prisma      # Profit Engine (Epic 8)
+```
+
+### Cross-Reference: FRs to Models
+
+| FR Range | Domain | Key Models |
+|----------|--------|------------|
+| FR10-FR12 | Catalog | Product, ProductVariant, Category |
+| FR13-FR17 | Cart | Cart, CartItem, CheckoutSession |
+| FR18-FR22 | Orders | Order, OrderItem, Fulfillment |
+| FR41-FR45 | Customers | Customer, CustomerAddress |
+| FR46-FR50 | Payments | Payment, Refund |
+| FR51-FR56 | Fulfillment | Fulfillment, Return |
+| FR105-FR109 | Promotions | Promotion, Coupon |
+| FR110-FR113 | Gift Cards | GiftCard, GiftCardTransaction |
+| FR114-FR118 | Localization | Region, Currency, PriceList |
+| FR126-FR130 | Suppliers | Supplier, PurchaseOrder |
+
+> **Reference:** See `_bmad-output/implementation-artifacts/database-schema-roadmap.md` for detailed story-to-model mapping.
+
 ## Override Kernel: Runtime Resolution System
 
 _Enhanced in revision 2026-01-14 - Detailed resolution mechanism for @trafi/core distribution_

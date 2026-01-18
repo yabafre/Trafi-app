@@ -32,6 +32,7 @@ model Product {
   // Relations
   store    Store            @relation(fields: [storeId], references: [id], onDelete: Cascade)
   variants ProductVariant[]
+  media    ProductMedia[]   // Story 3.3 - Product images
 
   // Indexes for multi-tenancy and lookup queries
   @@unique([storeId, slug])

@@ -93,7 +93,10 @@ development_status:
   3-1-product-model-and-basic-crud: done
   # REVIEWED: 2026-01-18 (code-review workflow, all fixes applied)
   3-2-product-variants-management: done
-  3-3-product-media-upload: backlog
+  # CREATED: 2026-01-18 (create-story workflow, comprehensive developer guide)
+  # STARTED: 2026-01-18 (dev-story workflow)
+  # COMPLETED: 2026-01-18 (all 12 tasks, 19 unit tests)
+  3-3-product-media-upload: done
   3-4-categories-management: backlog
   3-5-collections-management: backlog
   3-6-product-pricing-and-tax-rules: backlog

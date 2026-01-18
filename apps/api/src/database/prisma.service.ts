@@ -126,6 +126,9 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
   get storeMembership() {
     return this.client.storeMembership;
   }
+  get productMedia() {
+    return this.client.productMedia;
+  }
 
   // Delegate transaction and other methods with proper typing
   // Using bind to preserve 'this' context while forwarding calls

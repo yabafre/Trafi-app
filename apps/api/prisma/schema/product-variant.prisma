@@ -31,7 +31,8 @@ model ProductVariant {
   updatedAt             DateTime   @updatedAt @map("updated_at")
 
   // Relations
-  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  product Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
+  media   ProductMedia[] // Story 3.3 - Variant-specific images
 
   // Indexes for efficient lookups
   @@unique([productId, sku]) // SKU unique within a product

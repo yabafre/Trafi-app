@@ -24,6 +24,7 @@ import type { ApiKeysService } from '../modules/api-keys/api-keys.service';
 import type { OwnershipService } from '../modules/ownership/ownership.service';
 import type { ProductsService } from '../modules/products/products.service';
 import type { VariantsService } from '../modules/variants/variants.service';
+import type { MediaService } from '../modules/media/media.service';
 
 /**
  * Services injected from NestJS DI container
@@ -36,6 +37,7 @@ export interface TRPCServices {
   ownershipService: OwnershipService;
   productsService: ProductsService;
   variantsService: VariantsService;
+  mediaService: MediaService;
   jwtService: JwtService;
 }
 

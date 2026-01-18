@@ -4,6 +4,7 @@ import { APP_INTERCEPTOR } from '@nestjs/core';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { envValidationSchema } from './config';
 import { DatabaseModule } from './database';
+import { StorageModule } from '@common/storage';
 import { HealthModule } from './health';
 import { ObservabilityModule } from './observability';
 import { AuthModule } from '@modules/auth/auth.module';
@@ -12,6 +13,7 @@ import { ApiKeysModule } from '@modules/api-keys/api-keys.module';
 import { SettingsModule } from '@modules/settings/settings.module';
 import { OwnershipModule } from '@modules/ownership/ownership.module';
 import { VariantsModule } from '@modules/variants';
+import { MediaModule } from '@modules/media';
 import { TRPCModule } from './trpc/trpc.module';
 import { TenantInterceptor, AuditInterceptor } from '@common/interceptors';
 
@@ -36,6 +38,7 @@ import { TenantInterceptor, AuditInterceptor } from '@common/interceptors';
     }),
     EventEmitterModule.forRoot(),
     DatabaseModule,
+    StorageModule,
     ObservabilityModule,
     HealthModule,
     AuthModule,
@@ -44,6 +47,7 @@ import { TenantInterceptor, AuditInterceptor } from '@common/interceptors';
     SettingsModule,
     OwnershipModule,
     VariantsModule,
+    MediaModule,
     TRPCModule,
   ],
   controllers: [],

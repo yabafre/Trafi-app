@@ -32,7 +32,7 @@ describe('DomainEventService', () => {
       providers: [
         {
           provide: DomainEventService,
-          useFactory: (prisma: PrismaService) => new DomainEventService(prisma, 5),
+          useFactory: (prisma: PrismaService) => new DomainEventService(prisma),
           inject: [PrismaService],
         },
         {

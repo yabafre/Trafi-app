@@ -40,6 +40,55 @@ Merchant peut traiter, expedier, et suivre les commandes avec integration 3PL et
 - **UX-SHADOW:** None — elements sit firmly in the grid
 - **UX-TYPE:** JetBrains Mono for order numbers/amounts, system font for body
 
+### Architectural Requirements (CRITICAL - Updated 2026-01-18)
+
+**ARCH-ORD-1: Money Snapshots (Billing/Disputes)**
+Order and OrderItem MUST store snapshot totals for historical accuracy and disputes:
+```prisma
+model Order {
+  currencyCode        String
+  subtotalCents       Int
+  discountTotalCents  Int      @default(0)
+  shippingTotalCents  Int      @default(0)
+  taxTotalCents       Int      @default(0)
+  grandTotalCents     Int
+  taxIncluded         Boolean  @default(false)
+}
+
+model OrderItem {
+  quantity            Int
+  unitPriceCents      Int      // Snapshot at time of order
+  discountCents       Int      @default(0)
+  taxCents            Int      @default(0)
+  totalCents          Int      // unitPriceCents * quantity - discountCents + taxCents
+  productSnapshot     Json     // Full product data at time of order
+}
+```
+
+**ARCH-ORD-2: Product Snapshot JSON**
+OrderItem.productSnapshot captures product state at order time:
+```json
+{
+  "productId": "prod_xxx",
+  "variantId": "var_xxx",
+  "name": "Premium T-Shirt",
+  "sku": "TSHIRT-L-BLK",
+  "options": { "size": "L", "color": "Black" },
+  "imageUrl": "https://..."
+}
+```
+
+**ARCH-FUL-1: Tracking Events**
+FulfillmentTrackingEvent stores carrier webhook payloads:
+```prisma
+model FulfillmentTrackingEvent {
+  status      String     // in_transit, delivered, exception
+  location    String?
+  occurredAt  DateTime
+  rawPayload  Json       // Original carrier webhook data
+}
+```
+
 ---
 
 ## Story 6.1: Order List and Search
@@ -2532,3 +2581,272 @@ export function ReturnPolicyForm() {
 - **Restocking Fee**: Percentage input with explanation
 - **Dark Mode**: Form uses #1A1A1A card backgrounds (UX-COLOR)
 - **Breadcrumb**: Dashboard > Settings > Returns (UX-3)
+
+---
+
+## Story 6.10: Complete Fulfillment & Return Data Models
+
+As a **System**,
+I want **comprehensive fulfillment and return tracking**,
+So that **order lifecycle is fully tracked from purchase to delivery/return**.
+
+**Acceptance Criteria:**
+
+**Given** orders are placed
+**When** fulfillment and returns are processed
+**Then** the system tracks:
+- Fulfillments with carrier and tracking info
+- Fulfillment items with quantities
+- Returns with RMA numbers
+- Return items with conditions
+- Return policies per store
+**And** all status transitions are logged
+
+**FRs covered:** FR121, FR122, FR123
+
+---
+
+### Technical Implementation
+
+#### Prisma Schema (`apps/api/prisma/schema/fulfillment.prisma`)
+```prisma
+// =============================================================================
+// Fulfillment & Returns Domain Schema
+// =============================================================================
+// Order fulfillment and return management
+// ID prefix: ful_, fuli_, ret_, reti_, rpol_
+// =============================================================================
+
+enum FulfillmentStatus {
+  PENDING
+  PROCESSING
+  SHIPPED
+  IN_TRANSIT
+  OUT_FOR_DELIVERY
+  DELIVERED
+  FAILED
+  CANCELLED
+}
+
+enum ReturnStatus {
+  REQUESTED
+  APPROVED
+  REJECTED
+  RECEIVED
+  INSPECTING
+  REFUND_PENDING
+  COMPLETED
+  CANCELLED
+}
+
+enum ReturnItemCondition {
+  NEW
+  LIKE_NEW
+  GOOD
+  FAIR
+  DAMAGED
+  DEFECTIVE
+}
+
+model Fulfillment {
+  id                String              @id @default(cuid())
+  storeId           String              @map("store_id")
+  orderId           String              @map("order_id")
+  status            FulfillmentStatus   @default(PENDING)
+  carrier           String?                               // 'ups', 'fedex', etc.
+  trackingNumber    String?             @map("tracking_number")
+  trackingUrl       String?             @map("tracking_url")
+  estimatedDelivery DateTime?           @map("estimated_delivery")
+  shippedAt         DateTime?           @map("shipped_at")
+  deliveredAt       DateTime?           @map("delivered_at")
+  shippingLabelUrl  String?             @map("shipping_label_url")
+  notes             String?
+  metadata          Json?
+  createdAt         DateTime            @default(now()) @map("created_at")
+  updatedAt         DateTime            @updatedAt @map("updated_at")
+
+  // Relations
+  store             Store               @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  items             FulfillmentItem[]
+  trackingEvents    FulfillmentTrackingEvent[]
+
+  @@index([storeId])
+  @@index([orderId])
+  @@index([trackingNumber])
+  @@map("fulfillments")
+}
+
+model FulfillmentItem {
+  id              String      @id @default(cuid())
+  fulfillmentId   String      @map("fulfillment_id")
+  orderItemId     String      @map("order_item_id")
+  quantity        Int
+  createdAt       DateTime    @default(now()) @map("created_at")
+
+  // Relations
+  fulfillment     Fulfillment @relation(fields: [fulfillmentId], references: [id], onDelete: Cascade)
+
+  @@index([fulfillmentId])
+  @@index([orderItemId])
+  @@map("fulfillment_items")
+}
+
+model FulfillmentTrackingEvent {
+  id              String      @id @default(cuid())
+  fulfillmentId   String      @map("fulfillment_id")
+  status          String
+  description     String
+  location        String?
+  occurredAt      DateTime    @map("occurred_at")
+  rawData         Json?       @map("raw_data")
+  createdAt       DateTime    @default(now()) @map("created_at")
+
+  // Relations
+  fulfillment     Fulfillment @relation(fields: [fulfillmentId], references: [id], onDelete: Cascade)
+
+  @@index([fulfillmentId])
+  @@index([occurredAt])
+  @@map("fulfillment_tracking_events")
+}
+
+model Return {
+  id                    String        @id @default(cuid())
+  storeId               String        @map("store_id")
+  orderId               String        @map("order_id")
+  rmaNumber             String        @map("rma_number")
+  status                ReturnStatus  @default(REQUESTED)
+  reason                String
+  customerNotes         String?       @map("customer_notes")
+  merchantNotes         String?       @map("merchant_notes")
+  requestedAt           DateTime      @default(now()) @map("requested_at")
+  approvedAt            DateTime?     @map("approved_at")
+  receivedAt            DateTime?     @map("received_at")
+  completedAt           DateTime?     @map("completed_at")
+  returnShippingCarrier String?       @map("return_shipping_carrier")
+  returnTrackingNumber  String?       @map("return_tracking_number")
+  refundAmountCents     Int?          @map("refund_amount_cents")
+  restockingFeeCents    Int?          @map("restocking_fee_cents")
+  createdAt             DateTime      @default(now()) @map("created_at")
+  updatedAt             DateTime      @updatedAt @map("updated_at")
+
+  // Relations
+  store                 Store         @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  items                 ReturnItem[]
+
+  @@unique([storeId, rmaNumber])
+  @@index([storeId])
+  @@index([orderId])
+  @@map("returns")
+}
+
+model ReturnItem {
+  id              String              @id @default(cuid())
+  returnId        String              @map("return_id")
+  orderItemId     String              @map("order_item_id")
+  quantity        Int
+  reason          String
+  condition       ReturnItemCondition?
+  inspectionNotes String?             @map("inspection_notes")
+  createdAt       DateTime            @default(now()) @map("created_at")
+  updatedAt       DateTime            @updatedAt @map("updated_at")
+
+  // Relations
+  return          Return              @relation(fields: [returnId], references: [id], onDelete: Cascade)
+
+  @@index([returnId])
+  @@index([orderItemId])
+  @@map("return_items")
+}
+
+model ReturnPolicy {
+  id                      String      @id @default(cuid())
+  storeId                 String      @map("store_id")
+  name                    String
+  description             String?
+  daysToReturn            Int         @map("days_to_return")
+  requiresApproval        Boolean     @default(true) @map("requires_approval")
+  shippingResponsibility  String      @default("customer") @map("shipping_responsibility")
+  restockingFeePercent    Int         @default(0) @map("restocking_fee_percent")
+  excludedCategories      String[]    @map("excluded_categories")
+  excludedProducts        String[]    @map("excluded_products")
+  policyText              String?     @map("policy_text")
+  isDefault               Boolean     @default(false) @map("is_default")
+  isActive                Boolean     @default(true) @map("is_active")
+  createdAt               DateTime    @default(now()) @map("created_at")
+  updatedAt               DateTime    @updatedAt @map("updated_at")
+
+  // Relations
+  store                   Store       @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@index([storeId])
+  @@index([storeId, isDefault])
+  @@map("return_policies")
+}
+```
+
+#### Zod Schemas (`@trafi/validators`)
+```typescript
+// packages/validators/src/fulfillment/fulfillment.schema.ts
+import { z } from 'zod';
+
+export const FulfillmentStatusSchema = z.enum([
+  'PENDING',
+  'PROCESSING',
+  'SHIPPED',
+  'IN_TRANSIT',
+  'OUT_FOR_DELIVERY',
+  'DELIVERED',
+  'FAILED',
+  'CANCELLED',
+]);
+
+export const CreateFulfillmentSchema = z.object({
+  orderId: z.string(),
+  items: z.array(z.object({
+    orderItemId: z.string(),
+    quantity: z.number().int().positive(),
+  })).min(1),
+  carrier: z.string().optional(),
+  trackingNumber: z.string().optional(),
+  notes: z.string().max(500).optional(),
+});
+
+export const ReturnStatusSchema = z.enum([
+  'REQUESTED',
+  'APPROVED',
+  'REJECTED',
+  'RECEIVED',
+  'INSPECTING',
+  'REFUND_PENDING',
+  'COMPLETED',
+  'CANCELLED',
+]);
+
+export const CreateReturnSchema = z.object({
+  orderId: z.string(),
+  items: z.array(z.object({
+    orderItemId: z.string(),
+    quantity: z.number().int().positive(),
+    reason: z.string().min(1).max(500),
+  })).min(1),
+  customerNotes: z.string().max(1000).optional(),
+});
+
+export const CreateReturnPolicySchema = z.object({
+  name: z.string().min(1).max(100),
+  description: z.string().max(500).optional(),
+  daysToReturn: z.number().int().min(0).max(365),
+  requiresApproval: z.boolean().default(true),
+  shippingResponsibility: z.enum(['customer', 'merchant']).default('customer'),
+  restockingFeePercent: z.number().int().min(0).max(100).default(0),
+  excludedCategories: z.array(z.string()).default([]),
+  policyText: z.string().max(5000).optional(),
+  isDefault: z.boolean().default(false),
+});
+```
+
+#### UX Implementation Notes
+- **Fulfillment timeline**: Visual tracking with carrier updates
+- **Return portal**: Customer-facing return request form
+- **Inspection workflow**: Dashboard for processing received returns
+- **Policy builder**: Visual editor for return policy rules

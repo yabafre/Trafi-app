@@ -49,6 +49,25 @@ Buyer peut creer un compte (email, Google, Apple), gerer ses adresses, wishlist,
 - **UX-COLOR-2:** Background #000000, borders #333333, text #FFFFFF
 - **UX-RADIUS:** 0px everywhere
 
+### Architectural Requirements (CRITICAL - Updated 2026-01-18)
+
+**ARCH-TEXT-1: Case-Insensitive Email (citext)**
+Customer email MUST use Postgres `citext` extension for case-insensitive uniqueness:
+```prisma
+model Customer {
+  email String @unique @db.Citext  // "John@Email.COM" == "john@email.com"
+}
+```
+
+**ARCH-DEL-1: Soft Delete for Customers**
+Customer uses `deletedAt` for soft delete (order history, GDPR retention):
+```prisma
+model Customer {
+  deletedAt DateTime?
+  @@index([storeId, deletedAt])
+}
+```
+
 ---
 
 ## Story 7.1: Customer Registration with Email
@@ -2311,3 +2330,245 @@ So that **I can easily purchase saved items**.
 **And** variant selection is available if multiple exist
 **And** out-of-stock items show "Notify Me" instead
 **And** bulk "Add All to Cart" is available
+
+---
+
+## Story 7.13: Customer Groups & Segmentation
+
+As a **Merchant**,
+I want **to organize customers into groups**,
+So that **I can offer targeted promotions and pricing**.
+
+**Acceptance Criteria:**
+
+**Given** a Merchant accesses Customer Groups
+**When** they manage groups
+**Then** they can:
+- Create groups (e.g., "VIP", "Wholesale", "B2B")
+- Assign customers to groups manually or via rules
+- Set group-specific discounts
+- Link groups to price lists
+**And** customers can belong to multiple groups
+**And** group membership affects checkout pricing
+
+**FRs covered:** FR124, FR125
+
+---
+
+### Technical Implementation
+
+#### Prisma Schema (`apps/api/prisma/schema/customer.prisma`)
+```prisma
+// =============================================================================
+// Customer Domain Schema (Complete)
+// =============================================================================
+// Customer accounts, sessions, addresses, groups, and wishlists
+// ID prefix: cst_, csess_, cadr_, cgrp_, wl_, wli_
+// =============================================================================
+
+enum CustomerStatus {
+  ACTIVE
+  DISABLED
+  PENDING_VERIFICATION
+}
+
+model Customer {
+  id                String          @id @default(cuid())
+  storeId           String          @map("store_id")
+  email             String
+  passwordHash      String?         @map("password_hash")
+  firstName         String?         @map("first_name")
+  lastName          String?         @map("last_name")
+  phone             String?
+  status            CustomerStatus  @default(PENDING_VERIFICATION)
+  emailVerified     Boolean         @default(false) @map("email_verified")
+  acceptsMarketing  Boolean         @default(false) @map("accepts_marketing")
+  marketingOptInAt  DateTime?       @map("marketing_opt_in_at")
+  oauthProvider     String?         @map("oauth_provider")     // 'google', 'apple'
+  oauthProviderId   String?         @map("oauth_provider_id")
+  avatarUrl         String?         @map("avatar_url")
+  lastLoginAt       DateTime?       @map("last_login_at")
+  metadata          Json?
+  createdAt         DateTime        @default(now()) @map("created_at")
+  updatedAt         DateTime        @updatedAt @map("updated_at")
+
+  // Relations
+  store             Store           @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  sessions          CustomerSession[]
+  addresses         CustomerAddress[]
+  groupMemberships  CustomerGroupMembership[]
+  wishlists         Wishlist[]
+  giftCardsPurchased GiftCard[]    @relation("GiftCardPurchaser")
+
+  @@unique([storeId, email])
+  @@index([storeId])
+  @@index([storeId, email])
+  @@map("customers")
+}
+
+model CustomerSession {
+  id          String    @id @default(cuid())
+  customerId  String    @map("customer_id")
+  token       String    @unique
+  userAgent   String?   @map("user_agent")
+  ipAddress   String?   @map("ip_address")
+  rememberMe  Boolean   @default(false) @map("remember_me")
+  expiresAt   DateTime  @map("expires_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  // Relations
+  customer    Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([customerId])
+  @@index([token])
+  @@index([expiresAt])
+  @@map("customer_sessions")
+}
+
+model CustomerAddress {
+  id            String    @id @default(cuid())
+  customerId    String    @map("customer_id")
+  type          String    @default("shipping")  // 'shipping', 'billing'
+  isDefault     Boolean   @default(false) @map("is_default")
+  firstName     String    @map("first_name")
+  lastName      String    @map("last_name")
+  company       String?
+  address1      String
+  address2      String?
+  city          String
+  state         String?
+  postalCode    String    @map("postal_code")
+  countryCode   String    @map("country_code")
+  phone         String?
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  customer      Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([customerId])
+  @@index([customerId, type, isDefault])
+  @@map("customer_addresses")
+}
+
+model CustomerGroup {
+  id                  String      @id @default(cuid())
+  storeId             String      @map("store_id")
+  name                String
+  description         String?
+  discountPercent     Int         @default(0) @map("discount_percent")  // 0-100
+  priceListId         String?     @map("price_list_id")
+  autoAssignRules     Json?       @map("auto_assign_rules")  // Rules for auto-assignment
+  isActive            Boolean     @default(true) @map("is_active")
+  createdAt           DateTime    @default(now()) @map("created_at")
+  updatedAt           DateTime    @updatedAt @map("updated_at")
+
+  // Relations
+  store               Store       @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  members             CustomerGroupMembership[]
+
+  @@unique([storeId, name])
+  @@index([storeId])
+  @@map("customer_groups")
+}
+
+model CustomerGroupMembership {
+  id            String        @id @default(cuid())
+  customerId    String        @map("customer_id")
+  groupId       String        @map("group_id")
+  assignedAt    DateTime      @default(now()) @map("assigned_at")
+  assignedBy    String?       @map("assigned_by")   // User ID or 'system'
+  expiresAt     DateTime?     @map("expires_at")
+
+  // Relations
+  customer      Customer      @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  group         CustomerGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([customerId, groupId])
+  @@index([customerId])
+  @@index([groupId])
+  @@map("customer_group_memberships")
+}
+
+model Wishlist {
+  id          String        @id @default(cuid())
+  storeId     String        @map("store_id")
+  customerId  String        @map("customer_id")
+  name        String        @default("My Wishlist")
+  isPublic    Boolean       @default(false) @map("is_public")
+  shareToken  String?       @unique @map("share_token")
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+
+  // Relations
+  store       Store         @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  customer    Customer      @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  items       WishlistItem[]
+
+  @@index([storeId])
+  @@index([customerId])
+  @@index([shareToken])
+  @@map("wishlists")
+}
+
+model WishlistItem {
+  id          String    @id @default(cuid())
+  wishlistId  String    @map("wishlist_id")
+  productId   String    @map("product_id")
+  variantId   String?   @map("variant_id")
+  note        String?
+  priority    Int       @default(0)
+  addedAt     DateTime  @default(now()) @map("added_at")
+
+  // Relations
+  wishlist    Wishlist  @relation(fields: [wishlistId], references: [id], onDelete: Cascade)
+
+  @@unique([wishlistId, productId, variantId])
+  @@index([wishlistId])
+  @@index([productId])
+  @@map("wishlist_items")
+}
+```
+
+#### Zod Schemas (`@trafi/validators`)
+```typescript
+// packages/validators/src/customer/customer-group.schema.ts
+import { z } from 'zod';
+
+export const CreateCustomerGroupSchema = z.object({
+  name: z.string().min(1).max(100),
+  description: z.string().max(500).optional(),
+  discountPercent: z.number().int().min(0).max(100).default(0),
+  priceListId: z.string().optional(),
+  autoAssignRules: z.object({
+    minOrderCount: z.number().int().optional(),
+    minTotalSpent: z.number().int().optional(),
+    tags: z.array(z.string()).optional(),
+  }).optional(),
+});
+
+export const AssignToGroupSchema = z.object({
+  customerId: z.string(),
+  groupId: z.string(),
+  expiresAt: z.date().optional(),
+});
+
+// packages/validators/src/customer/wishlist.schema.ts
+export const CreateWishlistSchema = z.object({
+  name: z.string().min(1).max(100).default('My Wishlist'),
+  isPublic: z.boolean().default(false),
+});
+
+export const AddToWishlistSchema = z.object({
+  wishlistId: z.string().optional(), // Uses default if not provided
+  productId: z.string(),
+  variantId: z.string().optional(),
+  note: z.string().max(500).optional(),
+});
+```
+
+#### UX Implementation Notes
+- **Customer groups**: Dashboard page with member counts
+- **Auto-assignment**: Rule builder for automatic group membership
+- **Wishlist sharing**: Public link generation with copy button
+- **Price display**: Shows group discount if applicable

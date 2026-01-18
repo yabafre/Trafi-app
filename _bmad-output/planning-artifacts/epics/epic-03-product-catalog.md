@@ -40,6 +40,84 @@ Merchant peut creer, editer, et organiser son catalogue produits complet avec ge
 - **UX-SHADOW:** None — elements sit firmly in the grid
 - **UX-TYPE:** JetBrains Mono for product data/prices, system font for body
 
+### Architectural Requirements (CRITICAL - Updated 2026-01-18)
+
+**ARCH-INV-1: Inventory Reservations (with Status Lifecycle)**
+ProductVariant reserved stock is COMPUTED via SUM(), not stored. Reservations track status:
+```prisma
+model InventoryReservation {
+  id         String            @id // invres_xxx
+  storeId    String
+  cartId     String
+  variantId  String
+  quantity   Int
+  status     ReservationStatus @default(ACTIVE)
+  expiresAt  DateTime
+  releasedAt DateTime?         // When converted/expired
+
+  @@unique([cartId, variantId])
+  @@index([storeId, variantId, status])  // For stock calc (ACTIVE only)
+  @@index([status, expiresAt])           // For expiry worker
+}
+
+enum ReservationStatus {
+  ACTIVE     // Stock is held
+  RELEASED   // Converted to OrderItem
+  EXPIRED    // Auto-cleanup by worker
+}
+```
+Reserved quantity computed: `SUM(quantity) WHERE status = ACTIVE`
+
+**ARCH-PROMO-1: Simplified Promotions (MVP)**
+Removed enterprise complexity (PromotionRule, PromotionAction). Use simple type-based promotions:
+```prisma
+model Promotion {
+  type            PromotionType  // PERCENT, FIXED, FREE_SHIPPING, BUY_X_GET_Y
+  discountValue   Int?           // 10 = 10% or 1000 = $10
+  conditions      Json?          // { minOrderCents, productIds, customerGroupIds }
+}
+
+enum PromotionType {
+  PERCENT
+  FIXED
+  FREE_SHIPPING
+  BUY_X_GET_Y
+}
+```
+
+**ARCH-PROMO-2: Promotion Conditions JSON**
+```json
+// Minimum order: { "minOrderCents": 5000 }
+// Product restriction: { "productIds": ["prod_xxx"] }
+// Category restriction: { "categoryIds": ["cat_xxx"] }
+// Customer group: { "customerGroupIds": ["cgrp_xxx"] }
+// First-time customer: { "firstTimeCustomerOnly": true }
+// Buy X Get Y: { "buyQuantity": 2, "getQuantity": 1, "productId": "prod_xxx" }
+```
+
+**ARCH-TEXT-1: Case-Insensitive Codes (citext)**
+Use Postgres `citext` extension for promotion/coupon codes:
+```prisma
+model Coupon {
+  code String @db.Citext  // "SAVE20" == "save20"
+  @@unique([storeId, code])
+}
+
+model GiftCard {
+  code String @db.Citext
+  @@unique([storeId, code])
+}
+```
+
+**ARCH-DEL-1: Soft Delete for Catalog**
+Product and Category use `deletedAt` for soft delete (order history preservation):
+```prisma
+model Product {
+  deletedAt DateTime?
+  @@index([storeId, deletedAt])
+}
+```
+
 ---
 
 ## Story 3.1: Product Model and Basic CRUD
@@ -2100,3 +2178,1114 @@ AddToCartButton.tsx (Client)
 - **Allow oversell:** Per-variant flag for pre-orders or made-to-order items
 - **Auto-adjustment:** Cart quantities silently adjusted if stock drops between add and checkout
 - **Event emission:** `inventory.reserved` event for order processing
+
+---
+
+## Story 3.9: Promotions & Discounts Foundation
+
+As a **Merchant**,
+I want **to create promotions and discount codes**,
+So that **I can run marketing campaigns and incentivize purchases**.
+
+**Acceptance Criteria:**
+
+**Given** a Merchant is authenticated
+**When** they access the Promotions section
+**Then** they can:
+- Create promotions with percentage or fixed amount discounts
+- Set promotion rules (min purchase, product/category restrictions)
+- Generate unique coupon codes (single or bulk)
+- Set start/end dates and usage limits
+**And** promotions can be stackable or exclusive
+**And** usage is tracked per customer and globally
+
+**FRs covered:** FR105, FR106, FR107, FR108, FR109
+
+---
+
+### Technical Implementation
+
+#### File Structure
+```
+apps/dashboard/src/app/(dashboard)/marketing/promotions/
+├── page.tsx                          # RSC - Promotions list
+├── _components/
+│   ├── PromotionsDataTable.tsx       # Client - DataTable
+│   ├── PromotionStatusBadge.tsx      # Status: draft/active/paused/expired
+│   ├── CreatePromotionDialog.tsx     # Create form dialog
+│   └── CouponGenerator.tsx           # Bulk code generation
+├── _hooks/
+│   ├── usePromotions.ts
+│   ├── useCreatePromotion.ts
+│   └── useGenerateCoupons.ts
+├── new/
+│   ├── page.tsx
+│   └── _components/
+│       ├── PromotionForm.tsx
+│       ├── PromotionRulesBuilder.tsx # Visual rule builder
+│       └── PromotionActionsBuilder.tsx
+└── [promotionId]/
+    ├── page.tsx
+    ├── _components/
+    │   ├── EditPromotionForm.tsx
+    │   ├── CouponsTab.tsx            # Manage associated coupons
+    │   └── UsageTab.tsx              # Usage analytics
+    └── _hooks/
+        └── usePromotion.ts
+
+apps/api/src/modules/promotions/
+├── promotions.module.ts
+├── promotions.service.ts             # protected methods
+├── coupon.service.ts                 # Code generation & validation
+├── promotion-engine.service.ts       # Apply promotions to cart
+└── dto/
+    ├── create-promotion.dto.ts
+    ├── create-coupon.dto.ts
+    └── apply-promotion.dto.ts
+```
+
+#### Prisma Schema (`apps/api/prisma/schema/promotion.prisma`)
+```prisma
+// =============================================================================
+// Promotions & Discounts Domain Schema
+// =============================================================================
+// Marketing campaigns with rules and coupon codes
+// ID prefix: promo_, prule_, pact_, coup_, puse_
+// Money fields: INTEGER cents (ARCH-25)
+// =============================================================================
+
+enum PromotionType {
+  PERCENTAGE
+  FIXED_AMOUNT
+  BUY_X_GET_Y
+  FREE_SHIPPING
+}
+
+enum PromotionStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  EXPIRED
+  ARCHIVED
+}
+
+enum RuleType {
+  PRODUCT
+  CATEGORY
+  COLLECTION
+  CUSTOMER_TAG
+  ORDER_COUNT
+  CART_QUANTITY
+  FIRST_ORDER
+  SHIPPING_COUNTRY
+  MIN_PURCHASE
+}
+
+enum RuleOperator {
+  EQUALS
+  IN
+  NOT_IN
+  GREATER_THAN
+  LESS_THAN
+  BETWEEN
+}
+
+enum ActionType {
+  PERCENTAGE_OFF
+  FIXED_OFF
+  FREE_ITEM
+  FREE_SHIPPING
+}
+
+enum TargetType {
+  ORDER
+  LINE_ITEM
+  SHIPPING
+  SPECIFIC_ITEMS
+}
+
+model Promotion {
+  id                    String            @id @default(cuid())
+  storeId               String            @map("store_id")
+  name                  String
+  description           String?
+  code                  String?           // null = automatic, not code-based
+  type                  PromotionType
+  discountValue         Int               @map("discount_value")  // Cents or percentage*100
+  minPurchaseAmountCents Int?             @map("min_purchase_amount_cents")
+  maxDiscountCents      Int?              @map("max_discount_cents")
+  usageLimit            Int?              @map("usage_limit")     // null = unlimited
+  usageCount            Int               @default(0) @map("usage_count")
+  perCustomerLimit      Int?              @map("per_customer_limit")
+  startsAt              DateTime          @map("starts_at")
+  endsAt                DateTime?         @map("ends_at")
+  status                PromotionStatus   @default(DRAFT)
+  priority              Int               @default(0)
+  stackable             Boolean           @default(false)
+  createdAt             DateTime          @default(now()) @map("created_at")
+  updatedAt             DateTime          @updatedAt @map("updated_at")
+
+  // Relations
+  store                 Store             @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  rules                 PromotionRule[]
+  actions               PromotionAction[]
+  coupons               Coupon[]
+  usages                PromotionUsage[]
+
+  @@unique([storeId, code])
+  @@index([storeId])
+  @@index([storeId, status])
+  @@index([storeId, startsAt, endsAt])
+  @@map("promotions")
+}
+
+model PromotionRule {
+  id            String        @id @default(cuid())
+  promotionId   String        @map("promotion_id")
+  type          RuleType
+  operator      RuleOperator
+  value         Json          // Product IDs, category slugs, amounts, etc.
+  createdAt     DateTime      @default(now()) @map("created_at")
+
+  // Relations
+  promotion     Promotion     @relation(fields: [promotionId], references: [id], onDelete: Cascade)
+
+  @@index([promotionId])
+  @@map("promotion_rules")
+}
+
+model PromotionAction {
+  id            String        @id @default(cuid())
+  promotionId   String        @map("promotion_id")
+  type          ActionType
+  value         Int           // Discount value
+  targetType    TargetType
+  targetValue   Json?         // Specific targets
+  maxQuantity   Int?          @map("max_quantity")
+  createdAt     DateTime      @default(now()) @map("created_at")
+
+  // Relations
+  promotion     Promotion     @relation(fields: [promotionId], references: [id], onDelete: Cascade)
+
+  @@index([promotionId])
+  @@map("promotion_actions")
+}
+
+model Coupon {
+  id            String        @id @default(cuid())
+  storeId       String        @map("store_id")
+  promotionId   String        @map("promotion_id")
+  code          String
+  usageLimit    Int?          @map("usage_limit")
+  usageCount    Int           @default(0) @map("usage_count")
+  expiresAt     DateTime?     @map("expires_at")
+  isActive      Boolean       @default(true) @map("is_active")
+  metadata      Json?
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+
+  // Relations
+  store         Store         @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  promotion     Promotion     @relation(fields: [promotionId], references: [id], onDelete: Cascade)
+  usages        PromotionUsage[]
+
+  @@unique([storeId, code])
+  @@index([storeId])
+  @@index([promotionId])
+  @@map("coupons")
+}
+
+model PromotionUsage {
+  id                  String      @id @default(cuid())
+  storeId             String      @map("store_id")
+  promotionId         String      @map("promotion_id")
+  couponId            String?     @map("coupon_id")
+  orderId             String      @map("order_id")
+  customerId          String?     @map("customer_id")
+  discountAmountCents Int         @map("discount_amount_cents")
+  appliedAt           DateTime    @default(now()) @map("applied_at")
+
+  // Relations
+  store               Store       @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  promotion           Promotion   @relation(fields: [promotionId], references: [id])
+  coupon              Coupon?     @relation(fields: [couponId], references: [id])
+
+  @@index([storeId])
+  @@index([promotionId])
+  @@index([customerId])
+  @@index([orderId])
+  @@map("promotion_usages")
+}
+```
+
+#### Zod Schemas (`@trafi/validators`)
+```typescript
+// packages/validators/src/promotion/promotion.schema.ts
+import { z } from 'zod';
+
+export const PromotionTypeSchema = z.enum([
+  'PERCENTAGE',
+  'FIXED_AMOUNT',
+  'BUY_X_GET_Y',
+  'FREE_SHIPPING',
+]);
+
+export const PromotionStatusSchema = z.enum([
+  'DRAFT',
+  'ACTIVE',
+  'PAUSED',
+  'EXPIRED',
+  'ARCHIVED',
+]);
+
+export const RuleTypeSchema = z.enum([
+  'PRODUCT',
+  'CATEGORY',
+  'COLLECTION',
+  'CUSTOMER_TAG',
+  'ORDER_COUNT',
+  'CART_QUANTITY',
+  'FIRST_ORDER',
+  'SHIPPING_COUNTRY',
+  'MIN_PURCHASE',
+]);
+
+export const CreatePromotionSchema = z.object({
+  name: z.string().min(1).max(100),
+  description: z.string().max(500).optional(),
+  code: z.string().min(3).max(30).regex(/^[A-Z0-9_-]+$/).optional(),
+  type: PromotionTypeSchema,
+  discountValue: z.number().int().positive(),
+  minPurchaseAmountCents: z.number().int().nonnegative().optional(),
+  maxDiscountCents: z.number().int().positive().optional(),
+  usageLimit: z.number().int().positive().optional(),
+  perCustomerLimit: z.number().int().positive().optional(),
+  startsAt: z.date(),
+  endsAt: z.date().optional(),
+  stackable: z.boolean().default(false),
+  rules: z.array(z.object({
+    type: RuleTypeSchema,
+    operator: z.enum(['EQUALS', 'IN', 'NOT_IN', 'GREATER_THAN', 'LESS_THAN']),
+    value: z.unknown(),
+  })).optional(),
+});
+
+export const ApplyCouponSchema = z.object({
+  code: z.string().min(1),
+  cartId: z.string(),
+});
+
+export const GenerateCouponsSchema = z.object({
+  promotionId: z.string(),
+  count: z.number().int().min(1).max(10000),
+  prefix: z.string().max(10).optional(),
+  length: z.number().int().min(6).max(20).default(8),
+});
+```
+
+#### Backend Service (`apps/api/src/modules/promotions/promotions.service.ts`)
+```typescript
+@Injectable()
+export class PromotionsService {
+  constructor(
+    private prisma: PrismaService,
+    private idService: IdService,
+  ) {}
+
+  // Protected for @trafi/core extensibility (RETRO-2)
+  protected async create(storeId: string, input: CreatePromotionInput): Promise<Promotion> {
+    return this.prisma.promotion.create({
+      data: {
+        id: this.idService.generate('promo'),
+        storeId,
+        ...input,
+        rules: input.rules ? {
+          create: input.rules.map(rule => ({
+            id: this.idService.generate('prule'),
+            ...rule,
+          })),
+        } : undefined,
+      },
+      include: { rules: true, actions: true },
+    });
+  }
+
+  protected async list(storeId: string, query: PromotionListQuery): Promise<PaginatedResult<Promotion>> {
+    const where: Prisma.PromotionWhereInput = { storeId };
+
+    if (query.status) {
+      where.status = { in: query.status };
+    }
+
+    if (query.search) {
+      where.OR = [
+        { name: { contains: query.search, mode: 'insensitive' } },
+        { code: { contains: query.search, mode: 'insensitive' } },
+      ];
+    }
+
+    const [promotions, total] = await Promise.all([
+      this.prisma.promotion.findMany({
+        where,
+        include: { _count: { select: { usages: true, coupons: true } } },
+        orderBy: { createdAt: 'desc' },
+        skip: (query.page - 1) * query.limit,
+        take: query.limit,
+      }),
+      this.prisma.promotion.count({ where }),
+    ]);
+
+    return { data: promotions, total, page: query.page, limit: query.limit };
+  }
+
+  protected async validateAndApply(
+    storeId: string,
+    code: string,
+    cart: Cart,
+    customerId?: string,
+  ): Promise<ApplyPromotionResult> {
+    // Find promotion by code (direct or via coupon)
+    const promotion = await this.findPromotionByCode(storeId, code);
+
+    if (!promotion) {
+      return { success: false, error: 'INVALID_CODE' };
+    }
+
+    // Check status and dates
+    if (promotion.status !== 'ACTIVE') {
+      return { success: false, error: 'PROMOTION_INACTIVE' };
+    }
+
+    const now = new Date();
+    if (promotion.startsAt > now) {
+      return { success: false, error: 'PROMOTION_NOT_STARTED' };
+    }
+
+    if (promotion.endsAt && promotion.endsAt < now) {
+      return { success: false, error: 'PROMOTION_EXPIRED' };
+    }
+
+    // Check usage limits
+    if (promotion.usageLimit && promotion.usageCount >= promotion.usageLimit) {
+      return { success: false, error: 'USAGE_LIMIT_REACHED' };
+    }
+
+    // Check per-customer limit
+    if (customerId && promotion.perCustomerLimit) {
+      const customerUsage = await this.prisma.promotionUsage.count({
+        where: { promotionId: promotion.id, customerId },
+      });
+      if (customerUsage >= promotion.perCustomerLimit) {
+        return { success: false, error: 'CUSTOMER_LIMIT_REACHED' };
+      }
+    }
+
+    // Validate rules
+    const rulesValid = await this.validateRules(promotion.rules, cart);
+    if (!rulesValid.valid) {
+      return { success: false, error: 'RULES_NOT_MET', details: rulesValid.reason };
+    }
+
+    // Calculate discount
+    const discount = this.calculateDiscount(promotion, cart);
+
+    return {
+      success: true,
+      promotion,
+      discountAmountCents: discount,
+    };
+  }
+
+  protected calculateDiscount(promotion: Promotion, cart: Cart): number {
+    const cartTotal = cart.items.reduce((sum, item) => sum + item.priceAtAddition * item.quantity, 0);
+
+    let discount = 0;
+    switch (promotion.type) {
+      case 'PERCENTAGE':
+        discount = Math.floor(cartTotal * (promotion.discountValue / 10000)); // discountValue is percentage * 100
+        break;
+      case 'FIXED_AMOUNT':
+        discount = promotion.discountValue;
+        break;
+      case 'FREE_SHIPPING':
+        discount = cart.shippingCost ?? 0;
+        break;
+    }
+
+    // Apply max discount cap
+    if (promotion.maxDiscountCents && discount > promotion.maxDiscountCents) {
+      discount = promotion.maxDiscountCents;
+    }
+
+    return discount;
+  }
+}
+```
+
+#### UX Implementation Notes
+- **Promotion list:** DataTable with status badges, usage stats, quick actions
+- **Rule builder:** Visual drag-and-drop rule composition
+- **Coupon generator:** Bulk generation with preview and export to CSV
+- **Analytics tab:** Charts showing usage over time, conversion rates
+
+---
+
+## Story 3.10: Gift Cards
+
+As a **Merchant**,
+I want **to sell and manage gift cards**,
+So that **customers can purchase them as gifts and use them for payment**.
+
+**Acceptance Criteria:**
+
+**Given** a Merchant is authenticated
+**When** they access Gift Cards settings
+**Then** they can:
+- Create gift card templates with denominations
+- Issue gift cards manually or via purchase
+- Track gift card balances and transactions
+- View gift card usage analytics
+**And** gift cards can be used as payment method at checkout
+**And** partial balance usage is supported
+**And** gift cards have secure, unique codes
+
+**FRs covered:** FR110, FR111, FR112, FR113
+
+---
+
+### Technical Implementation
+
+#### File Structure
+```
+apps/dashboard/src/app/(dashboard)/marketing/gift-cards/
+├── page.tsx                          # RSC - Gift cards list
+├── _components/
+│   ├── GiftCardsDataTable.tsx
+│   ├── GiftCardStatusBadge.tsx
+│   ├── IssueGiftCardDialog.tsx
+│   └── GiftCardBalanceCell.tsx
+├── _hooks/
+│   ├── useGiftCards.ts
+│   └── useIssueGiftCard.ts
+├── templates/
+│   ├── page.tsx                      # Gift card templates
+│   └── _components/
+│       └── TemplateForm.tsx
+└── [giftCardId]/
+    ├── page.tsx                      # Gift card detail
+    └── _components/
+        ├── GiftCardDetails.tsx
+        └── TransactionsTable.tsx
+
+apps/api/src/modules/gift-cards/
+├── gift-cards.module.ts
+├── gift-cards.service.ts
+├── gift-card-payment.service.ts      # Payment integration
+└── dto/
+    ├── issue-gift-card.dto.ts
+    └── redeem-gift-card.dto.ts
+```
+
+#### Prisma Schema (`apps/api/prisma/schema/gift-card.prisma`)
+```prisma
+// =============================================================================
+// Gift Cards Domain Schema
+// =============================================================================
+// Digital gift cards with balance tracking
+// ID prefix: gc_, gctx_, gctpl_
+// Money fields: INTEGER cents (ARCH-25)
+// =============================================================================
+
+enum GiftCardStatus {
+  PENDING      // Purchased but not yet delivered
+  ACTIVE       // Ready to use
+  DISABLED     // Manually disabled by admin
+  EXPIRED      // Past expiration date
+  DEPLETED     // Zero balance
+}
+
+enum GiftCardTransactionType {
+  CREDIT       // Initial load or top-up
+  DEBIT        // Used for purchase
+  REFUND       // Returned to balance
+  ADJUSTMENT   // Admin manual change
+  EXPIRATION   // Balance expired
+}
+
+model GiftCard {
+  id                    String                @id @default(cuid())
+  storeId               String                @map("store_id")
+  codeHash              String                @map("code_hash")     // Hashed for security
+  codeLast4             String                @map("code_last4")    // Last 4 for display
+  initialBalanceCents   Int                   @map("initial_balance_cents")
+  currentBalanceCents   Int                   @map("current_balance_cents")
+  currencyCode          String                @default("EUR") @map("currency_code")
+  status                GiftCardStatus        @default(PENDING)
+  purchasedById         String?               @map("purchased_by_id")
+  recipientEmail        String?               @map("recipient_email")
+  recipientName         String?               @map("recipient_name")
+  senderName            String?               @map("sender_name")
+  giftMessage           String?               @map("gift_message")
+  expiresAt             DateTime?             @map("expires_at")
+  activatedAt           DateTime?             @map("activated_at")
+  lastUsedAt            DateTime?             @map("last_used_at")
+  issuedFromOrderId     String?               @map("issued_from_order_id")
+  templateId            String?               @map("template_id")
+  metadata              Json?
+  createdAt             DateTime              @default(now()) @map("created_at")
+  updatedAt             DateTime              @updatedAt @map("updated_at")
+
+  // Relations
+  store                 Store                 @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  purchasedBy           Customer?             @relation("GiftCardPurchaser", fields: [purchasedById], references: [id])
+  template              GiftCardTemplate?     @relation(fields: [templateId], references: [id])
+  transactions          GiftCardTransaction[]
+
+  @@unique([storeId, codeHash])
+  @@index([storeId])
+  @@index([storeId, status])
+  @@index([recipientEmail])
+  @@map("gift_cards")
+}
+
+model GiftCardTransaction {
+  id                String                    @id @default(cuid())
+  storeId           String                    @map("store_id")
+  giftCardId        String                    @map("gift_card_id")
+  type              GiftCardTransactionType
+  amountCents       Int                       @map("amount_cents")  // Positive = credit
+  balanceAfterCents Int                       @map("balance_after_cents")
+  orderId           String?                   @map("order_id")
+  reason            String?
+  performedById     String?                   @map("performed_by_id")
+  createdAt         DateTime                  @default(now()) @map("created_at")
+
+  // Relations
+  store             Store                     @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  giftCard          GiftCard                  @relation(fields: [giftCardId], references: [id], onDelete: Cascade)
+  performedBy       User?                     @relation(fields: [performedById], references: [id])
+
+  @@index([storeId])
+  @@index([giftCardId])
+  @@index([orderId])
+  @@map("gift_card_transactions")
+}
+
+model GiftCardTemplate {
+  id                  String      @id @default(cuid())
+  storeId             String      @map("store_id")
+  name                String
+  description         String?
+  designImageUrl      String?     @map("design_image_url")
+  denominations       Int[]       // Available amounts in cents
+  allowCustomAmount   Boolean     @default(false) @map("allow_custom_amount")
+  minAmountCents      Int?        @map("min_amount_cents")
+  maxAmountCents      Int?        @map("max_amount_cents")
+  validityDays        Int?        @map("validity_days")  // null = never expires
+  isActive            Boolean     @default(true) @map("is_active")
+  createdAt           DateTime    @default(now()) @map("created_at")
+  updatedAt           DateTime    @updatedAt @map("updated_at")
+
+  // Relations
+  store               Store       @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  giftCards           GiftCard[]
+
+  @@index([storeId])
+  @@index([storeId, isActive])
+  @@map("gift_card_templates")
+}
+```
+
+#### Zod Schemas (`@trafi/validators`)
+```typescript
+// packages/validators/src/gift-card/gift-card.schema.ts
+import { z } from 'zod';
+
+export const GiftCardStatusSchema = z.enum([
+  'PENDING',
+  'ACTIVE',
+  'DISABLED',
+  'EXPIRED',
+  'DEPLETED',
+]);
+
+export const IssueGiftCardSchema = z.object({
+  templateId: z.string().optional(),
+  amountCents: z.number().int().positive(),
+  currencyCode: z.string().length(3).default('EUR'),
+  recipientEmail: z.string().email().optional(),
+  recipientName: z.string().max(100).optional(),
+  senderName: z.string().max(100).optional(),
+  giftMessage: z.string().max(500).optional(),
+  expiresAt: z.date().optional(),
+  sendEmail: z.boolean().default(true),
+});
+
+export const RedeemGiftCardSchema = z.object({
+  code: z.string().min(8).max(32),
+  orderId: z.string(),
+  amountCents: z.number().int().positive(),
+});
+
+export const CreateGiftCardTemplateSchema = z.object({
+  name: z.string().min(1).max(100),
+  description: z.string().max(500).optional(),
+  designImageUrl: z.string().url().optional(),
+  denominations: z.array(z.number().int().positive()).min(1),
+  allowCustomAmount: z.boolean().default(false),
+  minAmountCents: z.number().int().positive().optional(),
+  maxAmountCents: z.number().int().positive().optional(),
+  validityDays: z.number().int().positive().optional(),
+});
+```
+
+#### Backend Service (`apps/api/src/modules/gift-cards/gift-cards.service.ts`)
+```typescript
+@Injectable()
+export class GiftCardsService {
+  private readonly CODE_LENGTH = 16;
+
+  constructor(
+    private prisma: PrismaService,
+    private idService: IdService,
+    private emailService: EmailService,
+  ) {}
+
+  // Protected for @trafi/core extensibility (RETRO-2)
+  protected async issue(storeId: string, input: IssueGiftCardInput): Promise<GiftCard> {
+    // Generate secure code
+    const code = this.generateSecureCode();
+    const codeHash = await this.hashCode(code);
+    const codeLast4 = code.slice(-4);
+
+    // Determine expiration
+    let expiresAt = input.expiresAt;
+    if (!expiresAt && input.templateId) {
+      const template = await this.prisma.giftCardTemplate.findUnique({
+        where: { id: input.templateId },
+      });
+      if (template?.validityDays) {
+        expiresAt = new Date(Date.now() + template.validityDays * 24 * 60 * 60 * 1000);
+      }
+    }
+
+    const giftCard = await this.prisma.$transaction(async (tx) => {
+      // Create gift card
+      const gc = await tx.giftCard.create({
+        data: {
+          id: this.idService.generate('gc'),
+          storeId,
+          codeHash,
+          codeLast4,
+          initialBalanceCents: input.amountCents,
+          currentBalanceCents: input.amountCents,
+          currencyCode: input.currencyCode,
+          status: input.recipientEmail ? 'PENDING' : 'ACTIVE',
+          recipientEmail: input.recipientEmail,
+          recipientName: input.recipientName,
+          senderName: input.senderName,
+          giftMessage: input.giftMessage,
+          expiresAt,
+          templateId: input.templateId,
+        },
+      });
+
+      // Create initial transaction
+      await tx.giftCardTransaction.create({
+        data: {
+          id: this.idService.generate('gctx'),
+          storeId,
+          giftCardId: gc.id,
+          type: 'CREDIT',
+          amountCents: input.amountCents,
+          balanceAfterCents: input.amountCents,
+          reason: 'Initial issue',
+        },
+      });
+
+      return gc;
+    });
+
+    // Send email if requested
+    if (input.sendEmail && input.recipientEmail) {
+      await this.emailService.sendGiftCardEmail({
+        to: input.recipientEmail,
+        recipientName: input.recipientName,
+        senderName: input.senderName,
+        giftMessage: input.giftMessage,
+        code, // Plain code for email only
+        amountCents: input.amountCents,
+        currencyCode: input.currencyCode,
+      });
+    }
+
+    return { ...giftCard, code }; // Return plain code only on creation
+  }
+
+  protected async redeem(
+    storeId: string,
+    code: string,
+    orderId: string,
+    amountCents: number,
+  ): Promise<RedeemResult> {
+    const codeHash = await this.hashCode(code);
+
+    const giftCard = await this.prisma.giftCard.findUnique({
+      where: { storeId_codeHash: { storeId, codeHash } },
+    });
+
+    if (!giftCard) {
+      return { success: false, error: 'INVALID_CODE' };
+    }
+
+    if (giftCard.status !== 'ACTIVE') {
+      return { success: false, error: 'CARD_NOT_ACTIVE' };
+    }
+
+    if (giftCard.expiresAt && giftCard.expiresAt < new Date()) {
+      return { success: false, error: 'CARD_EXPIRED' };
+    }
+
+    if (giftCard.currentBalanceCents < amountCents) {
+      return { success: false, error: 'INSUFFICIENT_BALANCE', availableBalance: giftCard.currentBalanceCents };
+    }
+
+    const result = await this.prisma.$transaction(async (tx) => {
+      const newBalance = giftCard.currentBalanceCents - amountCents;
+
+      // Update balance
+      const updated = await tx.giftCard.update({
+        where: { id: giftCard.id },
+        data: {
+          currentBalanceCents: newBalance,
+          status: newBalance === 0 ? 'DEPLETED' : 'ACTIVE',
+          lastUsedAt: new Date(),
+          activatedAt: giftCard.activatedAt ?? new Date(),
+        },
+      });
+
+      // Record transaction
+      await tx.giftCardTransaction.create({
+        data: {
+          id: this.idService.generate('gctx'),
+          storeId,
+          giftCardId: giftCard.id,
+          type: 'DEBIT',
+          amountCents: -amountCents,
+          balanceAfterCents: newBalance,
+          orderId,
+        },
+      });
+
+      return updated;
+    });
+
+    return {
+      success: true,
+      amountRedeemed: amountCents,
+      remainingBalance: result.currentBalanceCents,
+    };
+  }
+
+  private generateSecureCode(): string {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // No ambiguous chars
+    let code = '';
+    const randomBytes = crypto.randomBytes(this.CODE_LENGTH);
+    for (let i = 0; i < this.CODE_LENGTH; i++) {
+      code += chars[randomBytes[i] % chars.length];
+    }
+    // Format: XXXX-XXXX-XXXX-XXXX
+    return code.match(/.{4}/g)!.join('-');
+  }
+
+  private async hashCode(code: string): Promise<string> {
+    const normalized = code.replace(/-/g, '').toUpperCase();
+    return crypto.createHash('sha256').update(normalized).digest('hex');
+  }
+}
+```
+
+#### UX Implementation Notes
+- **Gift card list:** Balance shown as progress bar, status badges
+- **Issue form:** Template selection with visual preview
+- **Transaction history:** Timeline view with credits/debits
+- **Storefront:** Gift card purchase as product type, redeem at checkout
+
+---
+
+## Story 3.R1: Foundation Reinforcement (Epic 1 & 2 Enhancements)
+
+As a **System**,
+I want **core foundation models to support new commerce features**,
+So that **Promotions, Gift Cards, and Multi-currency integrate seamlessly**.
+
+**Acceptance Criteria:**
+
+**Given** the foundation models exist
+**When** new commerce features are added
+**Then** Store and StoreSettings are extended with:
+- Store: `defaultRegionId`, `supportedCurrencies[]`
+- StoreSettings: `giftCardsEnabled`, `promotionsEnabled`, `maxDiscountPercent`
+**And** relations to new models are established
+**And** existing functionality remains backward compatible
+
+---
+
+### Technical Implementation
+
+#### Schema Updates (`apps/api/prisma/schema/store.prisma`)
+```prisma
+// Add to existing Store model
+model Store {
+  // ... existing fields ...
+
+  // New fields for commerce features
+  defaultRegionId       String?   @map("default_region_id")
+  supportedCurrencies   String[]  @default(["EUR"]) @map("supported_currencies")
+
+  // New relations
+  promotions            Promotion[]
+  coupons               Coupon[]
+  promotionUsages       PromotionUsage[]
+  giftCards             GiftCard[]
+  giftCardTransactions  GiftCardTransaction[]
+  giftCardTemplates     GiftCardTemplate[]
+}
+```
+
+#### Schema Updates (`apps/api/prisma/schema/store-settings.prisma`)
+```prisma
+// Add to existing StoreSettings model
+model StoreSettings {
+  // ... existing fields ...
+
+  // Promotions settings
+  promotionsEnabled     Boolean   @default(true) @map("promotions_enabled")
+  maxDiscountPercent    Int       @default(100) @map("max_discount_percent") // 0-100
+  allowStackablePromos  Boolean   @default(false) @map("allow_stackable_promos")
+
+  // Gift cards settings
+  giftCardsEnabled      Boolean   @default(false) @map("gift_cards_enabled")
+  giftCardMinCents      Int       @default(1000) @map("gift_card_min_cents")    // $10 min
+  giftCardMaxCents      Int       @default(50000) @map("gift_card_max_cents")   // $500 max
+  giftCardValidityDays  Int?      @map("gift_card_validity_days")               // null = never
+
+  // Multi-currency settings
+  multiCurrencyEnabled  Boolean   @default(false) @map("multi_currency_enabled")
+  displayPriceIncTax    Boolean   @default(true) @map("display_price_inc_tax")
+}
+```
+
+#### Migration Strategy
+```sql
+-- Migration: add_commerce_features_to_foundation
+ALTER TABLE stores ADD COLUMN default_region_id TEXT;
+ALTER TABLE stores ADD COLUMN supported_currencies TEXT[] DEFAULT ARRAY['EUR'];
+
+ALTER TABLE store_settings ADD COLUMN promotions_enabled BOOLEAN DEFAULT true;
+ALTER TABLE store_settings ADD COLUMN max_discount_percent INTEGER DEFAULT 100;
+ALTER TABLE store_settings ADD COLUMN allow_stackable_promos BOOLEAN DEFAULT false;
+ALTER TABLE store_settings ADD COLUMN gift_cards_enabled BOOLEAN DEFAULT false;
+ALTER TABLE store_settings ADD COLUMN gift_card_min_cents INTEGER DEFAULT 1000;
+ALTER TABLE store_settings ADD COLUMN gift_card_max_cents INTEGER DEFAULT 50000;
+ALTER TABLE store_settings ADD COLUMN gift_card_validity_days INTEGER;
+ALTER TABLE store_settings ADD COLUMN multi_currency_enabled BOOLEAN DEFAULT false;
+ALTER TABLE store_settings ADD COLUMN display_price_inc_tax BOOLEAN DEFAULT true;
+```
+
+#### Backward Compatibility
+- All new fields have sensible defaults
+- Existing stores continue to function without changes
+- Feature flags (`promotionsEnabled`, `giftCardsEnabled`) control visibility
+- Migration is additive only, no destructive changes
+
+---
+
+## Story 3.R2: Prefixed IDs Foundation
+
+As a **Developer**,
+I want **all database IDs to be automatically prefixed with domain identifiers**,
+So that **IDs are self-documenting and debugging is easier**.
+
+**Acceptance Criteria:**
+
+**Given** any Prisma create operation
+**When** no ID is provided in the input data
+**Then** a prefixed ID is automatically generated
+**And** the format is `{prefix}_{nanoid}` (e.g., `prod_abc123xyz...`)
+**And** all 65+ planned models have prefixes configured
+**And** existing manual ID generation is removed from services
+**And** nested writes also receive prefixed IDs automatically
+
+---
+
+### Technical Implementation
+
+#### ID Prefix Configuration (`apps/api/src/database/id-prefixes.config.ts`)
+```typescript
+/**
+ * Centralized ID Prefix Configuration
+ * All Trafi models use prefixed IDs for better debugging and self-documentation.
+ * Format: {prefix}_{nanoid} (e.g., prod_abc123xyz...)
+ */
+
+export const ID_PREFIXES: Record<string, string> = {
+  // Core
+  Store: 'store',
+  User: 'usr',
+  StoreSettings: 'stset',
+  ApiKey: 'apikey',
+  AuditLog: 'audit',
+  OwnershipTransfer: 'owntx',
+
+  // Products (Epic 3)
+  Product: 'prod',
+  ProductVariant: 'var',
+  ProductMedia: 'med',
+  Category: 'cat',
+  Collection: 'col',
+  TaxRule: 'tax',
+  InventoryHistory: 'invh',
+
+  // Marketing (Epic 3)
+  Promotion: 'promo',
+  PromotionRule: 'prule',
+  PromotionAction: 'pact',
+  Coupon: 'coup',
+  PromotionUsage: 'puse',
+  GiftCard: 'gc',
+  GiftCardTransaction: 'gctx',
+  GiftCardTemplate: 'gctpl',
+
+  // Cart & Checkout (Epic 4)
+  Cart: 'cart',
+  CartItem: 'citem',
+  CheckoutSession: 'chk',
+
+  // ... (see full config for all 65+ models)
+};
+
+export function getIdPrefix(modelName: string): string | null {
+  return ID_PREFIXES[modelName] ?? null;
+}
+```
+
+#### Prisma Extension (`apps/api/src/database/prefixed-ids.extension.ts`)
+```typescript
+import { Prisma } from '@generated/prisma/client';
+import { nanoid } from 'nanoid';
+import { getIdPrefix } from './id-prefixes.config';
+
+/**
+ * Generate a prefixed ID for a model
+ */
+export function generatePrefixedId(modelName: string): string | null {
+  const prefix = getIdPrefix(modelName);
+  if (!prefix) return null;
+  return `${prefix}_${nanoid(21)}`;
+}
+
+/**
+ * Prisma extension that automatically generates prefixed IDs
+ * on all create operations (create, createMany, upsert)
+ */
+export const prefixedIdsExtension = Prisma.defineExtension({
+  name: 'prefixed-ids',
+  query: {
+    $allModels: {
+      async create({ model, args, query }) {
+        if (args.data && !args.data.id) {
+          const id = generatePrefixedId(model);
+          if (id) args.data = { ...args.data, id };
+        }
+        return query(args);
+      },
+      async createMany({ model, args, query }) {
+        // Process each item in the data array
+        if (args.data) {
+          args.data = processCreateData(model, args.data);
+        }
+        return query(args);
+      },
+      async upsert({ model, args, query }) {
+        if (args.create && !args.create.id) {
+          const id = generatePrefixedId(model);
+          if (id) args.create = { ...args.create, id };
+        }
+        return query(args);
+      },
+    },
+  },
+});
+```
+
+#### PrismaService Integration
+```typescript
+// apps/api/src/database/prisma.service.ts
+import { prefixedIdsExtension } from './prefixed-ids.extension';
+
+function createExtendedClient() {
+  const adapter = new PrismaPg({
+    connectionString: process.env.DATABASE_URL as string,
+  });
+  const baseClient = new PrismaClient({ adapter });
+  return baseClient.$extends(prefixedIdsExtension);
+}
+
+@Injectable()
+export class PrismaService implements OnModuleInit, OnModuleDestroy {
+  private readonly client: ExtendedPrismaClient;
+
+  constructor() {
+    this.client = createExtendedClient();
+  }
+
+  // Delegate model accessors to extended client
+  get product() { return this.client.product; }
+  get store() { return this.client.store; }
+  // ... other models
+}
+```
+
+#### Service Updates
+```typescript
+// apps/api/src/modules/products/products.service.ts
+// REMOVED: Manual ID generation
+// - protected generateProductId(): string { ... }
+// - const id = this.generateProductId();
+
+// UPDATED: Let extension handle ID generation
+async create(storeId: string, input: CreateProductInput) {
+  // No id passed - extension generates it automatically
+  const product = await this.prisma.product.create({
+    data: {
+      storeId,
+      name: input.name,
+      slug,
+      // ... other fields
+      // id is auto-generated as prod_xxx
+    },
+  });
+}
+```
+
+#### Dependencies
+```bash
+pnpm add nanoid --filter @trafi/api
+```
+
+#### File Structure
+```
+apps/api/src/database/
+├── database.module.ts
+├── prisma.service.ts          # Updated with extension
+├── id-prefixes.config.ts      # NEW: All model prefixes
+├── prefixed-ids.extension.ts  # NEW: Prisma extension
+└── index.ts                   # Exports
+```
+
+#### Verification Steps
+1. Run tests: `pnpm test --filter @trafi/api`
+2. Create a product via tRPC and verify ID format: `prod_...`
+3. Create nested records and verify all have correct prefixes
+4. Check logs show prefixed IDs on create operations

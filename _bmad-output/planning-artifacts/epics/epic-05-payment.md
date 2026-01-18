@@ -53,6 +53,39 @@ Systeme gere les paiements Stripe complets avec 3DS, webhooks, remboursements, e
 - **UX-SHADOW:** None — elements sit firmly in the grid
 - **UX-TYPE:** JetBrains Mono for amounts/numbers, system font for labels
 
+### Architectural Requirements (CRITICAL - Updated 2026-01-18)
+
+**ARCH-PAY-1: Credential Security (KMS/Envelope Encryption)**
+Never store Stripe credentials in plain text:
+```typescript
+// WRONG: store accessToken directly
+// RIGHT: Use KMS/Envelope encryption
+
+// StripeConnection model
+model StripeConnection {
+  encryptedRefreshToken String   // Encrypted via KMS
+  tokenExpiresAt        DateTime
+  // Prefer refreshToken over accessToken
+}
+```
+
+**ARCH-PAY-2: Audit Log Sanitization**
+PaymentAuditLog.metadata MUST be sanitized - no PII:
+```typescript
+// WRONG: { cardNumber: "4242...", email: "user@..." }
+// RIGHT: { last4: "4242", brand: "visa", eventType: "charge.succeeded" }
+```
+
+**ARCH-PAY-3: Card Data Handling**
+Never store full card numbers:
+```prisma
+model Payment {
+  last4  String?  // Only last 4 digits
+  brand  String?  // visa, mastercard, etc.
+  // NEVER: cardNumber, cvv, expiry
+}
+```
+
 ---
 
 ## Story 5.1: Stripe Account Connection
@@ -2431,3 +2464,241 @@ export function PaymentAuditLog({ orderId }: { orderId: string }) {
 - **Immutability**: No edit/delete actions - logs are read-only
 - **Dark Mode**: Uses dark background (#0A0A0A) with subtle border colors
 - **Retention**: Logs retained per policy (typically 7 years for PCI compliance)
+
+---
+
+## Story 5.9: Complete Payment & Refund Data Models
+
+As a **System**,
+I want **comprehensive payment and refund tracking**,
+So that **all financial transactions are properly recorded for reconciliation**.
+
+**Acceptance Criteria:**
+
+**Given** payment processing occurs
+**When** transactions are recorded
+**Then** the system tracks:
+- Payment intents with Stripe IDs
+- Payment methods with card details (last4, brand)
+- Transaction history with status changes
+- Refunds with partial/full amounts
+**And** all amounts are stored in cents (ARCH-25)
+**And** audit logs are immutable
+
+**FRs covered:** FR119, FR120
+
+---
+
+### Technical Implementation
+
+#### Prisma Schema (`apps/api/prisma/schema/payment.prisma`)
+```prisma
+// =============================================================================
+// Payment Processing Domain Schema
+// =============================================================================
+// Complete payment and refund tracking
+// ID prefix: sconn_, pi_, pay_, ref_, palog_
+// Money fields: INTEGER cents (ARCH-25)
+// =============================================================================
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  REQUIRES_ACTION
+  SUCCEEDED
+  FAILED
+  CANCELLED
+  REFUNDED
+  PARTIALLY_REFUNDED
+}
+
+enum RefundStatus {
+  PENDING
+  PROCESSING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+}
+
+enum RefundReason {
+  DUPLICATE
+  FRAUDULENT
+  CUSTOMER_REQUEST
+  ORDER_CANCELLED
+  PRODUCT_ISSUE
+  OTHER
+}
+
+model StripeConnection {
+  id                    String      @id @default(cuid())
+  storeId               String      @map("store_id")
+  mode                  String      // 'test' or 'live'
+  stripeAccountId       String      @map("stripe_account_id")
+  encryptedAccessToken  String      @map("encrypted_access_token")
+  encryptedRefreshToken String?     @map("encrypted_refresh_token")
+  accountName           String?     @map("account_name")
+  chargesEnabled        Boolean     @default(false) @map("charges_enabled")
+  payoutsEnabled        Boolean     @default(false) @map("payouts_enabled")
+  status                String      @default("connected")
+  connectedAt           DateTime    @default(now()) @map("connected_at")
+  updatedAt             DateTime    @updatedAt @map("updated_at")
+
+  // Relations
+  store                 Store       @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@unique([storeId, mode])
+  @@index([storeId])
+  @@map("stripe_connections")
+}
+
+model StripeConnectState {
+  id          String    @id @default(cuid())
+  state       String    @unique
+  storeId     String    @map("store_id")
+  mode        String
+  expiresAt   DateTime  @map("expires_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  @@index([state])
+  @@map("stripe_connect_states")
+}
+
+model Payment {
+  id                    String        @id @default(cuid())
+  storeId               String        @map("store_id")
+  orderId               String        @map("order_id")
+  stripePaymentIntentId String?       @map("stripe_payment_intent_id")
+  stripeChargeId        String?       @map("stripe_charge_id")
+  method                String                              // 'card', 'apple_pay', etc.
+  amountCents           Int           @map("amount_cents")
+  currencyCode          String        @map("currency_code")
+  status                PaymentStatus @default(PENDING)
+  last4                 String?
+  brand                 String?                             // 'visa', 'mastercard', etc.
+  expiryMonth           Int?          @map("expiry_month")
+  expiryYear            Int?          @map("expiry_year")
+  cardholderName        String?       @map("cardholder_name")
+  billingAddressId      String?       @map("billing_address_id")
+  metadata              Json?
+  failureCode           String?       @map("failure_code")
+  failureMessage        String?       @map("failure_message")
+  capturedAt            DateTime?     @map("captured_at")
+  createdAt             DateTime      @default(now()) @map("created_at")
+  updatedAt             DateTime      @updatedAt @map("updated_at")
+
+  // Relations
+  store                 Store         @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  refunds               Refund[]
+  auditLogs             PaymentAuditLog[]
+
+  @@index([storeId])
+  @@index([orderId])
+  @@index([stripePaymentIntentId])
+  @@map("payments")
+}
+
+model Refund {
+  id                  String        @id @default(cuid())
+  storeId             String        @map("store_id")
+  paymentId           String        @map("payment_id")
+  stripeRefundId      String?       @map("stripe_refund_id")
+  amountCents         Int           @map("amount_cents")
+  currencyCode        String        @map("currency_code")
+  status              RefundStatus  @default(PENDING)
+  reason              RefundReason
+  notes               String?
+  requestedBy         String?       @map("requested_by")   // User ID
+  processedAt         DateTime?     @map("processed_at")
+  failureReason       String?       @map("failure_reason")
+  createdAt           DateTime      @default(now()) @map("created_at")
+  updatedAt           DateTime      @updatedAt @map("updated_at")
+
+  // Relations
+  store               Store         @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  payment             Payment       @relation(fields: [paymentId], references: [id])
+
+  @@index([storeId])
+  @@index([paymentId])
+  @@index([stripeRefundId])
+  @@map("refunds")
+}
+
+model PaymentAuditLog {
+  id                    String    @id @default(cuid())
+  storeId               String    @map("store_id")
+  paymentId             String    @map("payment_id")
+  eventType             String    @map("event_type")        // 'created', 'succeeded', etc.
+  stripePaymentIntentId String?   @map("stripe_payment_intent_id")
+  actorType             String    @map("actor_type")        // 'system', 'webhook', 'admin'
+  actorId               String?   @map("actor_id")
+  previousStatus        String?   @map("previous_status")
+  newStatus             String?   @map("new_status")
+  metadata              Json?
+  createdAt             DateTime  @default(now()) @map("created_at")
+
+  // Relations
+  store                 Store     @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  payment               Payment   @relation(fields: [paymentId], references: [id])
+
+  @@index([storeId])
+  @@index([paymentId])
+  @@index([createdAt])
+  @@map("payment_audit_logs")
+}
+```
+
+#### Zod Schemas (`@trafi/validators`)
+```typescript
+// packages/validators/src/payment/payment.schema.ts
+import { z } from 'zod';
+
+export const PaymentStatusSchema = z.enum([
+  'PENDING',
+  'PROCESSING',
+  'REQUIRES_ACTION',
+  'SUCCEEDED',
+  'FAILED',
+  'CANCELLED',
+  'REFUNDED',
+  'PARTIALLY_REFUNDED',
+]);
+
+export const CreatePaymentSchema = z.object({
+  orderId: z.string(),
+  amountCents: z.number().int().positive(),
+  currencyCode: z.string().length(3),
+  method: z.string(),
+});
+
+export const RefundReasonSchema = z.enum([
+  'DUPLICATE',
+  'FRAUDULENT',
+  'CUSTOMER_REQUEST',
+  'ORDER_CANCELLED',
+  'PRODUCT_ISSUE',
+  'OTHER',
+]);
+
+export const CreateRefundSchema = z.object({
+  paymentId: z.string(),
+  amountCents: z.number().int().positive(),
+  reason: RefundReasonSchema,
+  notes: z.string().max(500).optional(),
+});
+
+export const PaymentAuditEventSchema = z.object({
+  paymentId: z.string(),
+  eventType: z.string(),
+  actorType: z.enum(['system', 'webhook', 'admin']),
+  actorId: z.string().optional(),
+  previousStatus: PaymentStatusSchema.optional(),
+  newStatus: PaymentStatusSchema.optional(),
+  metadata: z.record(z.unknown()).optional(),
+});
+```
+
+#### UX Implementation Notes
+- **Payment timeline**: Shows all status changes with timestamps
+- **Refund modal**: Partial refund input with reason selection
+- **Card details**: Masked display (•••• 4242)
+- **Error states**: Clear failure messages with retry options

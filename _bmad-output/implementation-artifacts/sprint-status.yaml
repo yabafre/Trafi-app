@@ -74,6 +74,8 @@ development_status:
   2-8-ownership-transfer: done
   # Note: Story 2.9 added to fill gap - Dashboard Shell was specified in UX but never implemented
   2-9-dashboard-shell-navigation: done
+  # New: Multi-store RBAC reinforcement (StoreMembership replaces User.storeId)
+  2-R1-multi-store-rbac: backlog
   epic-2-retrospective: done
 
   # ============================================
@@ -90,6 +92,40 @@ development_status:
   3-6-product-pricing-and-tax-rules: backlog
   3-7-inventory-tracking: backlog
   3-8-oversell-prevention: backlog
+  # New stories added 2026-01-18 for Promotions, Gift Cards, Foundation Reinforcement
+  # NOTE: 3.9 Promotions SIMPLIFIED for MVP (removed PromotionRule/PromotionAction)
+  3-9-promotions-and-discounts-foundation: backlog
+  3-10-gift-cards: backlog
+  3-R1-foundation-reinforcement: backlog
+  3-R2-prefixed-ids-foundation: done
+  # Architectural corrections v2 applied 2026-01-18:
+  # - Global tables (Country, Currency) without storeId
+  # - StoreMembership for multi-store RBAC
+  # - StoreCounter for atomic orderNumber generation
+  # - DomainEvent outbox pattern for async reliability
+  # - CheckoutSession with state snapshots
+  # - InventoryReservation indexes & constraints
+  # - Promotion.conditionsVersion for JSON versioning
+  # - TaxRule.appliesToShipping
+  # - Arrays -> Join tables (ShippingZoneCountry, RegionCountry, StoreCurrency)
+  # - Money snapshots for Cart/CartItem, Order/OrderItem
+  #
+  # Architectural corrections v3 applied 2026-01-18:
+  # - InventoryReservation status (ACTIVE/RELEASED/EXPIRED) + releasedAt
+  # - Cart.sessionId @@unique([storeId, sessionId]) constraint
+  # - Soft delete strategy (deletedAt on Product, Customer, Order, Promotion)
+  # - DomainEvent atomic claim pattern for multi-worker safety
+  # - Postgres citext extension for case-insensitive emails/codes
+  # See: database-schema-roadmap.md for full details (9 architectural principles)
+  #
+  # MAINTENANCE STORY M-1 (2026-01-18):
+  # V3 Retroactive Fixes - P0 blocker for Epic 3.2+
+  # - User.email citext
+  # - Product.deletedAt soft delete
+  # - Country/Currency global tables
+  # - StoreCounter atomic sequences
+  # - DomainEvent outbox pattern
+  M-1-v3-retroactive-fixes: ready-for-dev
   epic-3-retrospective: optional
 
   # ============================================
@@ -106,6 +142,8 @@ development_status:
   4-7-checkout-flow-guest-checkout: backlog
   4-8-checkout-flow-address-and-shipping-selection: backlog
   4-9-order-creation-and-confirmation: backlog
+  # New story added 2026-01-18 for Regions & Multi-Currency
+  4-10-regions-and-multi-currency-foundation: backlog
   epic-4-retrospective: optional
 
   # ============================================
@@ -121,6 +159,8 @@ development_status:
   5-6-payment-failure-handling: backlog
   5-7-refund-processing: backlog
   5-8-payment-audit-trail: backlog
+  # New story added 2026-01-18 for complete Payment data models
+  5-9-complete-payment-and-refund-data-models: backlog
   epic-5-retrospective: optional
 
   # ============================================
@@ -137,6 +177,8 @@ development_status:
   6-7-3pl-tracking-update-api: backlog
   6-8-return-authorization-rma: backlog
   6-9-return-policy-configuration: backlog
+  # New story added 2026-01-18 for complete Fulfillment data models
+  6-10-complete-fulfillment-and-return-data-models: backlog
   epic-6-retrospective: optional
 
   # ============================================
@@ -156,6 +198,8 @@ development_status:
   7-10-wishlist-add-and-view: backlog
   7-11-wishlist-management: backlog
   7-12-wishlist-to-cart: backlog
+  # New story added 2026-01-18 for Customer segmentation
+  7-13-customer-groups-and-segmentation: backlog
   epic-7-retrospective: optional
 
   # ============================================
@@ -301,3 +345,23 @@ development_status:
   14-11-custom-domain-configuration: backlog
   14-12-tenant-offboarding: backlog
   epic-14-retrospective: optional
+
+  # ============================================
+  # EPIC 15: Suppliers & Purchase Orders
+  # Merchant peut gérer ses fournisseurs, lier les produits aux fournisseurs, et créer/recevoir des commandes d'achat.
+  # ADDED: 2026-01-18
+  # ============================================
+  epic-15: backlog
+  15-1-supplier-management: backlog
+  15-2-supplier-product-linking: backlog
+  15-3-purchase-order-creation: backlog
+  15-4-goods-receipt-and-inventory-update: backlog
+  epic-15-retrospective: optional
+
+  # ============================================
+  # CROSS-EPIC: Foundation & Infrastructure
+  # Global tables and cross-cutting concerns
+  # ADDED: 2026-01-18
+  # NOTE: X-1 absorbed into M-1-v3-retroactive-fixes (2026-01-18)
+  # ============================================
+  # X-1-global-reference-data: REMOVED - merged into M-1

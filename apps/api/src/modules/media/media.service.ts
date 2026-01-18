@@ -1,19 +1,10 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-  Logger,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import sharp from 'sharp';
 import { PrismaService } from '@database/prisma.service';
 import { StorageService } from '@common/storage';
 import type { ProductMedia, MediaType as PrismaMediaType } from '@generated/prisma/client';
-import type {
-  UpdateMediaInput,
-  ReorderMediaInput,
-  MediaResponse,
-} from '@trafi/types';
+import type { UpdateMediaInput, ReorderMediaInput, MediaResponse } from '@trafi/types';
 import { MEDIA_CONSTANTS } from '@trafi/validators';
 
 /**
@@ -65,7 +56,7 @@ export class MediaService {
   constructor(
     protected readonly prisma: PrismaService,
     protected readonly storageService: StorageService,
-    protected readonly eventEmitter: EventEmitter2,
+    protected readonly eventEmitter: EventEmitter2
   ) {}
 
   /**
@@ -78,15 +69,13 @@ export class MediaService {
     // Check MIME type
     const allowedTypes = MEDIA_CONSTANTS.ALLOWED_MIME_TYPES as readonly string[];
     if (!allowedTypes.includes(file.mimetype)) {
-      throw new BadRequestException(
-        `Invalid file type. Allowed types: ${allowedTypes.join(', ')}`,
-      );
+      throw new BadRequestException(`Invalid file type. Allowed types: ${allowedTypes.join(', ')}`);
     }
 
     // Check file size
     if (file.size > MEDIA_CONSTANTS.MAX_FILE_SIZE) {
       throw new BadRequestException(
-        `File too large. Maximum size: ${MEDIA_CONSTANTS.MAX_FILE_SIZE / (1024 * 1024)}MB`,
+        `File too large. Maximum size: ${MEDIA_CONSTANTS.MAX_FILE_SIZE / (1024 * 1024)}MB`
       );
     }
   }
@@ -159,7 +148,7 @@ export class MediaService {
     storeId: string,
     productId: string,
     file: UploadedFile,
-    variantId?: string,
+    variantId?: string
   ): Promise<MediaResponseDto> {
     // Validate file
     this.validateFile(file);
@@ -181,7 +170,7 @@ export class MediaService {
     // Check max images limit
     if (product.media.length >= MEDIA_CONSTANTS.MAX_IMAGES_PER_PRODUCT) {
       throw new BadRequestException(
-        `Maximum ${MEDIA_CONSTANTS.MAX_IMAGES_PER_PRODUCT} images per product`,
+        `Maximum ${MEDIA_CONSTANTS.MAX_IMAGES_PER_PRODUCT} images per product`
       );
     }
 
@@ -204,15 +193,11 @@ export class MediaService {
     // Upload to storage
     const basePath = `${storeId}/products/${productId}`;
     const [mainUpload, thumbUpload] = await Promise.all([
-      this.storageService.upload(
-        `${basePath}/${tempId}.webp`,
-        optimized.optimized,
-        'image/webp',
-      ),
+      this.storageService.upload(`${basePath}/${tempId}.webp`, optimized.optimized, 'image/webp'),
       this.storageService.upload(
         `${basePath}/${tempId}_thumb.webp`,
         optimized.thumbnail,
-        'image/webp',
+        'image/webp'
       ),
     ]);
 
@@ -251,9 +236,7 @@ export class MediaService {
       timestamp: new Date().toISOString(),
     });
 
-    this.logger.log(
-      `Media uploaded: ${media.id} for product ${productId} in store ${storeId}`,
-    );
+    this.logger.log(`Media uploaded: ${media.id} for product ${productId} in store ${storeId}`);
 
     return response;
   }
@@ -265,10 +248,7 @@ export class MediaService {
    * @param input - Update data with media ID
    * @returns Updated media
    */
-  async update(
-    storeId: string,
-    input: UpdateMediaInput,
-  ): Promise<MediaResponseDto> {
+  async update(storeId: string, input: UpdateMediaInput): Promise<MediaResponseDto> {
     // Find media and verify tenant via product
     const media = await this.prisma.productMedia.findUnique({
       where: { id: input.id },
@@ -357,8 +337,8 @@ export class MediaService {
             position,
             isPrimary: position === 0, // First position is primary
           },
-        }),
-      ),
+        })
+      )
     );
 
     // Clear primary from any media not in the reorder list
@@ -458,10 +438,7 @@ export class MediaService {
    * @param productId - Product ID to list media for
    * @returns Array of media
    */
-  async listByProduct(
-    storeId: string,
-    productId: string,
-  ): Promise<MediaResponseDto[]> {
+  async listByProduct(storeId: string, productId: string): Promise<MediaResponseDto[]> {
     // Verify product belongs to store
     const product = await this.prisma.product.findFirst({
       where: {

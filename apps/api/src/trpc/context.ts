@@ -17,16 +17,16 @@ import type { AuthenticatedUser, JwtPayload, Permission, Role } from '@trafi/typ
 import { ROLE_PERMISSIONS } from '@trafi/types';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import type { JwtService } from '@nestjs/jwt';
-import type { AuthService } from '../modules/auth/auth.service';
-import type { UserService } from '../modules/user/user.service';
-import type { SettingsService } from '../modules/settings/settings.service';
-import type { ApiKeysService } from '../modules/api-keys/api-keys.service';
-import type { OwnershipService } from '../modules/ownership/ownership.service';
-import type { ProductsService } from '../modules/products/products.service';
-import type { VariantsService } from '../modules/variants/variants.service';
-import type { MediaService } from '../modules/media/media.service';
-import type { CategoriesService } from '../modules/categories/categories.service';
-import type { CollectionsService } from '../modules/collections/collections.service';
+import type { AuthService } from '@modules/auth/auth.service';
+import type { UserService } from '@modules/user';
+import type { SettingsService } from '@modules/settings';
+import type { ApiKeysService } from '@modules/api-keys';
+import type { OwnershipService } from '@modules/ownership';
+import type { ProductsService } from '@modules/products';
+import type { VariantsService } from '@modules/variants';
+import type { MediaService } from '@modules/media';
+import type { CategoriesService } from '@modules/categories';
+import type { CollectionsService } from '@modules/collections';
 
 /**
  * Services injected from NestJS DI container
@@ -108,7 +108,8 @@ export async function createContext({
 }: CreateContextOptions): Promise<Context> {
   // Try to extract and validate JWT from Authorization header
   let user: AuthenticatedUser | null = null;
-  let tenantCtx: { storeId?: string; userId?: string; role?: string; requestId?: string } | null = null;
+  let tenantCtx: { storeId?: string; userId?: string; role?: string; requestId?: string } | null =
+    null;
 
   const token = extractTokenFromHeader(req);
   if (token) {
@@ -176,9 +177,7 @@ export async function createContext({
      * @returns The resource if it belongs to current tenant
      * @throws NotFoundException if resource is null or belongs to different tenant
      */
-    ensureTenantOwnership: <T extends { storeId: string }>(
-      resource: T | null,
-    ): T => {
+    ensureTenantOwnership: <T extends { storeId: string }>(resource: T | null): T => {
       // Resource not found
       if (!resource) {
         throw new NotFoundException('Resource not found');

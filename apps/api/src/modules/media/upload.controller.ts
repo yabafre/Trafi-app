@@ -43,16 +43,30 @@ class UploadMediaResponseDto {
   @ApiProperty({ description: 'Product ID this media belongs to', example: 'prod_xyz789' })
   productId!: string;
 
-  @ApiProperty({ description: 'Variant ID if variant-specific', example: 'var_abc123', nullable: true })
+  @ApiProperty({
+    description: 'Variant ID if variant-specific',
+    example: 'var_abc123',
+    nullable: true,
+  })
   variantId!: string | null;
 
-  @ApiProperty({ description: 'Optimized image URL (WebP)', example: 'https://cdn.example.com/store/products/prod_xyz/med_abc.webp' })
+  @ApiProperty({
+    description: 'Optimized image URL (WebP)',
+    example: 'https://cdn.example.com/store/products/prod_xyz/med_abc.webp',
+  })
   url!: string;
 
-  @ApiProperty({ description: 'Thumbnail URL (400x400)', example: 'https://cdn.example.com/store/products/prod_xyz/med_abc_thumb.webp' })
+  @ApiProperty({
+    description: 'Thumbnail URL (400x400)',
+    example: 'https://cdn.example.com/store/products/prod_xyz/med_abc_thumb.webp',
+  })
   thumbnailUrl!: string;
 
-  @ApiProperty({ description: 'Alt text for accessibility', example: 'Product front view', nullable: true })
+  @ApiProperty({
+    description: 'Alt text for accessibility',
+    example: 'Product front view',
+    nullable: true,
+  })
   altText!: string | null;
 
   @ApiProperty({ description: 'Media type', enum: ['IMAGE', 'VIDEO'], example: 'IMAGE' })
@@ -155,13 +169,15 @@ export class UploadController {
         validators: [
           new MaxFileSizeValidator({ maxSize: MEDIA_CONSTANTS.MAX_FILE_SIZE }),
           new FileTypeValidator({
-            fileType: new RegExp(`^(${MEDIA_CONSTANTS.ALLOWED_MIME_TYPES.join('|').replace(/\//g, '\\/')})$`),
+            fileType: new RegExp(
+              `^(${MEDIA_CONSTANTS.ALLOWED_MIME_TYPES.join('|').replace(/\//g, '\\/')})$`
+            ),
           }),
         ],
         fileIsRequired: true,
-      }),
+      })
     )
-    file: Express.Multer.File,
+    file: Express.Multer.File
   ): Promise<MediaResponse> {
     if (!file) {
       throw new BadRequestException('No file uploaded');
@@ -174,11 +190,6 @@ export class UploadController {
       size: file.size,
     };
 
-    return this.mediaService.upload(
-      user.storeId,
-      productId,
-      uploadedFile,
-      variantId,
-    );
+    return this.mediaService.upload(user.storeId, productId, uploadedFile, variantId);
   }
 }

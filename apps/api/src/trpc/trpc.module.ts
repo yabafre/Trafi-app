@@ -8,26 +8,26 @@ import { Module, Injectable, type NestMiddleware } from '@nestjs/common';
 import type { Request, Response, NextFunction } from 'express';
 import * as trpcExpress from '@trpc/server/adapters/express';
 import { JwtService } from '@nestjs/jwt';
-import { AuthModule } from '../modules/auth/auth.module';
-import { UserModule } from '../modules/user/user.module';
-import { SettingsModule } from '../modules/settings/settings.module';
-import { ApiKeysModule } from '../modules/api-keys/api-keys.module';
-import { OwnershipModule } from '../modules/ownership/ownership.module';
-import { ProductsModule } from '../modules/products/products.module';
-import { VariantsModule } from '../modules/variants/variants.module';
-import { MediaModule } from '../modules/media/media.module';
-import { CategoriesModule } from '../modules/categories/categories.module';
-import { CollectionsModule } from '../modules/collections/collections.module';
-import { AuthService } from '../modules/auth/auth.service';
-import { UserService } from '../modules/user/user.service';
-import { SettingsService } from '../modules/settings/settings.service';
-import { ApiKeysService } from '../modules/api-keys/api-keys.service';
-import { OwnershipService } from '../modules/ownership/ownership.service';
-import { ProductsService } from '../modules/products/products.service';
-import { VariantsService } from '../modules/variants/variants.service';
-import { MediaService } from '../modules/media/media.service';
-import { CategoriesService } from '../modules/categories/categories.service';
-import { CollectionsService } from '../modules/collections/collections.service';
+import { AuthModule } from '@modules/auth/auth.module';
+import { UserModule } from '@modules/user';
+import { SettingsModule } from '@modules/settings';
+import { ApiKeysModule } from '@modules/api-keys';
+import { OwnershipModule } from '@modules/ownership';
+import { ProductsModule } from '@modules/products';
+import { VariantsModule } from '@modules/variants';
+import { MediaModule } from '@modules/media';
+import { CategoriesModule } from '@modules/categories';
+import { CollectionsModule } from '@modules/collections';
+import { AuthService } from '@modules/auth/auth.service';
+import { UserService } from '@modules/user';
+import { SettingsService } from '@modules/settings';
+import { ApiKeysService } from '@modules/api-keys';
+import { OwnershipService } from '@modules/ownership';
+import { ProductsService } from '@modules/products';
+import { VariantsService } from '@modules/variants';
+import { MediaService } from '@modules/media';
+import { CategoriesService } from '@modules/categories';
+import { CollectionsService } from '@modules/collections';
 import { appRouter } from './routers/_app';
 import { createContext, type TRPCServices } from './context';
 
@@ -130,7 +130,18 @@ export class TRPCService {
 }
 
 @Module({
-  imports: [AuthModule, UserModule, SettingsModule, ApiKeysModule, OwnershipModule, ProductsModule, VariantsModule, MediaModule, CategoriesModule, CollectionsModule],
+  imports: [
+    AuthModule,
+    UserModule,
+    SettingsModule,
+    ApiKeysModule,
+    OwnershipModule,
+    ProductsModule,
+    VariantsModule,
+    MediaModule,
+    CategoriesModule,
+    CollectionsModule,
+  ],
   providers: [TRPCService, TRPCMiddleware],
   exports: [TRPCService, TRPCMiddleware],
 })

@@ -6,7 +6,7 @@
  *
  * @see https://trpc.io/docs/server/merging-routers
  */
-import { router } from '../trpc';
+import { router } from '@/trpc';
 import { authRouter } from './auth.router';
 import { usersRouter } from './users.router';
 import { settingsRouter } from './settings.router';

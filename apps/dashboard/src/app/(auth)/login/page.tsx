@@ -1,6 +1,9 @@
 import type { Metadata } from 'next'
 import { LoginForm } from './_components/LoginForm'
 
+// Force dynamic rendering to avoid SSG issues with client components
+export const dynamic = 'force-dynamic'
+
 export const metadata: Metadata = {
   title: 'Login | Trafi Dashboard',
   description: 'Sign in to your Trafi admin dashboard',

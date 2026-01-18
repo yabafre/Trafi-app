@@ -1,11 +1,11 @@
 ---
 project_name: 'trafi-app'
 user_name: 'Alex'
-date: '2026-01-11'
-sections_completed: ['technology_stack', 'typescript_rules', 'framework_rules', 'testing_rules', 'code_quality', 'workflow_rules', 'critical_rules']
+date: '2026-01-18'
+sections_completed: ['technology_stack', 'typescript_rules', 'framework_rules', 'testing_rules', 'code_quality', 'workflow_rules', 'critical_rules', 'database_architecture_v3']
 existing_patterns_found: 12
 status: 'complete'
-rule_count: 50
+rule_count: 59
 optimized_for_llm: true
 ---
 
@@ -407,6 +407,14 @@ pnpm db:generate  # Generate Prisma client
    - ALWAYS include `requestId` for tracing
    - NEVER expose internal error details to clients
 
+5. **Database Schema (v3 Principles)**
+   - ALWAYS follow the 9 architectural principles in "Database Schema Architectural Principles" section
+   - Use join tables (NOT arrays) for relational data
+   - Use `deletedAt` for soft deletes on business entities
+   - Use `@db.Citext` for case-insensitive email/code fields
+   - Use `StoreCounter` for sequential IDs (orderNumber, etc.)
+   - Use `DomainEvent` outbox for async reliability
+
 #### SECURITY REQUIREMENTS 🔒
 
 - Validate ALL user input with Zod schemas
@@ -460,6 +468,222 @@ await prisma.product.findMany({ where: { storeId } });
 
 ---
 
+## Database Schema Architectural Principles (v3)
+
+> **Full Details:** `_bmad-output/implementation-artifacts/database-schema-roadmap.md`
+> **Updated:** 2026-01-18 | **Principles:** 9
+
+These 9 principles govern ALL database schema decisions. Violating them causes data integrity issues.
+
+### Principle 1: Tenant Scoping (storeId Everywhere)
+
+**Rule:** Every business model MUST have `storeId` with composite unique constraints.
+
+```prisma
+model Product {
+  id        String   @id
+  storeId   String
+  slug      String
+  @@unique([storeId, slug])  // Tenant-scoped uniqueness
+  @@index([storeId, createdAt])
+}
+```
+
+**EXCEPTION - Global Reference Tables (NO storeId):**
+- `Country` (iso2 PK) - ISO 3166 codes, shared across all stores
+- `Currency` (code PK) - ISO 4217 codes, shared across all stores
+
+**Tenant links to global tables via join tables:**
+- `StoreCurrency(storeId, currencyCode)` - NOT `Store.currencies[]`
+- `RegionCountry(regionId, countryIso2)` - NOT `Region.countries[]`
+
+### Principle 2: No Arrays for Relational Data
+
+**Rule:** Use join tables instead of `String[]` arrays for filterable/indexable relationships.
+
+```typescript
+// ❌ BAD: Array for countries
+model ShippingZone {
+  countries String[]  // Can't index, can't query efficiently
+}
+
+// ✅ GOOD: Join table
+model ShippingZoneCountry {
+  zoneId      String
+  countryIso2 String
+  @@id([zoneId, countryIso2])
+}
+```
+
+**Exception:** JSON is OK for UI configuration NOT used for filtering:
+- `ProductVariant.options Json` → `{size: "L", color: "red"}`
+- `GiftCardTemplate.designConfig Json`
+
+### Principle 3: Money & Totals Snapshots
+
+**Rule:** Orders and Carts MUST store snapshot totals for historical accuracy.
+
+```prisma
+model Order {
+  currencyCode        String
+  subtotalCents       Int
+  discountTotalCents  Int      @default(0)
+  shippingTotalCents  Int      @default(0)
+  taxTotalCents       Int      @default(0)
+  grandTotalCents     Int      // Billing disputes need this
+  taxIncluded         Boolean  @default(false)
+}
+
+model OrderItem {
+  unitPriceCents      Int      // Snapshot at time of order
+  productSnapshot     Json     // Full product state
+  productSnapshotVersion Int   @default(1)
+}
+```
+
+**Why:** Product prices change, promotions expire. Without snapshots, you can't reconstruct order totals.
+
+### Principle 4: Payment Security
+
+**Rule:** Never store sensitive Stripe data in plain text.
+
+- Use KMS/Envelope encryption for `StripeConnection.accessToken`
+- Store `refreshToken` + metadata, not full credentials
+- Sanitize `PaymentAuditLog.metadata` - NO PII allowed
+- NEVER log full card numbers, only `last4` and `brand`
+
+### Principle 5: Atomic Counters (StoreCounter)
+
+**Rule:** Sequential identifiers (orderNumber, invoiceNumber) MUST use atomic counters.
+
+```prisma
+model StoreCounter {
+  storeId   String
+  key       String   // "order", "invoice", "return"
+  value     BigInt   @default(0)
+  @@id([storeId, key])
+}
+```
+
+**Usage:**
+```typescript
+const counter = await prisma.storeCounter.update({
+  where: { storeId_key: { storeId, key: 'order' } },
+  data: { value: { increment: 1 } },
+});
+const orderNumber = `ORD-${year}-${String(counter.value).padStart(6, '0')}`;
+```
+
+**Why:** Prevents duplicate order numbers under concurrent load.
+
+### Principle 6: Outbox Pattern (DomainEvent)
+
+**Rule:** Async operations (emails, webhooks, analytics) MUST use outbox for reliability.
+
+```prisma
+model DomainEvent {
+  id          String      @id  // evt_xxx
+  storeId     String
+  type        String      // "order.created", "payment.succeeded"
+  payload     Json
+  status      EventStatus // PENDING → PROCESSING → PROCESSED | FAILED
+  attempts    Int         @default(0)
+  createdAt   DateTime    @default(now())
+  processedAt DateTime?
+  @@index([status, createdAt])  // For worker polling
+}
+```
+
+**Atomic Claim Pattern (multi-worker safety):**
+```typescript
+// Worker claims event atomically - prevents double-processing
+const event = await prisma.domainEvent.updateMany({
+  where: { status: 'PENDING' },
+  data: { status: 'PROCESSING', attempts: { increment: 1 } },
+  take: 1,
+  orderBy: { createdAt: 'asc' }
+});
+```
+
+**Why:** No lost events on crash, retry with backoff, dead letter queue for investigation.
+
+### Principle 7: JSON Versioning
+
+**Rule:** JSON columns with business logic MUST have version fields.
+
+```prisma
+model Promotion {
+  conditions        Json?
+  conditionsVersion Int    @default(1)  // Increment when schema changes
+}
+
+model OrderItem {
+  productSnapshot        Json
+  productSnapshotVersion Int    @default(1)
+}
+```
+
+**Why:** Enables backward-compatible parsing when JSON structure evolves.
+
+### Principle 8: Case-Insensitive Fields (citext)
+
+**Rule:** Use Postgres `citext` extension for case-insensitive fields.
+
+```sql
+-- Migration: Enable extension
+CREATE EXTENSION IF NOT EXISTS citext;
+```
+
+```prisma
+model Customer {
+  email String @unique @db.Citext  // "John@Email.COM" == "john@email.com"
+}
+
+model Coupon {
+  code String @db.Citext  // "SAVE20" == "save20"
+  @@unique([storeId, code])
+}
+```
+
+**Fields requiring citext:**
+- `Customer.email`, `User.email`
+- `Coupon.code`, `GiftCard.code`, `Promotion.code`
+
+**Why:** Prevents duplicate accounts, case-sensitive login bugs.
+
+### Principle 9: Soft Delete Strategy
+
+**Rule:** High-value business data uses `deletedAt` for soft deletes.
+
+```prisma
+model Product {
+  deletedAt DateTime?
+  @@index([storeId, deletedAt])  // For filtering active records
+}
+```
+
+**Tables WITH soft delete (deletedAt):**
+- `Product`, `ProductVariant` - order history references
+- `Customer` - order history, GDPR retention
+- `Order` - legal/financial records (NEVER truly deleted)
+- `Promotion`, `Collection`, `Category` - analytics history
+
+**Tables WITHOUT soft delete (hard delete OK):**
+- `Cart`, `CartItem` - ephemeral session data
+- `InventoryReservation` - ephemeral holds
+- `CustomerSession`, `CheckoutSession` - ephemeral auth/checkout
+- Join tables - no independent lifecycle
+
+**Query pattern:**
+```typescript
+// Always filter soft-deleted records
+const activeProducts = await prisma.product.findMany({
+  where: { storeId, deletedAt: null }
+});
+```
+
+---
+
 ## Usage Guidelines
 
 **For AI Agents:**
@@ -476,6 +700,6 @@ await prisma.product.findMany({ where: { storeId } });
 
 ---
 
-**Last Updated:** 2026-01-11
-**Rule Count:** 50+
+**Last Updated:** 2026-01-18
+**Rule Count:** 59 (including 9 v3 database architectural principles)
 **Optimized for LLM:** Yes

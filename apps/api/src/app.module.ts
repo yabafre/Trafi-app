@@ -11,6 +11,7 @@ import { UserModule } from '@modules/user/user.module';
 import { ApiKeysModule } from '@modules/api-keys/api-keys.module';
 import { SettingsModule } from '@modules/settings/settings.module';
 import { OwnershipModule } from '@modules/ownership/ownership.module';
+import { VariantsModule } from '@modules/variants';
 import { TRPCModule } from './trpc/trpc.module';
 import { TenantInterceptor, AuditInterceptor } from '@common/interceptors';
 
@@ -42,6 +43,7 @@ import { TenantInterceptor, AuditInterceptor } from '@common/interceptors';
     ApiKeysModule,
     SettingsModule,
     OwnershipModule,
+    VariantsModule,
     TRPCModule,
   ],
   controllers: [],

@@ -2,6 +2,7 @@ import { Global, Module } from '@nestjs/common';
 import { PrismaService } from './prisma.service';
 import { StoreCounterService } from './services/store-counter.service';
 import { DomainEventService } from './services/domain-event.service';
+import { StoreMembershipService } from './services/store-membership.service';
 
 /**
  * DatabaseModule - Global module providing Prisma access
@@ -16,10 +17,11 @@ import { DomainEventService } from './services/domain-event.service';
  * - PrismaService: Core database access with tenant context helpers
  * - StoreCounterService: Atomic counters for sequential IDs (Story M-1)
  * - DomainEventService: Transactional outbox pattern (Story M-1)
+ * - StoreMembershipService: Multi-store RBAC management (Story 2-R1)
  */
 @Global()
 @Module({
-  providers: [PrismaService, StoreCounterService, DomainEventService],
-  exports: [PrismaService, StoreCounterService, DomainEventService],
+  providers: [PrismaService, StoreCounterService, DomainEventService, StoreMembershipService],
+  exports: [PrismaService, StoreCounterService, DomainEventService, StoreMembershipService],
 })
 export class DatabaseModule {}

@@ -38,14 +38,9 @@ export type EventPayload = Prisma.InputJsonValue;
 @Injectable()
 export class DomainEventService {
   private readonly logger = new Logger(DomainEventService.name);
-  private readonly maxAttempts: number;
+  private readonly maxAttempts: number = DEFAULT_MAX_ATTEMPTS;
 
-  constructor(
-    private readonly prisma: PrismaService,
-    maxAttempts: number = DEFAULT_MAX_ATTEMPTS,
-  ) {
-    this.maxAttempts = maxAttempts;
-  }
+  constructor(private readonly prisma: PrismaService) {}
 
   /**
    * Emit a new domain event.

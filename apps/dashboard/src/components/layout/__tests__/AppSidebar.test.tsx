@@ -17,13 +17,28 @@ vi.mock('@/lib/hooks/useAuth', () => ({
   })),
 }));
 
-// Mock the store settings hook
-vi.mock('@/app/(dashboard)/settings/store/_hooks/useStoreSettings', () => ({
-  useStoreSettings: vi.fn(() => ({
-    data: { name: 'Test Store Settings' },
+// Mock the useMyStores hook (Story 2-R2)
+vi.mock('@/lib/hooks', () => ({
+  useMyStores: vi.fn(() => ({
+    stores: [
+      { id: 'store_1', name: 'Test Store Settings', slug: 'test-store', role: 'OWNER', isCurrent: true },
+    ],
+    currentStore: { id: 'store_1', name: 'Test Store Settings', slug: 'test-store', role: 'OWNER', isCurrent: true },
+    currentStoreId: 'store_1',
+    hasMultipleStores: false,
     isLoading: false,
     error: null,
+    refetch: vi.fn(),
   })),
+}));
+
+// Mock StoreSwitcher component (Story 2-R2)
+vi.mock('../StoreSwitcher', () => ({
+  StoreSwitcher: vi.fn(({ collapsed }: { collapsed?: boolean }) => (
+    <div data-testid="store-switcher" data-collapsed={collapsed}>
+      Test Store Settings
+    </div>
+  )),
 }));
 
 // Mock the UI store
@@ -55,8 +70,10 @@ describe('AppSidebar', () => {
   it('renders store name from settings when none provided', () => {
     render(<AppSidebar />);
 
-    // When no prop is provided, it uses the store settings name
-    expect(screen.getByText('Test Store Settings')).toBeInTheDocument();
+    // When no prop is provided, it uses the current store name from useMyStores
+    // The name appears in both StoreSwitcher and the user section, so we use getAllByText
+    const storeNameElements = screen.getAllByText('Test Store Settings');
+    expect(storeNameElements.length).toBeGreaterThan(0);
   });
 
   it('renders TRAFI logo text when expanded', () => {

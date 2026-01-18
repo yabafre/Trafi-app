@@ -5,7 +5,7 @@ import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import { AuthService } from '../auth.service';
 import { PrismaService } from '@database';
-import type { User } from '@generated/prisma/client';
+import type { User, StoreMembership } from '@generated/prisma/client';
 
 // Suppress unused import warnings - these are needed for dependency injection
 void JwtService;
@@ -21,8 +21,9 @@ describe('AuthService', () => {
   let authService: AuthService;
 
   // Create mock functions directly
-  const mockFindUnique = jest.fn();
-  const mockUpdate = jest.fn();
+  const mockUserFindUnique = jest.fn();
+  const mockUserUpdate = jest.fn();
+  const mockMembershipFindFirst = jest.fn();
   const mockSignAsync = jest.fn();
   const mockVerifyAsync = jest.fn();
   const mockGet = jest.fn();
@@ -33,13 +34,21 @@ describe('AuthService', () => {
     email: 'test@trafi.dev',
     name: 'Test User',
     passwordHash: '$2b$10$hashedpassword',
-    role: 'ADMIN',
     status: 'ACTIVE',
-    storeId: 'store_test123',
     lastLoginAt: null,
     refreshTokenHash: null,
     createdAt: new Date('2024-01-01'),
     updatedAt: new Date('2024-01-01'),
+  };
+
+  const mockMembership: StoreMembership = {
+    id: 'smem_test123',
+    storeId: 'store_test123',
+    userId: 'user_test123',
+    role: 'ADMIN',
+    status: 'ACTIVE',
+    invitedAt: new Date('2024-01-01'),
+    acceptedAt: new Date('2024-01-01'),
   };
 
   const mockTokens = {
@@ -58,8 +67,13 @@ describe('AuthService', () => {
           provide: PrismaService,
           useValue: {
             user: {
-              findUnique: mockFindUnique,
-              update: mockUpdate,
+              findUnique: mockUserFindUnique,
+              update: mockUserUpdate,
+            },
+            $client: {
+              storeMembership: {
+                findFirst: mockMembershipFindFirst,
+              },
             },
           },
         },
@@ -119,8 +133,9 @@ describe('AuthService', () => {
     });
 
     it('should return tokens and user on valid credentials', async () => {
-      mockFindUnique.mockResolvedValue(mockUser);
-      mockUpdate.mockResolvedValue(mockUser);
+      mockUserFindUnique.mockResolvedValue(mockUser);
+      mockMembershipFindFirst.mockResolvedValue(mockMembership);
+      mockUserUpdate.mockResolvedValue(mockUser);
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
 
       const result = await authService.login('test@trafi.dev', 'ValidPassword123!');
@@ -130,10 +145,12 @@ describe('AuthService', () => {
       expect(result).toHaveProperty('user');
       expect(result.user.email).toBe('test@trafi.dev');
       expect(result.user.id).toBe(mockUser.id);
+      expect(result.user.storeId).toBe(mockMembership.storeId);
+      expect(result.user.role).toBe(mockMembership.role);
     });
 
     it('should throw UnauthorizedException for non-existent user', async () => {
-      mockFindUnique.mockResolvedValue(null);
+      mockUserFindUnique.mockResolvedValue(null);
 
       await expect(authService.login('nonexistent@trafi.dev', 'password')).rejects.toThrow(
         UnauthorizedException,
@@ -141,7 +158,7 @@ describe('AuthService', () => {
     });
 
     it('should throw UnauthorizedException for wrong password', async () => {
-      mockFindUnique.mockResolvedValue(mockUser);
+      mockUserFindUnique.mockResolvedValue(mockUser);
       (bcrypt.compare as jest.Mock).mockResolvedValue(false);
 
       await expect(authService.login('test@trafi.dev', 'WrongPassword')).rejects.toThrow(
@@ -151,7 +168,7 @@ describe('AuthService', () => {
 
     it('should throw UnauthorizedException for inactive user', async () => {
       const inactiveUser = { ...mockUser, status: 'INACTIVE' as const };
-      mockFindUnique.mockResolvedValue(inactiveUser);
+      mockUserFindUnique.mockResolvedValue(inactiveUser);
 
       await expect(authService.login('test@trafi.dev', 'ValidPassword123!')).rejects.toThrow(
         UnauthorizedException,
@@ -160,7 +177,17 @@ describe('AuthService', () => {
 
     it('should throw UnauthorizedException for invited user', async () => {
       const invitedUser = { ...mockUser, status: 'INVITED' as const };
-      mockFindUnique.mockResolvedValue(invitedUser);
+      mockUserFindUnique.mockResolvedValue(invitedUser);
+
+      await expect(authService.login('test@trafi.dev', 'ValidPassword123!')).rejects.toThrow(
+        UnauthorizedException,
+      );
+    });
+
+    it('should throw UnauthorizedException for user without active membership', async () => {
+      mockUserFindUnique.mockResolvedValue(mockUser);
+      mockMembershipFindFirst.mockResolvedValue(null); // No active membership
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
 
       await expect(authService.login('test@trafi.dev', 'ValidPassword123!')).rejects.toThrow(
         UnauthorizedException,
@@ -168,13 +195,14 @@ describe('AuthService', () => {
     });
 
     it('should update lastLoginAt on successful login', async () => {
-      mockFindUnique.mockResolvedValue(mockUser);
-      mockUpdate.mockResolvedValue(mockUser);
+      mockUserFindUnique.mockResolvedValue(mockUser);
+      mockMembershipFindFirst.mockResolvedValue(mockMembership);
+      mockUserUpdate.mockResolvedValue(mockUser);
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
 
       await authService.login('test@trafi.dev', 'ValidPassword123!');
 
-      expect(mockUpdate).toHaveBeenCalledWith(
+      expect(mockUserUpdate).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { id: mockUser.id },
           data: expect.objectContaining({
@@ -185,14 +213,15 @@ describe('AuthService', () => {
     });
 
     it('should store hashed refresh token on successful login', async () => {
-      mockFindUnique.mockResolvedValue(mockUser);
-      mockUpdate.mockResolvedValue(mockUser);
+      mockUserFindUnique.mockResolvedValue(mockUser);
+      mockMembershipFindFirst.mockResolvedValue(mockMembership);
+      mockUserUpdate.mockResolvedValue(mockUser);
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
 
       await authService.login('test@trafi.dev', 'ValidPassword123!');
 
       // Check that refresh token hash is stored
-      expect(mockUpdate).toHaveBeenCalledWith(
+      expect(mockUserUpdate).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { id: mockUser.id },
           data: expect.objectContaining({
@@ -203,8 +232,9 @@ describe('AuthService', () => {
     });
 
     it('should return correct user permissions based on role', async () => {
-      mockFindUnique.mockResolvedValue(mockUser);
-      mockUpdate.mockResolvedValue(mockUser);
+      mockUserFindUnique.mockResolvedValue(mockUser);
+      mockMembershipFindFirst.mockResolvedValue(mockMembership);
+      mockUserUpdate.mockResolvedValue(mockUser);
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
 
       const result = await authService.login('test@trafi.dev', 'ValidPassword123!');
@@ -229,9 +259,10 @@ describe('AuthService', () => {
         refreshTokenHash: '$2b$10$validrefreshhash',
       };
 
-      mockVerifyAsync.mockResolvedValue({ sub: mockUser.id, type: 'refresh' });
-      mockFindUnique.mockResolvedValue(userWithRefreshHash);
-      mockUpdate.mockResolvedValue(userWithRefreshHash);
+      mockVerifyAsync.mockResolvedValue({ sub: mockUser.id, tenantId: mockMembership.storeId, type: 'refresh' });
+      mockUserFindUnique.mockResolvedValue(userWithRefreshHash);
+      mockMembershipFindFirst.mockResolvedValue(mockMembership);
+      mockUserUpdate.mockResolvedValue(userWithRefreshHash);
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
       (bcrypt.hash as jest.Mock).mockResolvedValue('new-hashed-refresh');
       mockSignAsync
@@ -254,8 +285,8 @@ describe('AuthService', () => {
     });
 
     it('should throw UnauthorizedException if user not found', async () => {
-      mockVerifyAsync.mockResolvedValue({ sub: 'nonexistent', type: 'refresh' });
-      mockFindUnique.mockResolvedValue(null);
+      mockVerifyAsync.mockResolvedValue({ sub: 'nonexistent', tenantId: 'store_test123', type: 'refresh' });
+      mockUserFindUnique.mockResolvedValue(null);
 
       await expect(authService.refreshAccessToken('valid.token')).rejects.toThrow(
         UnauthorizedException,
@@ -268,11 +299,27 @@ describe('AuthService', () => {
         refreshTokenHash: '$2b$10$differenthash',
       };
 
-      mockVerifyAsync.mockResolvedValue({ sub: mockUser.id, type: 'refresh' });
-      mockFindUnique.mockResolvedValue(userWithRefreshHash);
+      mockVerifyAsync.mockResolvedValue({ sub: mockUser.id, tenantId: mockMembership.storeId, type: 'refresh' });
+      mockUserFindUnique.mockResolvedValue(userWithRefreshHash);
       (bcrypt.compare as jest.Mock).mockResolvedValue(false);
 
       await expect(authService.refreshAccessToken('mismatched.token')).rejects.toThrow(
+        UnauthorizedException,
+      );
+    });
+
+    it('should throw UnauthorizedException if no active membership for the store', async () => {
+      const userWithRefreshHash = {
+        ...mockUser,
+        refreshTokenHash: '$2b$10$validrefreshhash',
+      };
+
+      mockVerifyAsync.mockResolvedValue({ sub: mockUser.id, tenantId: mockMembership.storeId, type: 'refresh' });
+      mockUserFindUnique.mockResolvedValue(userWithRefreshHash);
+      mockMembershipFindFirst.mockResolvedValue(null); // No active membership
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+
+      await expect(authService.refreshAccessToken('valid.refresh.token')).rejects.toThrow(
         UnauthorizedException,
       );
     });
@@ -283,9 +330,10 @@ describe('AuthService', () => {
         refreshTokenHash: '$2b$10$oldhash',
       };
 
-      mockVerifyAsync.mockResolvedValue({ sub: mockUser.id, type: 'refresh' });
-      mockFindUnique.mockResolvedValue(userWithRefreshHash);
-      mockUpdate.mockResolvedValue(userWithRefreshHash);
+      mockVerifyAsync.mockResolvedValue({ sub: mockUser.id, tenantId: mockMembership.storeId, type: 'refresh' });
+      mockUserFindUnique.mockResolvedValue(userWithRefreshHash);
+      mockMembershipFindFirst.mockResolvedValue(mockMembership);
+      mockUserUpdate.mockResolvedValue(userWithRefreshHash);
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
       (bcrypt.hash as jest.Mock).mockResolvedValue('new-hashed-refresh');
       mockSignAsync
@@ -295,7 +343,7 @@ describe('AuthService', () => {
       await authService.refreshAccessToken('old.refresh.token');
 
       // Verify new refresh token hash is stored
-      expect(mockUpdate).toHaveBeenCalledWith(
+      expect(mockUserUpdate).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { id: mockUser.id },
           data: expect.objectContaining({
@@ -308,11 +356,11 @@ describe('AuthService', () => {
 
   describe('logout', () => {
     it('should clear refresh token hash', async () => {
-      mockUpdate.mockResolvedValue(mockUser);
+      mockUserUpdate.mockResolvedValue(mockUser);
 
       await authService.logout(mockUser.id);
 
-      expect(mockUpdate).toHaveBeenCalledWith({
+      expect(mockUserUpdate).toHaveBeenCalledWith({
         where: { id: mockUser.id },
         data: { refreshTokenHash: null },
       });
@@ -321,11 +369,12 @@ describe('AuthService', () => {
 
   describe('validateJwtPayload', () => {
     it('should return user for valid payload', async () => {
-      mockFindUnique.mockResolvedValue(mockUser);
+      mockUserFindUnique.mockResolvedValue(mockUser);
+      mockMembershipFindFirst.mockResolvedValue(mockMembership);
 
       const payload = {
         sub: mockUser.id,
-        tenantId: mockUser.storeId,
+        tenantId: mockMembership.storeId,
         role: 'ADMIN' as const,
         permissions: ['products:read'],
         type: 'session' as const,
@@ -341,7 +390,7 @@ describe('AuthService', () => {
     });
 
     it('should return null for non-existent user', async () => {
-      mockFindUnique.mockResolvedValue(null);
+      mockUserFindUnique.mockResolvedValue(null);
 
       const payload = {
         sub: 'nonexistent',
@@ -360,11 +409,11 @@ describe('AuthService', () => {
 
     it('should return null for inactive user', async () => {
       const inactiveUser = { ...mockUser, status: 'INACTIVE' as const };
-      mockFindUnique.mockResolvedValue(inactiveUser);
+      mockUserFindUnique.mockResolvedValue(inactiveUser);
 
       const payload = {
         sub: mockUser.id,
-        tenantId: mockUser.storeId,
+        tenantId: mockMembership.storeId,
         role: 'ADMIN' as const,
         permissions: [],
         type: 'session' as const,
@@ -377,8 +426,9 @@ describe('AuthService', () => {
       expect(result).toBeNull();
     });
 
-    it('should return null for tenant mismatch', async () => {
-      mockFindUnique.mockResolvedValue(mockUser);
+    it('should return null for tenant mismatch (no active membership)', async () => {
+      mockUserFindUnique.mockResolvedValue(mockUser);
+      mockMembershipFindFirst.mockResolvedValue(null); // No membership for the store in token
 
       const payload = {
         sub: mockUser.id,
@@ -398,8 +448,9 @@ describe('AuthService', () => {
 
   describe('JWT Token Generation', () => {
     it('should generate access token with correct payload structure', async () => {
-      mockFindUnique.mockResolvedValue(mockUser);
-      mockUpdate.mockResolvedValue(mockUser);
+      mockUserFindUnique.mockResolvedValue(mockUser);
+      mockMembershipFindFirst.mockResolvedValue(mockMembership);
+      mockUserUpdate.mockResolvedValue(mockUser);
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
       (bcrypt.hash as jest.Mock).mockResolvedValue('hashed');
       mockGetOrThrow.mockReturnValue('jwt-secret');
@@ -410,12 +461,12 @@ describe('AuthService', () => {
 
       await authService.login('test@trafi.dev', 'password');
 
-      // Verify access token payload structure
+      // Verify access token payload structure (uses membership's storeId and role)
       expect(mockSignAsync).toHaveBeenCalledWith(
         expect.objectContaining({
           sub: mockUser.id,
-          tenantId: mockUser.storeId,
-          role: mockUser.role,
+          tenantId: mockMembership.storeId,
+          role: mockMembership.role,
           permissions: expect.any(Array),
           type: 'session',
         }),
@@ -423,8 +474,9 @@ describe('AuthService', () => {
     });
 
     it('should generate refresh token with correct payload structure', async () => {
-      mockFindUnique.mockResolvedValue(mockUser);
-      mockUpdate.mockResolvedValue(mockUser);
+      mockUserFindUnique.mockResolvedValue(mockUser);
+      mockMembershipFindFirst.mockResolvedValue(mockMembership);
+      mockUserUpdate.mockResolvedValue(mockUser);
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
       (bcrypt.hash as jest.Mock).mockResolvedValue('hashed');
       mockGetOrThrow.mockReturnValue('jwt-refresh-secret');
@@ -435,17 +487,63 @@ describe('AuthService', () => {
 
       await authService.login('test@trafi.dev', 'password');
 
-      // Verify refresh token is generated with different settings
+      // Verify refresh token is generated with store context from membership
       expect(mockSignAsync).toHaveBeenCalledWith(
         expect.objectContaining({
           sub: mockUser.id,
-          tenantId: mockUser.storeId,
+          tenantId: mockMembership.storeId,
           type: 'refresh',
         }),
         expect.objectContaining({
           secret: expect.any(String),
           expiresIn: '7d',
         }),
+      );
+    });
+  });
+
+  describe('switchStore', () => {
+    it('should return new tokens for valid store switch', async () => {
+      const newMembership: StoreMembership = {
+        ...mockMembership,
+        id: 'smem_new123',
+        storeId: 'store_new123',
+        role: 'EDITOR',
+      };
+
+      mockUserFindUnique.mockResolvedValue(mockUser);
+      mockMembershipFindFirst.mockResolvedValue(newMembership);
+      mockUserUpdate.mockResolvedValue(mockUser);
+      mockGetOrThrow.mockReturnValue('jwt-secret');
+      mockGet.mockReturnValue('15m');
+      (bcrypt.hash as jest.Mock).mockResolvedValue('hashed');
+      mockSignAsync
+        .mockResolvedValueOnce('new.access.token')
+        .mockResolvedValueOnce('new.refresh.token');
+
+      const result = await authService.switchStore(mockUser.id, 'store_new123');
+
+      expect(result).toHaveProperty('accessToken');
+      expect(result).toHaveProperty('refreshToken');
+      expect(result.user.storeId).toBe('store_new123');
+      expect(result.user.role).toBe('EDITOR');
+    });
+
+    it('should throw UnauthorizedException for inactive user', async () => {
+      const inactiveUser = { ...mockUser, status: 'INACTIVE' as const };
+      mockUserFindUnique.mockResolvedValue(inactiveUser);
+
+      await expect(authService.switchStore(mockUser.id, 'store_new123')).rejects.toThrow(
+        UnauthorizedException,
+      );
+    });
+
+    it('should throw UnauthorizedException if no membership for target store', async () => {
+      mockUserFindUnique.mockResolvedValue(mockUser);
+      mockMembershipFindFirst.mockResolvedValue(null);
+
+      await expect(authService.switchStore(mockUser.id, 'store_no_access')).rejects.toThrow(
+        UnauthorizedException,
       );
     });
   });

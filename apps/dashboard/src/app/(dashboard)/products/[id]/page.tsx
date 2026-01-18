@@ -5,35 +5,14 @@ import Link from 'next/link'
 import { ArrowLeft, Pencil, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
+import { formatPrice, formatDate } from '@/lib/utils'
 import { ProductStatusBadge, DeleteProductDialog } from '../_components'
+import { VariantsSection } from './_components'
 import { useProduct } from '../_hooks'
 import { usePermissions } from '@/lib/hooks'
 
 interface ProductDetailPageProps {
   params: Promise<{ id: string }>
-}
-
-/**
- * Format price from cents to display string
- */
-function formatPrice(cents: number): string {
-  return new Intl.NumberFormat('fr-FR', {
-    style: 'currency',
-    currency: 'EUR',
-  }).format(cents / 100)
-}
-
-/**
- * Format date for display
- */
-function formatDate(date: Date | string): string {
-  return new Intl.DateTimeFormat('fr-FR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(new Date(date))
 }
 
 /**
@@ -225,6 +204,9 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
           </dl>
         </div>
       </div>
+
+      {/* Variants Section - Story 3.2 */}
+      <VariantsSection productId={id} />
 
       {/* Delete Dialog */}
       <DeleteProductDialog

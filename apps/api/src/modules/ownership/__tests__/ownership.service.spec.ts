@@ -24,6 +24,12 @@ describe('OwnershipService', () => {
       update: jest.Mock;
       findMany: jest.Mock;
     };
+    $client: {
+      storeMembership: {
+        findFirst: jest.Mock;
+        updateMany: jest.Mock;
+      };
+    };
     $transaction: jest.Mock;
   };
   let mockEventEmitter: {
@@ -34,15 +40,26 @@ describe('OwnershipService', () => {
   const mockOwnerId = 'owner-123';
   const mockAdminId = 'admin-456';
   const mockTransferId = 'transfer-789';
+  const mockMembershipId = 'smem-123';
 
   const createMockUser = (overrides = {}) => ({
     id: mockOwnerId,
     email: 'owner@test.com',
     name: 'Owner User',
     passwordHash: 'hashed_password',
+    status: 'ACTIVE',
+    ...overrides,
+  });
+
+  const createMockMembership = (overrides = {}) => ({
+    id: mockMembershipId,
+    storeId: mockStoreId,
+    userId: mockOwnerId,
     role: 'OWNER',
     status: 'ACTIVE',
-    storeId: mockStoreId,
+    invitedAt: new Date(),
+    acceptedAt: new Date(),
+    user: createMockUser(),
     ...overrides,
   });
 
@@ -78,6 +95,12 @@ describe('OwnershipService', () => {
         update: jest.fn(),
         findMany: jest.fn(),
       },
+      $client: {
+        storeMembership: {
+          findFirst: jest.fn(),
+          updateMany: jest.fn(),
+        },
+      },
       $transaction: jest.fn(),
     };
 
@@ -107,17 +130,22 @@ describe('OwnershipService', () => {
   describe('initiate', () => {
     it('should create a transfer when all conditions are met', async () => {
       const mockOwner = createMockUser();
-      const mockAdmin = createMockUser({
+      const mockAdminUser = createMockUser({
         id: mockAdminId,
         email: 'admin@test.com',
         name: 'Admin User',
+      });
+      const mockAdminMembership = createMockMembership({
+        id: 'smem-admin',
+        userId: mockAdminId,
         role: 'ADMIN',
+        user: mockAdminUser,
       });
       const mockTransfer = createMockTransfer();
 
       mockPrisma.user.findUnique.mockResolvedValue(mockOwner);
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
-      mockPrisma.user.findFirst.mockResolvedValue(mockAdmin);
+      mockPrisma.$client.storeMembership.findFirst.mockResolvedValue(mockAdminMembership);
       mockPrisma.ownershipTransfer.findFirst.mockResolvedValue(null);
       mockPrisma.ownershipTransfer.create.mockResolvedValue(mockTransfer);
 
@@ -151,7 +179,7 @@ describe('OwnershipService', () => {
       const mockOwner = createMockUser();
       mockPrisma.user.findUnique.mockResolvedValue(mockOwner);
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
-      mockPrisma.user.findFirst.mockResolvedValue(null);
+      mockPrisma.$client.storeMembership.findFirst.mockResolvedValue(null);
 
       await expect(
         service.initiate(mockStoreId, mockOwnerId, {
@@ -163,15 +191,17 @@ describe('OwnershipService', () => {
 
     it('should throw BadRequestException when pending transfer exists', async () => {
       const mockOwner = createMockUser();
-      const mockAdmin = createMockUser({
-        id: mockAdminId,
+      const mockAdminMembership = createMockMembership({
+        id: 'smem-admin',
+        userId: mockAdminId,
         role: 'ADMIN',
+        user: createMockUser({ id: mockAdminId }),
       });
       const existingTransfer = createMockTransfer();
 
       mockPrisma.user.findUnique.mockResolvedValue(mockOwner);
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
-      mockPrisma.user.findFirst.mockResolvedValue(mockAdmin);
+      mockPrisma.$client.storeMembership.findFirst.mockResolvedValue(mockAdminMembership);
       mockPrisma.ownershipTransfer.findFirst.mockResolvedValue(existingTransfer);
 
       await expect(
@@ -188,7 +218,6 @@ describe('OwnershipService', () => {
       const mockTransfer = createMockTransfer();
       const mockTargetUser = createMockUser({
         id: mockAdminId,
-        role: 'ADMIN',
       });
 
       mockPrisma.ownershipTransfer.findFirst.mockResolvedValue(mockTransfer);
@@ -200,7 +229,19 @@ describe('OwnershipService', () => {
         status: 'CONFIRMED',
         completedAt: new Date(),
       };
-      mockPrisma.$transaction.mockResolvedValue([confirmedTransfer]);
+
+      // Mock transaction to execute the callback and return the confirmed transfer
+      mockPrisma.$transaction.mockImplementation(async (callback) => {
+        const mockTx = {
+          ownershipTransfer: {
+            update: jest.fn().mockResolvedValue(confirmedTransfer),
+          },
+          storeMembership: {
+            updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+          },
+        };
+        return callback(mockTx);
+      });
 
       const result = await service.confirm(mockStoreId, mockAdminId, {
         transferId: mockTransferId,
@@ -354,12 +395,17 @@ describe('OwnershipService', () => {
   describe('tenant isolation', () => {
     it('should scope initiate to correct storeId', async () => {
       const mockOwner = createMockUser();
-      const mockAdmin = createMockUser({ id: mockAdminId, role: 'ADMIN' });
+      const mockAdminMembership = createMockMembership({
+        id: 'smem-admin',
+        userId: mockAdminId,
+        role: 'ADMIN',
+        user: createMockUser({ id: mockAdminId }),
+      });
       const mockTransfer = createMockTransfer();
 
       mockPrisma.user.findUnique.mockResolvedValue(mockOwner);
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
-      mockPrisma.user.findFirst.mockResolvedValue(mockAdmin);
+      mockPrisma.$client.storeMembership.findFirst.mockResolvedValue(mockAdminMembership);
       mockPrisma.ownershipTransfer.findFirst.mockResolvedValue(null);
       mockPrisma.ownershipTransfer.create.mockResolvedValue(mockTransfer);
 
@@ -368,7 +414,7 @@ describe('OwnershipService', () => {
         password: 'correct_password',
       });
 
-      expect(mockPrisma.user.findFirst).toHaveBeenCalledWith(
+      expect(mockPrisma.$client.storeMembership.findFirst).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({
             storeId: mockStoreId,
@@ -389,12 +435,17 @@ describe('OwnershipService', () => {
   describe('72-hour expiration', () => {
     it('should set correct expiration time on initiate', async () => {
       const mockOwner = createMockUser();
-      const mockAdmin = createMockUser({ id: mockAdminId, role: 'ADMIN' });
+      const mockAdminMembership = createMockMembership({
+        id: 'smem-admin',
+        userId: mockAdminId,
+        role: 'ADMIN',
+        user: createMockUser({ id: mockAdminId }),
+      });
       const mockTransfer = createMockTransfer();
 
       mockPrisma.user.findUnique.mockResolvedValue(mockOwner);
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
-      mockPrisma.user.findFirst.mockResolvedValue(mockAdmin);
+      mockPrisma.$client.storeMembership.findFirst.mockResolvedValue(mockAdminMembership);
       mockPrisma.ownershipTransfer.findFirst.mockResolvedValue(null);
       mockPrisma.ownershipTransfer.create.mockResolvedValue(mockTransfer);
 

@@ -14,7 +14,8 @@ import { cn } from '@/lib/utils';
 import { useNavigation, type NavItemWithActive } from '@/config/navigation';
 import { useUIStore } from '@/stores/ui-store';
 import { useAuth } from '@/lib/hooks/useAuth';
-import { useStoreSettings } from '@/app/(dashboard)/settings/store/_hooks/useStoreSettings';
+import { useMyStores } from '@/lib/hooks';
+import { StoreSwitcher } from './StoreSwitcher';
 import {
   Tooltip,
   TooltipContent,
@@ -54,11 +55,11 @@ export function AppSidebar({
   const navigation = useNavigation();
   const { sidebarCollapsed, toggleSidebarCollapsed } = useUIStore();
   const { user, logout, isLoading } = useAuth();
-  const { data: storeSettings } = useStoreSettings();
+  const { currentStore } = useMyStores();
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
 
-  // Use prop override or fetch from store settings, fallback to default
-  const storeName = storeNameProp ?? storeSettings?.name ?? 'My Store';
+  // Use prop override or current store from multi-store context, fallback to default
+  const storeName = storeNameProp ?? currentStore?.name ?? 'My Store';
 
   // Derive user display info from auth
   const userName = user?.email?.split('@')[0] ?? 'User';
@@ -114,7 +115,10 @@ export function AppSidebar({
             </div>
           )}
 
-          {/* ... Rest of the component ... */}
+          {/* Store Switcher - Story 2-R2 */}
+          <div className="border-b border-border">
+            <StoreSwitcher collapsed={sidebarCollapsed} />
+          </div>
 
           {/* Navigation Section */}
           <div className="flex-1 flex flex-col overflow-y-auto no-scrollbar">

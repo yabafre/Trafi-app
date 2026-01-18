@@ -16,6 +16,7 @@ export * from './customer.types';
 export * from './store.types';
 export * from './auth.types';
 export * from './permissions.types';
+export * from './variant.types';
 
 // Common types from validators
 export type {

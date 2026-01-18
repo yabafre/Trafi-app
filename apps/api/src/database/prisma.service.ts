@@ -120,6 +120,12 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
   get domainEvent() {
     return this.client.domainEvent;
   }
+  get productVariant() {
+    return this.client.productVariant;
+  }
+  get storeMembership() {
+    return this.client.storeMembership;
+  }
 
   // Delegate transaction and other methods with proper typing
   // Using bind to preserve 'this' context while forwarding calls

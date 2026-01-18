@@ -14,7 +14,7 @@
 
 // Import PrismaClient from the custom generated location (Prisma 7)
 // Uses @prisma/adapter-pg for PostgreSQL connection (same as PrismaService)
-import { PrismaClient, UserRole, UserStatus, ProductStatus } from '../src/generated/prisma/client';
+import { PrismaClient, UserRole, UserStatus, ProductStatus, MembershipStatus } from '../src/generated/prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import * as bcrypt from 'bcrypt';
 import { prefixedIdsExtension } from '../src/database/prefixed-ids.extension';
@@ -201,18 +201,18 @@ async function seedStore(): Promise<string> {
 }
 
 async function seedUsers(storeId: string): Promise<void> {
-  console.log('\n--- Seeding Users ---');
+  console.log('\n--- Seeding Users & Memberships ---');
 
   // Hash password once for all users (performance optimization)
   const passwordHash = bcrypt.hashSync(DEMO_PASSWORD, BCRYPT_ROUNDS);
   console.log(`  Password hash generated (bcrypt rounds: ${BCRYPT_ROUNDS})`);
 
   for (const userData of DEMO_USERS) {
+    // Create/update user without storeId or role (multi-store RBAC)
+    // Role is now per-membership, not per-user
     const user = await prisma.user.upsert({
       where: { email: userData.email },
       update: {
-        // Update role and status if user exists
-        role: userData.role,
         status: userData.status,
         passwordHash: passwordHash,
       },
@@ -220,18 +220,39 @@ async function seedUsers(storeId: string): Promise<void> {
         email: userData.email,
         name: userData.name,
         passwordHash: passwordHash,
-        role: userData.role,
         status: userData.status,
+      },
+    });
+
+    // Create StoreMembership for this user-store pair
+    // @see Story 2-R1 - Multi-Store RBAC (StoreMembership Model)
+    const membershipStatus = userData.status === 'ACTIVE' ? 'ACTIVE' : 'PENDING';
+    await prisma.storeMembership.upsert({
+      where: {
+        storeId_userId: {
+          storeId: storeId,
+          userId: user.id,
+        },
+      },
+      update: {
+        role: userData.role,
+        status: membershipStatus,
+      },
+      create: {
         storeId: storeId,
+        userId: user.id,
+        role: userData.role,
+        status: membershipStatus,
+        acceptedAt: membershipStatus === 'ACTIVE' ? new Date() : null,
       },
     });
 
     const statusIcon = user.status === 'ACTIVE' ? '✓' : '○';
-    console.log(`  [${statusIcon}] ${user.name} (${user.email}) - ${user.role}`);
+    console.log(`  [${statusIcon}] ${user.name} (${user.email}) - ${userData.role} (membership: ${membershipStatus})`);
   }
 
-  console.log(`  Total: ${DEMO_USERS.length} users`);
-  console.log(`  Demo login: any email above with password "${DEMO_PASSWORD}"`);
+  console.log(`  Total: ${DEMO_USERS.length} users with store memberships`);
+  console.log(`  Demo login: any ACTIVE email above with password "${DEMO_PASSWORD}"`);
 }
 
 async function seedProducts(storeId: string): Promise<void> {

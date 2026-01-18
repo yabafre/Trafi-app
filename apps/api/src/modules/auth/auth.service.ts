@@ -3,7 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '@database/prisma.service';
-import type { User } from '@generated/prisma/client';
+import type { User, StoreMembership } from '@generated/prisma/client';
 import type { AuthenticatedUser, AuthResponse, JwtPayload } from '@trafi/types';
 import {
   ROLE_PERMISSIONS,
@@ -11,12 +11,24 @@ import {
 } from '../../common/types/permissions';
 
 /**
+ * User with active membership for auth context
+ */
+interface UserWithMembership {
+  user: User;
+  membership: StoreMembership;
+}
+
+/**
  * Authentication service for admin dashboard access
  *
  * IMPORTANT: Use `protected` methods (not `private`) to support
  * merchant overrides in @trafi/core distribution model.
  *
+ * Multi-store RBAC: Users can belong to multiple stores. At login,
+ * we select the first ACTIVE membership. Users can switch stores later.
+ *
  * @see epic-1-retrospective.md#Trafi-Core-Override-Pattern
+ * @see Story 2-R1 - Multi-Store RBAC (StoreMembership Model)
  */
 @Injectable()
 export class AuthService {
@@ -34,24 +46,26 @@ export class AuthService {
    * @throws UnauthorizedException if credentials are invalid
    */
   async login(email: string, password: string): Promise<AuthResponse> {
-    const user = await this.validateUser(email, password);
+    const result = await this.validateUser(email, password);
 
-    if (!user) {
+    if (!result) {
       // Generic error message - don't reveal if email exists
       throw new UnauthorizedException('Invalid credentials');
     }
+
+    const { user, membership } = result;
 
     // Update last login timestamp
     await this.updateLastLogin(user.id);
 
     // Generate tokens
-    const tokens = await this.generateTokens(user);
+    const tokens = await this.generateTokens(user, membership);
 
     // Store hashed refresh token
     await this.storeRefreshToken(user.id, tokens.refreshToken);
 
     return {
-      user: this.toAuthenticatedUser(user),
+      user: this.toAuthenticatedUser(user, membership),
       accessToken: tokens.accessToken,
       refreshToken: tokens.refreshToken,
       expiresIn: this.getAccessTokenExpiration(),
@@ -59,10 +73,12 @@ export class AuthService {
   }
 
   /**
-   * Validate user credentials
+   * Validate user credentials and get active membership
    * Protected for merchant override (e.g., add 2FA)
+   *
+   * @returns User with their first active membership, or null if invalid
    */
-  protected async validateUser(email: string, password: string): Promise<User | null> {
+  protected async validateUser(email: string, password: string): Promise<UserWithMembership | null> {
     const user = await this.prisma.user.findUnique({
       where: { email },
     });
@@ -82,7 +98,21 @@ export class AuthService {
       return null;
     }
 
-    return user;
+    // Get user's first active membership
+    const membership = await this.prisma.$client.storeMembership.findFirst({
+      where: {
+        userId: user.id,
+        status: 'ACTIVE',
+      },
+      orderBy: { acceptedAt: 'desc' }, // Most recently accepted first
+    });
+
+    if (!membership) {
+      // User has no active store membership
+      return null;
+    }
+
+    return { user, membership };
   }
 
   /**
@@ -90,21 +120,23 @@ export class AuthService {
    * Protected for merchant override (e.g., custom claims)
    */
   protected async generateTokens(
-    user: User
+    user: User,
+    membership: StoreMembership
   ): Promise<{ accessToken: string; refreshToken: string }> {
-    const permissions = this.getPermissionsForRole(user.role as Role);
+    const role = membership.role as Role;
+    const permissions = this.getPermissionsForRole(role);
 
     const payload = {
       sub: user.id,
-      tenantId: user.storeId,
-      role: user.role,
+      tenantId: membership.storeId,
+      role: membership.role,
       permissions,
       type: 'session' as const,
     };
 
     const refreshPayload = {
       sub: user.id,
-      tenantId: user.storeId,
+      tenantId: membership.storeId,
       type: 'refresh' as const,
     };
 
@@ -165,14 +197,14 @@ export class AuthService {
   /**
    * Convert User entity to AuthenticatedUser response
    */
-  protected toAuthenticatedUser(user: User): AuthenticatedUser {
-    const role = user.role as Role;
+  protected toAuthenticatedUser(user: User, membership: StoreMembership): AuthenticatedUser {
+    const role = membership.role as Role;
     return {
       id: user.id,
       email: user.email,
       name: user.name,
       role,
-      storeId: user.storeId,
+      storeId: membership.storeId,
       permissions: this.getPermissionsForRole(role),
     };
   }
@@ -230,14 +262,27 @@ export class AuthService {
         throw new UnauthorizedException('Invalid refresh token');
       }
 
+      // Get the membership for the store in the token
+      const membership = await this.prisma.$client.storeMembership.findFirst({
+        where: {
+          userId: user.id,
+          storeId: payload.tenantId,
+          status: 'ACTIVE',
+        },
+      });
+
+      if (!membership) {
+        throw new UnauthorizedException('No active membership for this store');
+      }
+
       // Generate new tokens (rotation)
-      const tokens = await this.generateTokens(user);
+      const tokens = await this.generateTokens(user, membership);
 
       // Store new refresh token hash
       await this.storeRefreshToken(user.id, tokens.refreshToken);
 
       return {
-        user: this.toAuthenticatedUser(user),
+        user: this.toAuthenticatedUser(user, membership),
         accessToken: tokens.accessToken,
         refreshToken: tokens.refreshToken,
         expiresIn: this.getAccessTokenExpiration(),
@@ -270,11 +315,90 @@ export class AuthService {
       return null;
     }
 
-    // Verify tenant matches
-    if (user.storeId !== payload.tenantId) {
+    // Verify user has active membership for the store in the token
+    const membership = await this.prisma.$client.storeMembership.findFirst({
+      where: {
+        userId: user.id,
+        storeId: payload.tenantId,
+        status: 'ACTIVE',
+      },
+    });
+
+    if (!membership) {
       return null;
     }
 
-    return this.toAuthenticatedUser(user);
+    return this.toAuthenticatedUser(user, membership);
+  }
+
+  /**
+   * Switch to a different store for an authenticated user.
+   *
+   * Returns new tokens for the requested store if the user has an active membership.
+   *
+   * @param userId - Current user ID
+   * @param storeId - Target store ID to switch to
+   * @returns New auth response for the selected store
+   * @throws UnauthorizedException if user doesn't have access to the store
+   */
+  async switchStore(userId: string, storeId: string): Promise<AuthResponse> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user || user.status !== 'ACTIVE') {
+      throw new UnauthorizedException('User not found or inactive');
+    }
+
+    // Get the membership for the target store
+    const membership = await this.prisma.$client.storeMembership.findFirst({
+      where: {
+        userId,
+        storeId,
+        status: 'ACTIVE',
+      },
+    });
+
+    if (!membership) {
+      throw new UnauthorizedException('No active membership for this store');
+    }
+
+    // Generate new tokens for the new store context
+    const tokens = await this.generateTokens(user, membership);
+
+    // Store new refresh token hash
+    await this.storeRefreshToken(user.id, tokens.refreshToken);
+
+    return {
+      user: this.toAuthenticatedUser(user, membership),
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+      expiresIn: this.getAccessTokenExpiration(),
+    };
+  }
+
+  /**
+   * Get all stores the user has access to.
+   *
+   * @param userId - User ID
+   * @returns List of stores with membership info
+   */
+  async getUserStores(userId: string) {
+    return this.prisma.$client.storeMembership.findMany({
+      where: {
+        userId,
+        status: 'ACTIVE',
+      },
+      include: {
+        store: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          },
+        },
+      },
+      orderBy: { acceptedAt: 'desc' },
+    });
   }
 }

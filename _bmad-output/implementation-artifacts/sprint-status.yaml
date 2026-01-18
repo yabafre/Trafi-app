@@ -75,7 +75,13 @@ development_status:
   # Note: Story 2.9 added to fill gap - Dashboard Shell was specified in UX but never implemented
   2-9-dashboard-shell-navigation: done
   # New: Multi-store RBAC reinforcement (StoreMembership replaces User.storeId)
-  2-R1-multi-store-rbac: backlog
+  # COMPLETED: 2026-01-18 (StoreMembership model, AuthService rewrite, tests passing)
+  2-R1-multi-store-rbac: done
+  # New: Store Switching UI (dashboard component for multi-store users)
+  # CREATED: 2026-01-18 (frontend UI for backend endpoints from 2-R1)
+  # COMPLETED: 2026-01-18 (StoreSwitcher component, hooks, server actions, 28 tests)
+  # REVIEWED: 2026-01-18 (5 issues fixed, 1 action item deferred)
+  2-R2-store-switching-ui: done
   epic-2-retrospective: done
 
   # ============================================
@@ -85,7 +91,8 @@ development_status:
   # ============================================
   epic-3: in-progress
   3-1-product-model-and-basic-crud: done
-  3-2-product-variants-management: backlog
+  # REVIEWED: 2026-01-18 (code-review workflow, all fixes applied)
+  3-2-product-variants-management: done
   3-3-product-media-upload: backlog
   3-4-categories-management: backlog
   3-5-collections-management: backlog

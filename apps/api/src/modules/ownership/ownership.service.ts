@@ -7,6 +7,7 @@ import {
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '@database/prisma.service';
+import type { UserRole } from '@generated/prisma/client';
 import type { TransferStatus } from '@trafi/validators';
 import type { InitiateTransferDto, TransferResponseDto } from './dto';
 
@@ -84,16 +85,17 @@ export class OwnershipService {
       throw new ForbiddenException('Invalid password');
     }
 
-    // 2. Verify target user exists and is eligible (admin or editor in same store)
-    const targetUser = await this.prisma.user.findFirst({
+    // 2. Verify target user has active ADMIN or EDITOR membership in this store
+    const targetMembership = await this.prisma.$client.storeMembership.findFirst({
       where: {
-        id: input.targetUserId,
+        userId: input.targetUserId,
         storeId,
-        role: { in: ['ADMIN', 'EDITOR'] },
+        role: { in: ['ADMIN', 'EDITOR'] as UserRole[] },
         status: 'ACTIVE',
       },
+      include: { user: true },
     });
-    if (!targetUser) {
+    if (!targetMembership || targetMembership.user.status !== 'ACTIVE') {
       throw new BadRequestException(
         'Target user not found or not eligible for ownership',
       );
@@ -185,10 +187,10 @@ export class OwnershipService {
       throw new ForbiddenException('Invalid password');
     }
 
-    // 3. Execute transfer in transaction
-    const [updatedTransfer] = await this.prisma.$transaction([
+    // 3. Execute transfer in transaction (update membership roles, not user roles)
+    const updatedTransfer = await this.prisma.$transaction(async (tx) => {
       // Update transfer record
-      this.prisma.ownershipTransfer.update({
+      const updated = await tx.ownershipTransfer.update({
         where: { id: transfer.id },
         data: {
           status: 'CONFIRMED',
@@ -198,18 +200,30 @@ export class OwnershipService {
           fromUser: { select: { id: true, email: true, name: true } },
           toUser: { select: { id: true, email: true, name: true } },
         },
-      }),
-      // Promote new owner
-      this.prisma.user.update({
-        where: { id: userId },
+      });
+
+      // Promote new owner (update membership role)
+      await tx.storeMembership.updateMany({
+        where: {
+          userId,
+          storeId,
+          status: 'ACTIVE',
+        },
         data: { role: 'OWNER' },
-      }),
-      // Demote old owner to admin
-      this.prisma.user.update({
-        where: { id: transfer.fromUserId },
+      });
+
+      // Demote old owner to admin (update membership role)
+      await tx.storeMembership.updateMany({
+        where: {
+          userId: transfer.fromUserId,
+          storeId,
+          status: 'ACTIVE',
+        },
         data: { role: 'ADMIN' },
-      }),
-    ]);
+      });
+
+      return updated;
+    });
 
     // 4. Emit completion event
     this.eventEmitter.emit('ownership.transfer.completed', {

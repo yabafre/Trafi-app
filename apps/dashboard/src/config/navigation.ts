@@ -10,6 +10,7 @@ import {
   Key,
   UserCog,
   ArrowLeftRight,
+  FolderTree,
   type LucideIcon,
 } from 'lucide-react';
 import { usePathname } from 'next/navigation';
@@ -43,6 +44,14 @@ export const navigationConfig: NavItem[] = [
     label: 'Products',
     href: '/products',
     icon: Package,
+    children: [
+      {
+        id: 'products-categories',
+        label: 'Categories',
+        href: '/products/categories',
+        icon: FolderTree,
+      },
+    ],
   },
   {
     id: 'orders',
@@ -138,6 +147,7 @@ export function getPathLabel(segment: string): string {
   const labels: Record<string, string> = {
     dashboard: 'Dashboard',
     products: 'Products',
+    categories: 'Categories',
     new: 'Nouveau',
     edit: 'Modifier',
     orders: 'Orders',

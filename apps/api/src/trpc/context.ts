@@ -25,6 +25,7 @@ import type { OwnershipService } from '../modules/ownership/ownership.service';
 import type { ProductsService } from '../modules/products/products.service';
 import type { VariantsService } from '../modules/variants/variants.service';
 import type { MediaService } from '../modules/media/media.service';
+import type { CategoriesService } from '../modules/categories/categories.service';
 
 /**
  * Services injected from NestJS DI container
@@ -38,6 +39,7 @@ export interface TRPCServices {
   productsService: ProductsService;
   variantsService: VariantsService;
   mediaService: MediaService;
+  categoriesService: CategoriesService;
   jwtService: JwtService;
 }
 

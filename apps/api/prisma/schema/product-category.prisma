@@ -1,0 +1,24 @@
+// =============================================================================
+// ProductCategory Domain Schema (Join Table)
+// =============================================================================
+// Many-to-many relationship between Products and Categories.
+// Allows products to belong to multiple categories.
+// No ID prefix - composite primary key on [productId, categoryId].
+// @see Story 3.4 - Categories Management (AC #4)
+// =============================================================================
+
+model ProductCategory {
+  productId  String   @map("product_id")
+  categoryId String   @map("category_id")
+  position   Int      @default(0) // Order of product within category
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  // Relations
+  product  Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  // Composite primary key
+  @@id([productId, categoryId])
+  @@index([categoryId])
+  @@map("product_categories")
+}

@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { formatPrice, formatDate } from '@/lib/utils'
 import { ProductStatusBadge, DeleteProductDialog } from '../_components'
-import { VariantsSection, MediaSection } from './_components'
+import { VariantsSection, MediaSection, CategoriesSection } from './_components'
 import { useProduct } from '../_hooks'
 import { usePermissions } from '@/lib/hooks'
 
@@ -204,6 +204,9 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
           </dl>
         </div>
       </div>
+
+      {/* Categories Section - Story 3.4 */}
+      <CategoriesSection productId={id} />
 
       {/* Media Section - Story 3.3 */}
       <MediaSection productId={id} />

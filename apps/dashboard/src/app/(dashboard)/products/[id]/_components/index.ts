@@ -20,3 +20,6 @@ export { MediaItem } from './MediaItem'
 export { UploadMediaDialog } from './UploadMediaDialog'
 export { EditMediaDialog } from './EditMediaDialog'
 export { DeleteMediaDialog } from './DeleteMediaDialog'
+
+// Category Components
+export { CategoriesSection } from './CategoriesSection'

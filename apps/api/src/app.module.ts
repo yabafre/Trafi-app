@@ -14,6 +14,7 @@ import { SettingsModule } from '@modules/settings/settings.module';
 import { OwnershipModule } from '@modules/ownership/ownership.module';
 import { VariantsModule } from '@modules/variants';
 import { MediaModule } from '@modules/media';
+import { CategoriesModule } from '@modules/categories';
 import { TRPCModule } from './trpc/trpc.module';
 import { TenantInterceptor, AuditInterceptor } from '@common/interceptors';
 
@@ -48,6 +49,7 @@ import { TenantInterceptor, AuditInterceptor } from '@common/interceptors';
     OwnershipModule,
     VariantsModule,
     MediaModule,
+    CategoriesModule,
     TRPCModule,
   ],
   controllers: [],

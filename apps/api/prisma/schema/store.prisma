@@ -18,6 +18,7 @@ model Store {
   // Relations - Multi-store RBAC via StoreMembership
   memberships        StoreMembership[]
   products           Product[]
+  categories         Category[]
   apiKeys            ApiKey[]
   auditLogs          AuditLog[]
   settings           StoreSettings?

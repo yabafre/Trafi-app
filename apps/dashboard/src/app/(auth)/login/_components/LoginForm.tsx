@@ -26,6 +26,14 @@ import {
 } from '@/components/ui/card'
 import { useLogin } from '../_hooks/useLogin'
 
+interface LoginFormProps {
+  /**
+   * URL to redirect to after successful login.
+   * Defaults to '/' (dashboard home).
+   */
+  redirectTo?: string
+}
+
 interface FormState {
   email: string
   password: string
@@ -37,8 +45,8 @@ interface FormErrors {
   general?: string
 }
 
-export function LoginForm() {
-  const { login, isLoading, error, isError } = useLogin()
+export function LoginForm({ redirectTo }: LoginFormProps) {
+  const { login, isLoading, error, isError } = useLogin({ redirectTo })
 
   const [formData, setFormData] = useState<FormState>({
     email: '',

@@ -15,6 +15,7 @@ import { ownershipRouter } from './ownership.router';
 import { productsRouter } from './products.router';
 import { variantsRouter } from './variants.router';
 import { mediaRouter } from './media.router';
+import { categoriesRouter } from './categories.router';
 
 /**
  * Main application router
@@ -31,6 +32,7 @@ export const appRouter = router({
   products: productsRouter,
   variants: variantsRouter,
   media: mediaRouter,
+  categories: categoriesRouter,
 });
 
 /**

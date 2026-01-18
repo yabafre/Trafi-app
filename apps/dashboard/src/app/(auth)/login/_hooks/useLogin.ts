@@ -14,22 +14,33 @@ import { useRouter } from 'next/navigation'
 import { useServerActionMutation } from '@/lib/server-action-hooks'
 import { loginAction } from '../_actions/login'
 
+interface UseLoginOptions {
+  /**
+   * URL to redirect to after successful login.
+   * Defaults to '/' (dashboard home).
+   */
+  redirectTo?: string
+}
+
 /**
  * useLogin hook
  *
  * Provides login mutation with loading state and error handling.
  *
+ * @param options - Optional configuration including redirect URL
+ *
  * @example
  * ```tsx
- * const { login, isLoading, error } = useLogin()
+ * const { login, isLoading, error } = useLogin({ redirectTo: '/products' })
  *
  * const handleSubmit = () => {
  *   login({ email, password })
  * }
  * ```
  */
-export function useLogin() {
+export function useLogin(options: UseLoginOptions = {}) {
   const router = useRouter()
+  const { redirectTo = '/' } = options
 
   const {
     mutate,
@@ -42,8 +53,8 @@ export function useLogin() {
     reset,
   } = useServerActionMutation(loginAction, {
     onSuccess: () => {
-      // Redirect to dashboard on successful login
-      router.push('/')
+      // Redirect to the specified URL or dashboard on successful login
+      router.push(redirectTo)
       router.refresh()
     },
   })

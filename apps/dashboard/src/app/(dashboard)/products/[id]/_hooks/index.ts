@@ -36,3 +36,7 @@ export type { UseReorderMediaOptions } from './useReorderMedia';
 
 export { useDeleteMedia } from './useDeleteMedia';
 export type { UseDeleteMediaOptions } from './useDeleteMedia';
+
+// Category Hooks
+export { useProductCategories, PRODUCT_CATEGORIES_QUERY_KEY } from './useProductCategories';
+export type { UseProductCategoriesOptions } from './useProductCategories';

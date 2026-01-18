@@ -13,6 +13,7 @@ interface LoginPageProps {
 export default async function LoginPage({ searchParams }: LoginPageProps) {
   const params = await searchParams
   const sessionExpired = params.expired === '1'
+  const redirectTo = params.redirect || '/'
 
   return (
     <div className="w-full max-w-md space-y-8 px-4">
@@ -38,7 +39,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         </div>
       )}
 
-      <LoginForm />
+      <LoginForm redirectTo={redirectTo} />
     </div>
   )
 }

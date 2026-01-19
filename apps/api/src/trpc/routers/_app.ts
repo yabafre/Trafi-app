@@ -20,6 +20,7 @@ import { collectionsRouter } from './collections.router';
 import { taxRulesRouter } from './tax-rules.router';
 import { pricingRouter } from './pricing.router';
 import { inventoryRouter } from './inventory.router';
+import { cartValidationRouter } from './cart-validation.router';
 
 /**
  * Main application router
@@ -41,6 +42,7 @@ export const appRouter = router({
   taxRules: taxRulesRouter,
   pricing: pricingRouter,
   inventory: inventoryRouter,
+  cartValidation: cartValidationRouter,
 });
 
 /**

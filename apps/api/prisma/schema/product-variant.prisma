@@ -34,10 +34,11 @@ model ProductVariant {
   updatedAt             DateTime   @updatedAt @map("updated_at")
 
   // Relations
-  product          Product            @relation(fields: [productId], references: [id], onDelete: Cascade)
-  taxRule          TaxRule?           @relation(fields: [taxRuleId], references: [id]) // Story 3.6
-  media            ProductMedia[]     // Story 3.3 - Variant-specific images
-  inventoryHistory InventoryHistory[] // Story 3.7 - Inventory change history
+  product               Product                @relation(fields: [productId], references: [id], onDelete: Cascade)
+  taxRule               TaxRule?               @relation(fields: [taxRuleId], references: [id]) // Story 3.6
+  media                 ProductMedia[]         // Story 3.3 - Variant-specific images
+  inventoryHistory      InventoryHistory[]     // Story 3.7 - Inventory change history
+  inventoryReservations InventoryReservation[] // Story 3.8 - Inventory reservations for carts
 
   // Indexes for efficient lookups
   @@unique([productId, sku]) // SKU unique within a product

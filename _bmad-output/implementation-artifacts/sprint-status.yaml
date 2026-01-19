@@ -117,7 +117,11 @@ development_status:
   # COMPLETED: 2026-01-19 (all 10 tasks, 30 unit tests)
   # REVIEWED: 2026-01-19 (code-review workflow, 8 issues found and fixed)
   3-7-inventory-tracking: done
-  3-8-oversell-prevention: backlog
+  # CREATED: 2026-01-19 (create-story workflow, comprehensive developer guide)
+  # STARTED: 2026-01-19 (dev-story workflow)
+  # COMPLETED: 2026-01-19 (all 6 tasks, 40 unit tests - CartValidationService, ExpireReservationsJob, tRPC router)
+  # REVIEWED: 2026-01-19 (code-review workflow, 5 documentation issues found and fixed)
+  3-8-oversell-prevention: done
   # New stories added 2026-01-18 for Promotions, Gift Cards, Foundation Reinforcement
   # NOTE: 3.9 Promotions SIMPLIFIED for MVP (removed PromotionRule/PromotionAction)
   3-9-promotions-and-discounts-foundation: backlog

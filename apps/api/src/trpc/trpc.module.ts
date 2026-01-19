@@ -19,7 +19,7 @@ import { MediaModule } from '@modules/media';
 import { CategoriesModule } from '@modules/categories';
 import { CollectionsModule } from '@modules/collections';
 import { PricingModule } from '@modules/pricing';
-import { InventoryModule, InventoryService, CartValidationService } from '@modules/inventory';
+import { InventoryModule, InventoryService } from '@modules/inventory';
 import { AuthService } from '@modules/auth/auth.service';
 import { UserService } from '@modules/user';
 import { SettingsService } from '@modules/settings';
@@ -57,7 +57,6 @@ export class TRPCMiddleware implements NestMiddleware {
     private readonly taxRulesService: TaxRulesService,
     private readonly pricingService: PricingService,
     private readonly inventoryService: InventoryService,
-    private readonly cartValidationService: CartValidationService,
     private readonly jwtService: JwtService
   ) {
     const services: TRPCServices = {
@@ -74,7 +73,6 @@ export class TRPCMiddleware implements NestMiddleware {
       taxRulesService: this.taxRulesService,
       pricingService: this.pricingService,
       inventoryService: this.inventoryService,
-      cartValidationService: this.cartValidationService,
       jwtService: this.jwtService,
     };
 
@@ -108,12 +106,13 @@ export class TRPCService {
     private readonly taxRulesService: TaxRulesService,
     private readonly pricingService: PricingService,
     private readonly inventoryService: InventoryService,
-    private readonly cartValidationService: CartValidationService,
     private readonly jwtService: JwtService
   ) {}
 
   /**
    * Get the services to inject into tRPC context
+   *
+   * NOTE: CartValidationService is NOT included - it uses REST for storefront.
    */
   getServices(): TRPCServices {
     return {
@@ -130,7 +129,6 @@ export class TRPCService {
       taxRulesService: this.taxRulesService,
       pricingService: this.pricingService,
       inventoryService: this.inventoryService,
-      cartValidationService: this.cartValidationService,
       jwtService: this.jwtService,
     };
   }

@@ -28,10 +28,14 @@ import type { MediaService } from '@modules/media';
 import type { CategoriesService } from '@modules/categories';
 import type { CollectionsService } from '@modules/collections';
 import type { TaxRulesService, PricingService } from '@modules/pricing';
-import type { InventoryService, CartValidationService } from '@modules/inventory';
+import type { InventoryService } from '@modules/inventory';
 
 /**
  * Services injected from NestJS DI container
+ *
+ * NOTE: CartValidationService is NOT included here because it's exposed
+ * via REST controller for storefront (SDK/REST consumers), not tRPC.
+ * @see CartValidationController in inventory module
  */
 export interface TRPCServices {
   authService: AuthService;
@@ -47,7 +51,6 @@ export interface TRPCServices {
   taxRulesService: TaxRulesService;
   pricingService: PricingService;
   inventoryService: InventoryService;
-  cartValidationService: CartValidationService;
   jwtService: JwtService;
 }
 

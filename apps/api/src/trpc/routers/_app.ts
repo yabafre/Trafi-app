@@ -20,13 +20,16 @@ import { collectionsRouter } from './collections.router';
 import { taxRulesRouter } from './tax-rules.router';
 import { pricingRouter } from './pricing.router';
 import { inventoryRouter } from './inventory.router';
-import { cartValidationRouter } from './cart-validation.router';
 
 /**
  * Main application router
  *
  * All domain routers should be merged here.
  * Convention: router name = domain name (e.g., auth, users, products)
+ *
+ * NOTE: Cart validation is exposed via REST controller (not tRPC)
+ * because it's consumed by storefront (SDK/REST), not dashboard.
+ * @see CartValidationController in inventory module
  */
 export const appRouter = router({
   auth: authRouter,
@@ -42,7 +45,6 @@ export const appRouter = router({
   taxRules: taxRulesRouter,
   pricing: pricingRouter,
   inventory: inventoryRouter,
-  cartValidation: cartValidationRouter,
 });
 
 /**

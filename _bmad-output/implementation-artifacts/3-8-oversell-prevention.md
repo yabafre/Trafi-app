@@ -95,15 +95,19 @@ So that **customers don't order unavailable products**.
   - [x] 4.2 Update `apps/api/src/modules/inventory/index.ts` - export CartValidationService
   - [x] 4.3 PrismaService auto-includes inventoryReservation via Prisma generate (no manual update needed)
 
-- [x] **Task 5: Create tRPC Router** (AC: #1, #2, #3, #4)
-  - [x] 5.1 Create `apps/api/src/trpc/routers/cart-validation.router.ts`
-  - [x] 5.2 Implement `checkAvailability` query (public - storefront needs this)
-  - [x] 5.3 Implement `validateCart` query (public - storefront needs this)
-  - [x] 5.4 Implement `createReservation` mutation (internal - called during checkout)
-  - [x] 5.5 Implement `releaseReservation` mutation (internal - called after order)
-  - [x] 5.6 Implement `getAvailableStock` query (public - for displaying stock levels)
-  - [x] 5.7 Register in `apps/api/src/trpc/routers/_app.ts`
-  - [x] 5.8 Add CartValidationService to TRPCServices in `apps/api/src/trpc/context.ts`
+- [x] **Task 5: Create REST Controller** (AC: #1, #2, #3, #4)
+  - [x] 5.1 Create `apps/api/src/modules/inventory/cart-validation.controller.ts`
+  - [x] 5.2 Implement `GET /storefront/:storeId/availability/:variantId` (public)
+  - [x] 5.3 Implement `POST /storefront/:storeId/cart/validate` (public)
+  - [x] 5.4 Implement `POST /storefront/:storeId/reservations` (auth required)
+  - [x] 5.5 Implement `POST /storefront/:storeId/reservations/release` (auth required)
+  - [x] 5.6 Implement `GET /storefront/:storeId/stock/:variantId` (public)
+  - [x] 5.7 Register controller in InventoryModule
+  - [x] 5.8 Add Swagger documentation for all endpoints
+
+  **Architecture Note:** REST controller (not tRPC) because storefront uses SDK/REST per architecture.md:
+  - Dashboard → tRPC (internal)
+  - Storefront → SDK/REST (external)
 
 - [x] **Task 6: Create Reservation Expiry Job** (AC: #10)
   - [x] 6.1 Create `apps/api/src/modules/inventory/jobs/expire-reservations.job.ts`
@@ -455,27 +459,29 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 
 ### File List
 
-**New Files (7):**
+**New Files (8):**
 - `_bmad-output/implementation-artifacts/3-8-oversell-prevention.md` - Story file
 - `apps/api/prisma/schema/inventory-reservation.prisma` - InventoryReservation Prisma schema
 - `apps/api/src/modules/inventory/cart-validation.service.ts` - Cart validation and reservation service
+- `apps/api/src/modules/inventory/cart-validation.controller.ts` - REST controller for storefront (SDK/REST)
 - `apps/api/src/modules/inventory/jobs/expire-reservations.job.ts` - Reservation expiry background job
 - `apps/api/src/modules/inventory/jobs/index.ts` - Jobs barrel export
 - `apps/api/src/modules/inventory/__tests__/cart-validation.service.spec.ts` - Cart validation unit tests (28 tests)
 - `apps/api/src/modules/inventory/__tests__/expire-reservations.job.spec.ts` - Expiry job unit tests (12 tests)
-- `apps/api/src/trpc/routers/cart-validation.router.ts` - tRPC router for cart validation
 
-**Modified Files (12):**
+**Modified Files (9):**
 - `apps/api/package.json` - Added @nestjs/schedule dependency
 - `apps/api/prisma/schema/product-variant.prisma` - Added inventoryReservations relation
 - `apps/api/prisma/schema/store.prisma` - Added inventoryReservations relation
 - `apps/api/src/database/prisma.service.ts` - Added invres_ prefix configuration
-- `apps/api/src/modules/inventory/index.ts` - Exported CartValidationService and ExpireReservationsJob
-- `apps/api/src/modules/inventory/inventory.module.ts` - Added CartValidationService and ExpireReservationsJob providers
-- `apps/api/src/trpc/context.ts` - Added CartValidationService to TRPCServices
-- `apps/api/src/trpc/routers/_app.ts` - Registered cartValidationRouter
-- `apps/api/src/trpc/trpc.module.ts` - Imported ScheduleModule
+- `apps/api/src/modules/inventory/index.ts` - Exported CartValidationService, CartValidationController, ExpireReservationsJob
+- `apps/api/src/modules/inventory/inventory.module.ts` - Added CartValidationController, CartValidationService, ExpireReservationsJob
 - `packages/@trafi/validators/src/inventory/index.ts` - Added reservation and cart validation schemas
 - `pnpm-lock.yaml` - Updated lockfile
 - `_bmad-output/implementation-artifacts/sprint-status.yaml` - Updated story status
+
+**Architecture Decision:**
+Cart validation exposed via REST controller (not tRPC) per architecture.md:
+- Storefront → SDK/REST → `/storefront/:storeId/*` endpoints
+- Dashboard → tRPC (cart validation not needed in backoffice)
 

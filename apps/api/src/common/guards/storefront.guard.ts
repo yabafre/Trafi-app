@@ -36,24 +36,13 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '@database/prisma.service';
 import { randomUUID } from 'crypto';
+import {
+  STOREFRONT_HEADERS,
+  StorefrontContext,
+} from '@trafi/types';
 
-/**
- * Storefront request context added to request object
- */
-export interface StorefrontContext {
-  storeId: string;
-  resolvedVia: 'store-id-header' | 'publishable-key' | 'host';
-  cartToken?: string;
-}
-
-/**
- * Header names for storefront context resolution
- */
-export const STOREFRONT_HEADERS = {
-  STORE_ID: 'x-trafi-store-id',
-  PUBLISHABLE_KEY: 'x-trafi-publishable-key',
-  CART_TOKEN: 'x-trafi-cart-token',
-} as const;
+// Re-export for backwards compatibility (existing imports from this file)
+export { STOREFRONT_HEADERS, StorefrontContext };
 
 @Injectable()
 export class StorefrontGuard implements CanActivate {

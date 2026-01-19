@@ -24,6 +24,10 @@
  * - HMAC/JWT signed cart tokens with secret
  * - Token scopes (read/write)
  * - Token rotation on sensitive operations
+ * - REPLAY PROTECTION: Check cart.status === 'ACTIVE' and cart.lastSeenAt
+ *   This prevents bots/old tokens from hitting reservation endpoints
+ *   Implementation: Add lastSeenAt field to Cart model, update on each request,
+ *   reject if cart status != ACTIVE or cart already checked out
  *
  * Token Format (v0.2):
  *   ct_{storeId}_{cartId}_{expUnix}_{nonce}
@@ -45,22 +49,14 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { createHash } from 'crypto';
-import { STOREFRONT_HEADERS, StorefrontContext } from './storefront.guard';
+import {
+  STOREFRONT_HEADERS,
+  StorefrontContext,
+  CartTokenContext,
+} from '@trafi/types';
 
-/**
- * Cart token metadata added to request
- *
- * Recommended TTL: 30 minutes (configurable via CART_TOKEN_TTL_MINUTES env var)
- * Token expiration is embedded in the token itself (expUnix field).
- */
-export interface CartTokenContext {
-  cartId: string;
-  storeId: string;
-  expiresAt: Date;
-  nonce: string;
-  fingerprint: string; // sha256(token).slice(0, 8) for debugging
-  // Future: scopes, signature, etc.
-}
+// Re-export for backwards compatibility (existing imports from this file)
+export { CartTokenContext };
 
 /**
  * Decorator key for optional cart token

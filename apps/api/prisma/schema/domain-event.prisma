@@ -4,6 +4,31 @@
 // Transactional outbox for reliable async operations (emails, webhooks, analytics).
 // Per Principle #6: Async operations MUST use outbox for reliability.
 // @see Story M-1 - V3 Architectural Retroactive Fixes (AC5)
+//
+// WORKER PATTERN - Atomic Claim (prevents double processing under load):
+// -----------------------------------------------------------------
+// 1. Claim batch atomically:
+//    UPDATE domain_events
+//    SET status = 'PROCESSING', claimed_at = NOW(), claimed_by = 'worker-{id}'
+//    WHERE status = 'PENDING' AND (claimed_at IS NULL OR claimed_at < NOW() - INTERVAL '5 min')
+//    LIMIT 10
+//    RETURNING *
+//
+// 2. In Prisma (no RETURNING with updateMany):
+//    await prisma.$transaction([
+//      prisma.domainEvent.updateMany({
+//        where: { status: 'PENDING', claimedAt: null },
+//        data: { status: 'PROCESSING', claimedAt: new Date(), claimedBy: workerId },
+//        take: 10, // Note: Prisma doesn't support LIMIT in updateMany, use raw query
+//      }),
+//    ]);
+//    // Fallback: Use $queryRaw for true atomic claim with LIMIT
+//
+// 3. Process each event, then:
+//    - Success: status = 'PROCESSED', processedAt = NOW()
+//    - Failure: status = 'FAILED' (or back to 'PENDING' for retry), attempts++
+//
+// 4. Stale claim recovery (cron): Reset PROCESSING with claimedAt > 5 min ago
 // =============================================================================
 
 enum EventStatus {
@@ -25,8 +50,13 @@ model DomainEvent {
   processedAt  DateTime?   @map("processed_at") // When successfully processed
   errorMessage String?     @map("error_message") // Last error (for debugging)
 
+  // Atomic claim fields (prevents double processing in multi-worker scenarios)
+  claimedAt    DateTime?   @map("claimed_at")  // When a worker claimed this event
+  claimedBy    String?     @map("claimed_by")  // Worker ID that claimed (for debugging)
+
   // Indexes for efficient worker polling
   @@index([storeId, status, createdAt])
   @@index([status, createdAt]) // Global polling index
+  @@index([status, claimedAt]) // For stale claim recovery
   @@map("domain_events")
 }

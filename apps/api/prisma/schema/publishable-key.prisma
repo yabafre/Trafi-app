@@ -21,8 +21,15 @@ model PublishableKey {
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
 
+  // Key rotation support (graceful rollover without downtime)
+  // When rotating: create new key, set rotatedFromKeyId, optionally keep both active
+  // during grace period, then revoke old key
+  rotatedFromKeyId String? @map("rotated_from_key_id")
+
   // Relations
-  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  store           Store          @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  rotatedFromKey  PublishableKey? @relation("KeyRotation", fields: [rotatedFromKeyId], references: [id])
+  rotatedToKeys   PublishableKey[] @relation("KeyRotation")
 
   // Indexes for efficient lookups
   @@index([storeId])

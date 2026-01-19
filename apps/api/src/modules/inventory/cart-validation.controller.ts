@@ -33,13 +33,7 @@ import {
 import { Response } from 'express';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery, ApiHeader } from '@nestjs/swagger';
 import { CartValidationService } from './cart-validation.service';
-
-/**
- * Maximum stock quantity to expose publicly.
- * Prevents exact inventory scraping while indicating "plenty in stock".
- * Values above this threshold are reported as this cap.
- */
-const PUBLIC_STOCK_CAP = 20;
+import { STOREFRONT_HEADERS, PUBLIC_STOCK_CAP } from '@trafi/types';
 
 /**
  * Helper to set cache Vary headers based on environment
@@ -73,7 +67,7 @@ function setCacheVaryHeaders(res: Response): void {
  *
  * @see Epic 12 - SDK & API Experience
  */
-import { StorefrontGuard, STOREFRONT_HEADERS } from '@common/guards/storefront.guard';
+import { StorefrontGuard } from '@common/guards/storefront.guard';
 import { CartTokenGuard } from '@common/guards/cart-token.guard';
 import { StorefrontStoreId } from '@common/decorators/storefront.decorator';
 import {

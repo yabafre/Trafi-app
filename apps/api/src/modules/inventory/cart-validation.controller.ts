@@ -28,7 +28,9 @@ import {
   HttpCode,
   HttpStatus,
   UseGuards,
+  Res,
 } from '@nestjs/common';
+import { Response } from 'express';
 import {
   ApiTags,
   ApiOperation,
@@ -38,6 +40,13 @@ import {
   ApiHeader,
 } from '@nestjs/swagger';
 import { CartValidationService } from './cart-validation.service';
+
+/**
+ * Maximum stock quantity to expose publicly.
+ * Prevents exact inventory scraping while indicating "plenty in stock".
+ * Values above this threshold are reported as this cap.
+ */
+const PUBLIC_STOCK_CAP = 20;
 import { StorefrontGuard, STOREFRONT_HEADERS } from '@common/guards/storefront.guard';
 import { CartTokenGuard } from '@common/guards/cart-token.guard';
 import { StorefrontStoreId } from '@common/decorators/storefront.decorator';
@@ -104,13 +113,20 @@ export class CartValidationController {
 
   /**
    * Check availability for a single variant
+   *
+   * SECURITY:
+   * - Available quantity is CAPPED at PUBLIC_STOCK_CAP (20) in response
+   *
+   * CACHING:
+   * - Varies by X-Trafi-Store-Id and X-Trafi-Publishable-Key headers
    */
   @Get('availability/:variantId')
   @ApiOperation({
     summary: 'Check variant availability',
     description:
       'Check if a variant has sufficient stock for a requested quantity. ' +
-      'Considers physical stock minus active reservations.',
+      'Considers physical stock minus active reservations. ' +
+      'Available quantity capped at 20 for privacy.',
   })
   @ApiParam({ name: 'variantId', description: 'Product variant ID' })
   @ApiQuery({
@@ -126,7 +142,11 @@ export class CartValidationController {
       type: 'object',
       properties: {
         available: { type: 'boolean', example: true },
-        availableQuantity: { type: 'number', example: 50 },
+        availableQuantity: {
+          type: 'number',
+          example: 20,
+          description: 'Capped at 20 for privacy',
+        },
         allowOversell: { type: 'boolean', example: false },
         trackInventory: { type: 'boolean', example: true },
       },
@@ -140,40 +160,64 @@ export class CartValidationController {
     @StorefrontStoreId() storeId: string,
     @Param('variantId') variantId: string,
     @Query('quantity') quantity: string,
+    @Res({ passthrough: true }) res: Response,
   ) {
+    // Set Vary headers for CDN/proxy cache safety
+    res.setHeader(
+      'Vary',
+      `${STOREFRONT_HEADERS.STORE_ID}, ${STOREFRONT_HEADERS.PUBLISHABLE_KEY}`,
+    );
+
     const input = CheckAvailabilityInputSchema.parse({
       variantId,
       requestedQuantity: parseInt(quantity, 10),
     });
 
-    return this.cartValidationService.checkAvailability(storeId, input);
+    const result = await this.cartValidationService.checkAvailability(
+      storeId,
+      input,
+    );
+
+    // Cap available quantity in response
+    return {
+      ...result,
+      availableQuantity: Math.min(result.availableQuantity, PUBLIC_STOCK_CAP),
+    };
   }
 
   /**
    * Get available stock details for a variant
    *
-   * NOTE: Returns full stock details. In production, consider:
-   * - Returning only inStock: boolean for public
-   * - Capping availableQuantity to prevent scraping
+   * SECURITY:
+   * - Physical/reserved quantities are NOT exposed (prevents inventory scraping)
+   * - Available quantity is CAPPED at PUBLIC_STOCK_CAP (20)
+   * - Only returns: inStock boolean + capped availableQuantity
+   *
+   * CACHING:
+   * - Varies by X-Trafi-Store-Id and X-Trafi-Publishable-Key headers
+   * - CDN/proxy must respect Vary header to avoid cross-store cache pollution
    */
   @Get('stock/:variantId')
   @ApiOperation({
     summary: 'Get available stock for variant',
     description:
-      'Returns detailed stock information including physical quantity, ' +
-      'reserved quantity, and available quantity.',
+      'Returns stock availability. Quantity is capped at 20+ for privacy. ' +
+      'Use inStock boolean for UI display.',
   })
   @ApiParam({ name: 'variantId', description: 'Product variant ID' })
   @ApiResponse({
     status: 200,
-    description: 'Stock details',
+    description: 'Stock details (quantity capped for privacy)',
     schema: {
       type: 'object',
       properties: {
         variantId: { type: 'string', example: 'var_abc123' },
-        physicalQuantity: { type: 'number', example: 100 },
-        reservedQuantity: { type: 'number', example: 30 },
-        availableQuantity: { type: 'number', example: 70 },
+        inStock: { type: 'boolean', example: true },
+        availableQuantity: {
+          type: 'number',
+          example: 20,
+          description: 'Capped at 20 for privacy',
+        },
         trackInventory: { type: 'boolean', example: true },
         allowOversell: { type: 'boolean', example: false },
       },
@@ -186,8 +230,30 @@ export class CartValidationController {
   async getAvailableStock(
     @StorefrontStoreId() storeId: string,
     @Param('variantId') variantId: string,
+    @Res({ passthrough: true }) res: Response,
   ) {
-    return this.cartValidationService.getAvailableStock(storeId, variantId);
+    // Set Vary headers for CDN/proxy cache safety
+    // Prevents serving Store A's data to Store B via cache
+    res.setHeader(
+      'Vary',
+      `${STOREFRONT_HEADERS.STORE_ID}, ${STOREFRONT_HEADERS.PUBLISHABLE_KEY}`,
+    );
+
+    const stock = await this.cartValidationService.getAvailableStock(
+      storeId,
+      variantId,
+    );
+
+    // Cap quantity to prevent exact inventory scraping
+    // Returns inStock boolean for simple UI checks
+    return {
+      variantId: stock.variantId,
+      inStock: stock.availableQuantity > 0,
+      availableQuantity: Math.min(stock.availableQuantity, PUBLIC_STOCK_CAP),
+      trackInventory: stock.trackInventory,
+      allowOversell: stock.allowOversell,
+      // NOTE: physicalQuantity and reservedQuantity are NOT exposed
+    };
   }
 
   /**

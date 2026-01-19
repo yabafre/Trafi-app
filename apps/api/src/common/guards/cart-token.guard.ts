@@ -8,24 +8,28 @@
  * SECURITY POSTURE: DENY BY DEFAULT
  * - No token = reject (unless @CartTokenOptional)
  * - Invalid format = reject
+ * - Expired token = reject
  * - Wrong store binding = reject
  * - No signature validation yet (Epic 4) but structure is in place
  *
  * Current behavior (scaffold):
  * - Requires X-Trafi-Cart-Token header
- * - Validates token format: ct_{storeId}_{cartId}_{nonce}
+ * - Validates token format: ct_{storeId}_{cartId}_{expUnix}_{nonce}
+ * - Validates expiration (exp must be > now)
  * - Validates store binding (token storeId must match request storeId)
  * - Validates nonce format (min 6 chars)
+ * - Logs token fingerprint (sha256 first 8 chars) for debugging
  *
  * Future behavior (Epic 4):
  * - HMAC/JWT signed cart tokens with secret
- * - Token expiration (exp claim)
  * - Token scopes (read/write)
  * - Token rotation on sensitive operations
  *
- * Token Format (scaffold):
- *   ct_{storeId}_{cartId}_{nonce}
- *   Example: ct_store_abc123_cart_xyz789_a1b2c3
+ * Token Format (v0.2):
+ *   ct_{storeId}_{cartId}_{expUnix}_{nonce}
+ *   Example: ct_store_abc123_cart_xyz789_1705678800_a1b2c3d4
+ *
+ * Default TTL: 30 minutes (configurable via CART_TOKEN_TTL_MINUTES)
  *
  * @see Story 3.8 - Oversell Prevention
  * @see Epic 4 - Shopping Cart & Checkout
@@ -40,16 +44,22 @@ import {
   SetMetadata,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import { createHash } from 'crypto';
 import { STOREFRONT_HEADERS, StorefrontContext } from './storefront.guard';
 
 /**
  * Cart token metadata added to request
+ *
+ * Recommended TTL: 30 minutes (configurable via CART_TOKEN_TTL_MINUTES env var)
+ * Token expiration is embedded in the token itself (expUnix field).
  */
 export interface CartTokenContext {
   cartId: string;
   storeId: string;
+  expiresAt: Date;
   nonce: string;
-  // Future: expiresAt, scopes, signature, etc.
+  fingerprint: string; // sha256(token).slice(0, 8) for debugging
+  // Future: scopes, signature, etc.
 }
 
 /**
@@ -90,17 +100,32 @@ export class CartTokenGuard implements CanActivate {
       );
     }
 
+    // Generate fingerprint for logging (never log raw token)
+    const fingerprint = this.getTokenFingerprint(cartToken);
+
     // Validate token format and extract context
-    const tokenContext = this.validateCartToken(cartToken);
+    const tokenContext = this.validateCartToken(cartToken, fingerprint);
 
     if (!tokenContext) {
       this.logger.warn({
         event: 'cart_token_invalid_format',
         requestId,
+        tokenFingerprint: fingerprint,
         path: request.url,
-        // Never log the raw token
       });
       throw new UnauthorizedException('Invalid cart token format');
+    }
+
+    // Check expiration
+    if (tokenContext.expiresAt < new Date()) {
+      this.logger.warn({
+        event: 'cart_token_expired',
+        requestId,
+        tokenFingerprint: fingerprint,
+        expiredAt: tokenContext.expiresAt.toISOString(),
+        path: request.url,
+      });
+      throw new UnauthorizedException('Cart token has expired');
     }
 
     // CRITICAL: Verify store binding
@@ -111,6 +136,7 @@ export class CartTokenGuard implements CanActivate {
       this.logger.warn({
         event: 'cart_token_store_mismatch',
         requestId,
+        tokenFingerprint: fingerprint,
         tokenStoreId: tokenContext.storeId,
         requestStoreId: storefrontContext.storeId,
         path: request.url,
@@ -118,12 +144,14 @@ export class CartTokenGuard implements CanActivate {
       throw new ForbiddenException('Cart token does not match store context');
     }
 
-    // Audit log (no raw token)
+    // Audit log (fingerprint only, no raw token)
     this.logger.log({
       event: 'cart_token_validated',
       requestId,
+      tokenFingerprint: fingerprint,
       cartId: tokenContext.cartId,
       storeId: tokenContext.storeId,
+      expiresAt: tokenContext.expiresAt.toISOString(),
       path: request.url,
     });
 
@@ -134,20 +162,32 @@ export class CartTokenGuard implements CanActivate {
   }
 
   /**
+   * Generate a short fingerprint of the token for logging
+   * Uses sha256 hash, first 8 characters
+   */
+  protected getTokenFingerprint(token: string): string {
+    return createHash('sha256').update(token).digest('hex').slice(0, 8);
+  }
+
+  /**
    * Validate cart token (scaffold implementation)
    *
-   * Format: ct_{storeId}_{cartId}_{nonce}
-   * Example: ct_store_abc123_cart_xyz789_a1b2c3
+   * Format v0.2: ct_{storeId}_{cartId}_{expUnix}_{nonce}
+   * Example: ct_store_abc123_cart_xyz789_1705678800_a1b2c3d4
    *
    * Validation rules:
    * - Must start with 'ct_'
-   * - Must have storeId, cartId, and nonce
+   * - Must have storeId, cartId, expUnix, and nonce
+   * - expUnix must be a valid unix timestamp
    * - Nonce must be at least 6 characters
    * - StoreId and cartId must be non-empty
    *
    * Future (Epic 4): HMAC signature validation
    */
-  protected validateCartToken(token: string): CartTokenContext | null {
+  protected validateCartToken(
+    token: string,
+    fingerprint: string,
+  ): CartTokenContext | null {
     // Must start with ct_ prefix
     if (!token.startsWith('ct_')) {
       return null;
@@ -157,9 +197,9 @@ export class CartTokenGuard implements CanActivate {
     const payload = token.slice(3);
     const parts = payload.split('_');
 
-    // Minimum: storeId (2 parts), cartId (2 parts), nonce (1 part) = 5 parts
-    // Example: store_abc123_cart_xyz789_a1b2c3
-    if (parts.length < 5) {
+    // Minimum: storeId (2 parts), cartId (2 parts), expUnix (1 part), nonce (1+ parts) = 6 parts
+    // Example: store_abc123_cart_xyz789_1705678800_a1b2c3d4
+    if (parts.length < 6) {
       return null;
     }
 
@@ -175,8 +215,15 @@ export class CartTokenGuard implements CanActivate {
       return null;
     }
 
+    // Extract expiration (unix timestamp)
+    const expUnix = parseInt(parts[4], 10);
+    if (isNaN(expUnix) || expUnix <= 0) {
+      return null; // Invalid expiration timestamp
+    }
+    const expiresAt = new Date(expUnix * 1000);
+
     // Extract nonce (remaining parts joined)
-    const nonce = parts.slice(4).join('_');
+    const nonce = parts.slice(5).join('_');
     if (nonce.length < 6) {
       return null; // Nonce too short
     }
@@ -184,7 +231,9 @@ export class CartTokenGuard implements CanActivate {
     return {
       storeId,
       cartId,
+      expiresAt,
       nonce,
+      fingerprint,
     };
   }
 }

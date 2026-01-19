@@ -31,14 +31,7 @@ import {
   Res,
 } from '@nestjs/common';
 import { Response } from 'express';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiParam,
-  ApiQuery,
-  ApiHeader,
-} from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery, ApiHeader } from '@nestjs/swagger';
 import { CartValidationService } from './cart-validation.service';
 
 /**
@@ -47,6 +40,39 @@ import { CartValidationService } from './cart-validation.service';
  * Values above this threshold are reported as this cap.
  */
 const PUBLIC_STOCK_CAP = 20;
+
+/**
+ * Helper to set cache Vary headers based on environment
+ * In production, only vary by publishable key (better cache hit rate)
+ * In dev/staging, also vary by store-id header
+ */
+function setCacheVaryHeaders(res: Response): void {
+  const isProduction = process.env.NODE_ENV === 'production';
+  const allowStoreIdHeader = process.env.ALLOW_STORE_ID_HEADER === 'true';
+
+  // In production (without override), only vary by publishable key
+  // This improves CDN cache hit rate since store-id-header is blocked
+  if (isProduction && !allowStoreIdHeader) {
+    res.setHeader('Vary', STOREFRONT_HEADERS.PUBLISHABLE_KEY);
+  } else {
+    // In dev/staging, vary by both headers
+    res.setHeader('Vary', `${STOREFRONT_HEADERS.STORE_ID}, ${STOREFRONT_HEADERS.PUBLISHABLE_KEY}`);
+  }
+}
+
+/**
+ * Rate Limiting Configuration (scaffold - implement in Epic 12)
+ *
+ * TODO: Implement rate limiting using @nestjs/throttler or similar
+ *
+ * Recommended limits:
+ * - GET /availability/:variantId: 100 req/min per IP (burst: 20)
+ * - GET /stock/:variantId: 100 req/min per IP (burst: 20)
+ * - POST /cart/validate: 30 req/min per IP (burst: 5) - DB heavy
+ * - POST /reservations: 20 req/min per cart token (burst: 3)
+ *
+ * @see Epic 12 - SDK & API Experience
+ */
 import { StorefrontGuard, STOREFRONT_HEADERS } from '@common/guards/storefront.guard';
 import { CartTokenGuard } from '@common/guards/cart-token.guard';
 import { StorefrontStoreId } from '@common/decorators/storefront.decorator';
@@ -160,23 +186,17 @@ export class CartValidationController {
     @StorefrontStoreId() storeId: string,
     @Param('variantId') variantId: string,
     @Query('quantity') quantity: string,
-    @Res({ passthrough: true }) res: Response,
+    @Res({ passthrough: true }) res: Response
   ) {
-    // Set Vary headers for CDN/proxy cache safety
-    res.setHeader(
-      'Vary',
-      `${STOREFRONT_HEADERS.STORE_ID}, ${STOREFRONT_HEADERS.PUBLISHABLE_KEY}`,
-    );
+    // Set Vary headers for CDN/proxy cache safety (env-aware)
+    setCacheVaryHeaders(res);
 
     const input = CheckAvailabilityInputSchema.parse({
       variantId,
       requestedQuantity: parseInt(quantity, 10),
     });
 
-    const result = await this.cartValidationService.checkAvailability(
-      storeId,
-      input,
-    );
+    const result = await this.cartValidationService.checkAvailability(storeId, input);
 
     // Cap available quantity in response
     return {
@@ -230,19 +250,13 @@ export class CartValidationController {
   async getAvailableStock(
     @StorefrontStoreId() storeId: string,
     @Param('variantId') variantId: string,
-    @Res({ passthrough: true }) res: Response,
+    @Res({ passthrough: true }) res: Response
   ) {
     // Set Vary headers for CDN/proxy cache safety
     // Prevents serving Store A's data to Store B via cache
-    res.setHeader(
-      'Vary',
-      `${STOREFRONT_HEADERS.STORE_ID}, ${STOREFRONT_HEADERS.PUBLISHABLE_KEY}`,
-    );
+    res.setHeader('Vary', `${STOREFRONT_HEADERS.STORE_ID}, ${STOREFRONT_HEADERS.PUBLISHABLE_KEY}`);
 
-    const stock = await this.cartValidationService.getAvailableStock(
-      storeId,
-      variantId,
-    );
+    const stock = await this.cartValidationService.getAvailableStock(storeId, variantId);
 
     // Cap quantity to prevent exact inventory scraping
     // Returns inStock boolean for simple UI checks
@@ -294,10 +308,7 @@ export class CartValidationController {
       },
     },
   })
-  async validateCart(
-    @StorefrontStoreId() storeId: string,
-    @Body() body: unknown,
-  ) {
+  async validateCart(@StorefrontStoreId() storeId: string, @Body() body: unknown) {
     const schema = z.object({
       items: z.array(ValidateCartItemSchema),
     });
@@ -354,10 +365,7 @@ export class CartValidationController {
     status: 404,
     description: 'Variant not found',
   })
-  async createReservation(
-    @StorefrontStoreId() storeId: string,
-    @Body() body: unknown,
-  ) {
+  async createReservation(@StorefrontStoreId() storeId: string, @Body() body: unknown) {
     const bodyObj = body as Record<string, unknown>;
     const input = CreateReservationInputSchema.parse({
       ...bodyObj,
@@ -393,10 +401,7 @@ export class CartValidationController {
     status: 404,
     description: 'Active reservation not found',
   })
-  async releaseReservation(
-    @StorefrontStoreId() storeId: string,
-    @Body() body: unknown,
-  ) {
+  async releaseReservation(@StorefrontStoreId() storeId: string, @Body() body: unknown) {
     const input = ReleaseReservationInputSchema.parse(body);
 
     return this.cartValidationService.releaseReservation(storeId, input);
@@ -430,21 +435,14 @@ export class CartValidationController {
     status: 401,
     description: 'Missing or invalid cart token',
   })
-  async releaseCartReservations(
-    @StorefrontStoreId() storeId: string,
-    @Body() body: unknown,
-  ) {
+  async releaseCartReservations(@StorefrontStoreId() storeId: string, @Body() body: unknown) {
     const schema = z.object({
       cartId: z.string(),
       reason: z.enum(['RELEASED', 'EXPIRED']),
     });
     const { cartId, reason } = schema.parse(body);
 
-    const count = await this.cartValidationService.releaseCartReservations(
-      storeId,
-      cartId,
-      reason,
-    );
+    const count = await this.cartValidationService.releaseCartReservations(storeId, cartId, reason);
 
     return { released: count };
   }
@@ -458,8 +456,7 @@ export class CartValidationController {
   @ApiOperation({
     summary: 'Get cart reservations',
     description:
-      'Returns all active reservations for a cart. ' +
-      'Requires X-Trafi-Cart-Token header.',
+      'Returns all active reservations for a cart. ' + 'Requires X-Trafi-Cart-Token header.',
   })
   @ApiParam({ name: 'cartId', description: 'Cart ID' })
   @ApiResponse({
@@ -483,10 +480,7 @@ export class CartValidationController {
     status: 401,
     description: 'Missing or invalid cart token',
   })
-  async getCartReservations(
-    @StorefrontStoreId() storeId: string,
-    @Param('cartId') cartId: string,
-  ) {
+  async getCartReservations(@StorefrontStoreId() storeId: string, @Param('cartId') cartId: string) {
     return this.cartValidationService.getCartReservations(storeId, cartId);
   }
 }

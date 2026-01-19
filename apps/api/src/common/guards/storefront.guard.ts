@@ -8,13 +8,18 @@
  * Resolution order:
  * 1. X-Trafi-Publishable-Key (production-ready - Epic 12)
  * 2. Host header (future - Epic 14)
- * 3. X-Trafi-Store-Id (dev/debug ONLY - blocked in production)
+ * 3. X-Trafi-Store-Id (dev/debug/staging - blocked in production unless ALLOW_STORE_ID_HEADER=true)
  * 4. 400 Bad Request if none provided
  *
  * Security:
  * - X-Trafi-Store-Id is BLOCKED in production (prevents enumeration/scraping)
- * - Must use Publishable Key or Host in production
+ * - Exception: ALLOW_STORE_ID_HEADER=true allows it for internal envs (staging, preview, E2E)
+ * - Must use Publishable Key or Host in production (unless exception above)
  * - All resolutions are logged for audit
+ *
+ * Environment Variables:
+ * - NODE_ENV: "production" blocks store-id-header by default
+ * - ALLOW_STORE_ID_HEADER: "true" allows store-id-header even in production (for staging/E2E)
  *
  * @see Story 3.8 - Oversell Prevention
  * @see Epic 12 - SDK & API Experience
@@ -144,12 +149,16 @@ export class StorefrontGuard implements CanActivate {
     // const host = headers['host'];
     // Future: Look up custom domain or subdomain -> storeId
 
-    // 3. X-Trafi-Store-Id header (dev/debug ONLY)
+    // 3. X-Trafi-Store-Id header (dev/debug/staging ONLY)
     const storeIdHeader = headers[STOREFRONT_HEADERS.STORE_ID];
     if (storeIdHeader) {
+      // Check if store-id-header is explicitly allowed (for staging/E2E/preview envs)
+      const allowStoreIdHeader =
+        this.configService.get('ALLOW_STORE_ID_HEADER') === 'true';
+
       // SECURITY: Block X-Trafi-Store-Id in production
-      // This prevents store enumeration and cross-store scraping
-      if (isProduction) {
+      // Exception: ALLOW_STORE_ID_HEADER=true allows it for internal envs
+      if (isProduction && !allowStoreIdHeader) {
         this.logger.warn({
           event: 'storefront_auth_blocked',
           requestId,
@@ -161,7 +170,7 @@ export class StorefrontGuard implements CanActivate {
         );
       }
 
-      // Verify store exists (dev/debug only)
+      // Verify store exists
       const store = await this.prisma.store.findUnique({
         where: { id: storeIdHeader },
         select: { id: true },
@@ -171,14 +180,14 @@ export class StorefrontGuard implements CanActivate {
         throw new BadRequestException(`Store not found: ${storeIdHeader}`);
       }
 
-      // Audit log (dev only)
+      // Audit log (includes warning for non-standard auth)
       this.logger.log({
         event: 'storefront_auth',
         requestId,
         storeId: storeIdHeader,
         resolvedVia: 'store-id-header',
         path,
-        warning: 'dev-mode-only',
+        warning: isProduction ? 'allowed-via-env-override' : 'dev-mode',
       });
 
       return {

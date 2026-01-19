@@ -27,5 +27,6 @@ model PublishableKey {
   // Indexes for efficient lookups
   @@index([storeId])
   @@index([key])
+  @@index([storeId, mode, revokedAt]) // For listing active keys per store/mode
   @@map("publishable_keys")
 }

@@ -102,7 +102,7 @@ export function CollectionsList() {
           ))}
         </div>
       ) : !data?.collections.length ? (
-        <div className="text-center py-12 border-2 border-dashed rounded-lg">
+        <div className="text-center py-12 border-2 border-dashed rounded-none">
           <h3 className="text-lg font-semibold">No collections yet</h3>
           <p className="text-muted-foreground mt-1">
             Create your first collection to organize products.

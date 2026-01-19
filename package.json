@@ -10,7 +10,7 @@
   },
   "scripts": {
     "dev": "dotenv -- turbo dev",
-    "build": "dotenv -- turbo build",
+    "build": "NODE_ENV=production dotenv -- turbo build",
     "lint": "dotenv -- turbo lint",
     "test": "dotenv -- turbo test",
     "test:cov": "dotenv -- turbo test:cov",

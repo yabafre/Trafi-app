@@ -87,7 +87,7 @@ export function CategoryTreeItem({
         onDragOver={onDragOver}
         onDrop={(e) => onDrop(e, category)}
         className={cn(
-          'group flex items-center gap-2 px-3 py-2 rounded-md transition-colors',
+          'group flex items-center gap-2 px-3 py-2 rounded-none transition-colors',
           'hover:bg-zinc-800',
           isDragging && 'opacity-50',
           dragOverId === category.id && 'bg-zinc-800 ring-2 ring-[#CCFF00]',

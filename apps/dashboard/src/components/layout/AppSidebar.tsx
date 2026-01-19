@@ -314,7 +314,7 @@ function NavItem({ item, collapsed, expanded, onToggleExpand }: NavItemProps) {
                     'flex items-center gap-3 px-6 py-2 pl-12', // Indented
                     'transition-colors duration-100 text-[10px] font-bold uppercase tracking-widest',
                     child.isActive 
-                      ? 'text-primary' // Active child text color
+                      ? 'bg-sidebar-accent text-sidebar-accent-foreground' // Active child: High contrast
                       : 'text-muted-foreground hover:text-foreground'
                   )}
                   aria-current={child.isActive ? 'page' : undefined}

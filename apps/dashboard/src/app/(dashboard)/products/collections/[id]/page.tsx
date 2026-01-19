@@ -154,8 +154,7 @@ export default function CollectionDetailPage() {
         </div>
 
         {collection.products.length === 0 ? (
-          <div className="text-center py-12 border-2 border-dashed rounded-lg">
-            <h3 className="text-lg font-semibold">No products in this collection</h3>
+                      <div className="text-center py-12 border-2 border-dashed rounded-none">            <h3 className="text-lg font-semibold">No products in this collection</h3>
             <p className="text-muted-foreground mt-1">
               Add products to this collection to display them here.
             </p>

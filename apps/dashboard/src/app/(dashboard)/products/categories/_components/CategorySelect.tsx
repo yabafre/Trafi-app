@@ -108,7 +108,7 @@ export function CategoryMultiSelect({
     <div className="space-y-2">
       <div
         className={cn(
-          'flex min-h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm',
+          'flex min-h-10 w-full items-center justify-between rounded-none border border-input bg-background px-3 py-2 text-sm',
           disabled && 'cursor-not-allowed opacity-50'
         )}
       >
@@ -120,7 +120,7 @@ export function CategoryMultiSelect({
       </div>
 
       {!disabled && !isLoading && (
-        <div className="border rounded-md p-2 max-h-48 overflow-y-auto space-y-1">
+        <div className="border rounded-none p-2 max-h-48 overflow-y-auto space-y-1">
           {(categories || []).map((category) => (
             <label
               key={category.id}

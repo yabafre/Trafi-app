@@ -80,7 +80,7 @@ export function TaxRulesList() {
           ))}
         </div>
       ) : !data?.items.length ? (
-        <div className="text-center py-12 border-2 border-dashed rounded-lg">
+        <div className="text-center py-12 border-2 border-dashed rounded-none">
           <h3 className="text-lg font-semibold">No tax rules yet</h3>
           <p className="text-muted-foreground mt-1">
             Create your first tax rule to apply taxes to products.
@@ -92,8 +92,7 @@ export function TaxRulesList() {
         </div>
       ) : (
         <>
-          <div className="border rounded-lg">
-            <Table>
+                      <div className="border rounded-none">            <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Name</TableHead>

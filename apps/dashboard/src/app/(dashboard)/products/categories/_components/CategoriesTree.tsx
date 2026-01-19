@@ -156,7 +156,7 @@ export function CategoriesTree() {
 
       {/* Tree or Empty State */}
       {isEmpty ? (
-        <div className="flex flex-col items-center justify-center py-16 px-4 border-2 border-dashed border-zinc-700 rounded-lg">
+        <div className="flex flex-col items-center justify-center py-16 px-4 border-2 border-dashed border-zinc-700 rounded-none">
           <FolderTree className="size-12 text-zinc-500 mb-4" />
           <h3 className="text-lg font-medium text-zinc-300 mb-2">No categories yet</h3>
           <p className="text-sm text-zinc-500 mb-4 text-center">
@@ -169,8 +169,7 @@ export function CategoriesTree() {
         </div>
       ) : (
         <div
-          className="p-2 rounded-lg bg-zinc-900/50 border border-zinc-800"
-          onDragLeave={handleDragLeave}
+                          className="p-2 rounded-none bg-zinc-900/50 border border-zinc-800"          onDragLeave={handleDragLeave}
         >
           {categories.map((category) => (
             <div
@@ -223,8 +222,7 @@ function CategoriesTreeSkeleton() {
         <div className="h-6 w-32 bg-zinc-800 rounded animate-pulse" />
         <div className="h-9 w-32 bg-zinc-800 rounded animate-pulse" />
       </div>
-      <div className="p-2 rounded-lg bg-zinc-900/50 border border-zinc-800 space-y-2">
-        {[1, 2, 3].map((i) => (
+                  <div className="p-2 rounded-none bg-zinc-900/50 border border-zinc-800 space-y-2">        {[1, 2, 3].map((i) => (
           <div key={i} className="flex items-center gap-2 px-3 py-2">
             <div className="h-4 w-4 bg-zinc-800 rounded animate-pulse" />
             <div className="h-4 w-4 bg-zinc-800 rounded animate-pulse" />

@@ -57,12 +57,12 @@ function SidebarNavItem({ item, onNavigate }: SidebarNavItemProps) {
         <button
           onClick={handleClick}
           className={cn(
-            'w-full flex items-center justify-between px-6 py-4',
+            'w-full flex items-center justify-between px-6 py-3', // Reduced padding
             'text-xs font-bold uppercase tracking-widest',
             'transition-colors duration-100',
             isActive || isChildActive
-              ? 'bg-muted text-primary'
-              : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+              ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+              : 'text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
           )}
         >
           <div className="flex items-center gap-4">
@@ -97,12 +97,12 @@ function SidebarNavItem({ item, onNavigate }: SidebarNavItemProps) {
       href={item.href}
       onClick={onNavigate}
       className={cn(
-        'flex items-center gap-4 px-6 py-4 border-b border-border',
+        'flex items-center gap-4 px-6 py-3 border-b border-border', // Reduced padding
         'text-xs font-bold uppercase tracking-widest',
         'transition-colors duration-100',
         isActive
-          ? 'bg-muted text-primary border-l-2 border-l-primary'
-          : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+          ? 'bg-sidebar-accent text-sidebar-accent-foreground border-l-2 border-l-primary'
+          : 'text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
       )}
     >
       <Icon size={18} />
@@ -125,11 +125,11 @@ function SidebarNavChildItem({ item, onNavigate }: SidebarNavChildItemProps) {
       href={item.href}
       onClick={onNavigate}
       className={cn(
-        'flex items-center gap-4 pl-14 pr-6 py-3',
+        'flex items-center gap-4 pl-14 pr-6 py-2', // Reduced padding
         'text-xs font-bold uppercase tracking-widest',
         'transition-colors duration-100',
         isActive
-          ? 'text-primary bg-muted/50 border-l-2 border-l-primary'
+          ? 'bg-sidebar-accent text-sidebar-accent-foreground border-l-2 border-l-primary'
           : 'text-muted-foreground hover:text-foreground hover:bg-muted/30'
       )}
     >

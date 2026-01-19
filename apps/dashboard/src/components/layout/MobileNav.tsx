@@ -68,7 +68,7 @@ export function MobileNav({ storeName }: MobileNavProps) {
                   'flex flex-col items-center justify-center gap-1 flex-1 h-full',
                   'transition-colors duration-100',
                   isActive
-                    ? 'text-primary'
+                    ? 'text-foreground bg-secondary/50'
                     : 'text-muted-foreground active:text-foreground'
                 )}
               >

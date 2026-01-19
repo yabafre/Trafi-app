@@ -98,7 +98,7 @@ export function ApiKeysTable({ onRevoke }: ApiKeysTableProps) {
             </span>
           </div>
           <div className="flex-1 px-4 py-4">
-            <span className="font-mono text-sm font-bold text-foreground bg-muted/50 px-2 py-1 rounded-sm">
+            <span className="font-mono text-sm font-bold text-foreground bg-muted/50 px-2 py-1 rounded-none">
               {apiKey.keyPrefix}...{apiKey.lastFourChars}
             </span>
           </div>

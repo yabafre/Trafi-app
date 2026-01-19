@@ -115,7 +115,7 @@ export function CategoriesSection({ productId }: CategoriesSectionProps) {
             <DialogTitle>Add to Category</DialogTitle>
           </DialogHeader>
 
-          <div className="max-h-64 overflow-y-auto border rounded-md p-2 space-y-1">
+          <div className="max-h-64 overflow-y-auto border rounded-none p-2 space-y-1">
             {availableCategories.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-4">
                 This product is already in all categories

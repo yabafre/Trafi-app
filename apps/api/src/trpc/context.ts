@@ -32,6 +32,10 @@ import type { InventoryService } from '@modules/inventory';
 
 /**
  * Services injected from NestJS DI container
+ *
+ * NOTE: CartValidationService is NOT included here because it's exposed
+ * via REST controller for storefront (SDK/REST consumers), not tRPC.
+ * @see CartValidationController in inventory module
  */
 export interface TRPCServices {
   authService: AuthService;

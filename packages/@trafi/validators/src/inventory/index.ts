@@ -130,3 +130,135 @@ export type VariantInventory = z.infer<typeof VariantInventorySchema>
 export const StockStatusSchema = z.enum(['IN_STOCK', 'LOW_STOCK', 'OUT_OF_STOCK'])
 
 export type StockStatus = z.infer<typeof StockStatusSchema>
+
+// =============================================================================
+// Cart Validation & Reservation Schemas (Story 3.8 - Oversell Prevention)
+// =============================================================================
+
+/**
+ * Reservation status enum
+ * Matches Prisma enum ReservationStatus
+ */
+export const ReservationStatusSchema = z.enum(['ACTIVE', 'RELEASED', 'EXPIRED'])
+
+export type ReservationStatus = z.infer<typeof ReservationStatusSchema>
+
+/**
+ * Check availability input
+ */
+export const CheckAvailabilityInputSchema = z.object({
+  variantId: z.string(),
+  requestedQuantity: z.number().int().positive(),
+})
+
+export type CheckAvailabilityInput = z.infer<typeof CheckAvailabilityInputSchema>
+
+/**
+ * Check availability result
+ */
+export const CheckAvailabilityResultSchema = z.object({
+  available: z.boolean(),
+  availableQuantity: z.number().int().min(0),
+  allowOversell: z.boolean(),
+  trackInventory: z.boolean(),
+})
+
+export type CheckAvailabilityResult = z.infer<typeof CheckAvailabilityResultSchema>
+
+/**
+ * Validate cart item input
+ */
+export const ValidateCartItemSchema = z.object({
+  variantId: z.string(),
+  quantity: z.number().int().positive(),
+})
+
+export type ValidateCartItem = z.infer<typeof ValidateCartItemSchema>
+
+/**
+ * Cart adjustment response (when quantity is auto-adjusted)
+ */
+export const CartAdjustmentSchema = z.object({
+  variantId: z.string(),
+  requestedQuantity: z.number().int(),
+  availableQuantity: z.number().int().min(0),
+  adjusted: z.boolean(),
+  message: z.string().optional(),
+})
+
+export type CartAdjustment = z.infer<typeof CartAdjustmentSchema>
+
+/**
+ * Cart validation result
+ */
+export const CartValidationResultSchema = z.object({
+  valid: z.boolean(),
+  adjustments: z.array(CartAdjustmentSchema),
+  outOfStockItems: z.array(z.string()), // Variant IDs
+})
+
+export type CartValidationResult = z.infer<typeof CartValidationResultSchema>
+
+/**
+ * Create reservation input
+ */
+export const CreateReservationInputSchema = z.object({
+  storeId: z.string(),
+  cartId: z.string(),
+  variantId: z.string(),
+  quantity: z.number().int().positive(),
+  expiresInMinutes: z.number().int().positive().optional().default(15),
+})
+
+export type CreateReservationInput = z.infer<typeof CreateReservationInputSchema>
+
+/**
+ * Inventory reservation response
+ */
+export const InventoryReservationSchema = z.object({
+  id: z.string(),
+  storeId: z.string(),
+  cartId: z.string(),
+  variantId: z.string(),
+  quantity: z.number().int(),
+  status: ReservationStatusSchema,
+  expiresAt: z.string().datetime(),
+  createdAt: z.string().datetime(),
+  releasedAt: z.string().datetime().nullable(),
+})
+
+export type InventoryReservation = z.infer<typeof InventoryReservationSchema>
+
+/**
+ * Release reservation input
+ */
+export const ReleaseReservationInputSchema = z.object({
+  cartId: z.string(),
+  variantId: z.string(),
+  reason: z.enum(['RELEASED', 'EXPIRED']),
+})
+
+export type ReleaseReservationInput = z.infer<typeof ReleaseReservationInputSchema>
+
+/**
+ * Get available stock input
+ */
+export const GetAvailableStockInputSchema = z.object({
+  variantId: z.string(),
+})
+
+export type GetAvailableStockInput = z.infer<typeof GetAvailableStockInputSchema>
+
+/**
+ * Get available stock result
+ */
+export const GetAvailableStockResultSchema = z.object({
+  variantId: z.string(),
+  physicalQuantity: z.number().int(),
+  reservedQuantity: z.number().int(),
+  availableQuantity: z.number().int(),
+  trackInventory: z.boolean(),
+  allowOversell: z.boolean(),
+})
+
+export type GetAvailableStockResult = z.infer<typeof GetAvailableStockResultSchema>

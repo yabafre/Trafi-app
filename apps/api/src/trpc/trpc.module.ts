@@ -111,6 +111,8 @@ export class TRPCService {
 
   /**
    * Get the services to inject into tRPC context
+   *
+   * NOTE: CartValidationService is NOT included - it uses REST for storefront.
    */
   getServices(): TRPCServices {
     return {

@@ -149,6 +149,12 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
   get inventoryHistory() {
     return this.client.inventoryHistory;
   }
+  get inventoryReservation() {
+    return this.client.inventoryReservation;
+  }
+  get publishableKey() {
+    return this.client.publishableKey;
+  }
 
   // Delegate transaction and other methods with proper typing
   // Using bind to preserve 'this' context while forwarding calls

@@ -16,15 +16,17 @@ model Store {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   // Relations - Multi-store RBAC via StoreMembership
-  memberships        StoreMembership[]
-  products           Product[]
-  categories         Category[]
-  collections        Collection[]
-  taxRules           TaxRule[]
-  apiKeys            ApiKey[]
-  auditLogs          AuditLog[]
-  settings           StoreSettings?
-  ownershipTransfers OwnershipTransfer[]
+  memberships           StoreMembership[]
+  products              Product[]
+  categories            Category[]
+  collections           Collection[]
+  taxRules              TaxRule[]
+  apiKeys               ApiKey[]
+  publishableKeys       PublishableKey[] // Story 3.8 - Storefront SDK keys
+  auditLogs             AuditLog[]
+  settings              StoreSettings?
+  ownershipTransfers    OwnershipTransfer[]
+  inventoryReservations InventoryReservation[] // Story 3.8 - Inventory reservations
 
   @@map("stores")
 }

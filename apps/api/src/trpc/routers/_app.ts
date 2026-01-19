@@ -26,6 +26,10 @@ import { inventoryRouter } from './inventory.router';
  *
  * All domain routers should be merged here.
  * Convention: router name = domain name (e.g., auth, users, products)
+ *
+ * NOTE: Cart validation is exposed via REST controller (not tRPC)
+ * because it's consumed by storefront (SDK/REST), not dashboard.
+ * @see CartValidationController in inventory module
  */
 export const appRouter = router({
   auth: authRouter,

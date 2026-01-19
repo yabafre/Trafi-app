@@ -22,6 +22,7 @@ export * from './category.types';
 export * from './collection.types';
 export * from './pricing.types';
 export * from './inventory.types';
+export * from './storefront.types';
 
 // Common types from validators
 export type {

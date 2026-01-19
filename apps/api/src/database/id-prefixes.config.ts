@@ -20,6 +20,7 @@ export const ID_PREFIXES: Record<string, string> = {
   StoreMembership: 'smem', // NEW: Multi-store RBAC
   StoreSettings: 'stset',
   ApiKey: 'apikey',
+  PublishableKey: 'pk', // Storefront SDK keys (pk_live_, pk_test_)
   AuditLog: 'audit',
   OwnershipTransfer: 'owntx',
   DomainEvent: 'evt', // NEW: Outbox pattern for async jobs

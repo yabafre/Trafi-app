@@ -95,19 +95,30 @@ So that **customers don't order unavailable products**.
   - [x] 4.2 Update `apps/api/src/modules/inventory/index.ts` - export CartValidationService
   - [x] 4.3 PrismaService auto-includes inventoryReservation via Prisma generate (no manual update needed)
 
-- [x] **Task 5: Create REST Controller** (AC: #1, #2, #3, #4)
+- [x] **Task 5: Create REST Controller with Header-Based Store Resolution** (AC: #1, #2, #3, #4)
   - [x] 5.1 Create `apps/api/src/modules/inventory/cart-validation.controller.ts`
-  - [x] 5.2 Implement `GET /storefront/:storeId/availability/:variantId` (public)
-  - [x] 5.3 Implement `POST /storefront/:storeId/cart/validate` (public)
-  - [x] 5.4 Implement `POST /storefront/:storeId/reservations` (auth required)
-  - [x] 5.5 Implement `POST /storefront/:storeId/reservations/release` (auth required)
-  - [x] 5.6 Implement `GET /storefront/:storeId/stock/:variantId` (public)
-  - [x] 5.7 Register controller in InventoryModule
-  - [x] 5.8 Add Swagger documentation for all endpoints
+  - [x] 5.2 Implement `GET /storefront/availability/:variantId` (public, store via header)
+  - [x] 5.3 Implement `POST /storefront/cart/validate` (public, store via header)
+  - [x] 5.4 Implement `POST /storefront/reservations` (cart token required)
+  - [x] 5.5 Implement `POST /storefront/reservations/release` (cart token required)
+  - [x] 5.6 Implement `GET /storefront/stock/:variantId` (public, store via header)
+  - [x] 5.7 Create `StorefrontGuard` for header-based store resolution
+  - [x] 5.8 Create `CartTokenGuard` for cart token validation (scaffold)
+  - [x] 5.9 Create `StorefrontStoreId` decorator for injecting resolved storeId
+  - [x] 5.10 Register controller and guards in InventoryModule
+  - [x] 5.11 Add Swagger documentation for all endpoints
 
   **Architecture Note:** REST controller (not tRPC) because storefront uses SDK/REST per architecture.md:
   - Dashboard → tRPC (internal)
   - Storefront → SDK/REST (external)
+
+  **Store Resolution (via headers, NOT URL):**
+  - `X-Trafi-Store-Id`: store_... (dev/debug mode)
+  - `X-Trafi-Publishable-Key`: pk_... (future - Epic 12)
+  - Host header (future - Epic 14)
+
+  **Cart Auth (for reservation endpoints):**
+  - `X-Trafi-Cart-Token`: ct_... (scaffold - full impl in Epic 4)
 
 - [x] **Task 6: Create Reservation Expiry Job** (AC: #10)
   - [x] 6.1 Create `apps/api/src/modules/inventory/jobs/expire-reservations.job.ts`
@@ -346,43 +357,60 @@ export class CartValidationService {
 }
 ```
 
-### Dashboard Data Flow Pattern (for Storefront - Epic 4)
+### Storefront Data Flow Pattern (Epic 4)
 
 ```
-AddToCartButton.tsx (Client - Storefront)
-  |-- useCheckAvailability() hook (pre-check before add)
+AddToCartButton.tsx (Storefront Client)
+  |-- SDK/REST API call with headers:
+  |   - X-Trafi-Store-Id: store_abc123
+  |   - X-Trafi-Cart-Token: ct_... (for checkout)
        |
        v
-Server Actions (storefront/_actions/cart-validation-actions.ts)
-       |
-       v
-tRPC Router (cart-validation.router.ts)
+REST Controller (cart-validation.controller.ts)
+  |-- StorefrontGuard → resolve store from headers
+  |-- CartTokenGuard → validate cart token (for reservations)
        |
        v
 CartValidationService (cart-validation.service.ts)
 ```
 
+**Endpoints (no :storeId in URL - resolved via headers):**
+- `GET  /storefront/availability/:variantId` - Check availability
+- `GET  /storefront/stock/:variantId` - Get stock details
+- `POST /storefront/cart/validate` - Validate cart items
+- `POST /storefront/reservations` - Create reservation (cart token required)
+- `POST /storefront/reservations/release` - Release reservation (cart token required)
+- `POST /storefront/reservations/release-cart` - Release all cart reservations (cart token required)
+- `GET  /storefront/reservations/:cartId` - Get cart reservations (cart token required)
+
 ### Project Structure Notes
 
 ```
 apps/api/src/modules/inventory/
-├── inventory.module.ts           # MODIFIED: Add CartValidationService
+├── inventory.module.ts           # MODIFIED: Add CartValidationService, guards
 ├── inventory.service.ts          # Existing from 3.7
 ├── cart-validation.service.ts    # NEW: Availability checks + reservations
-├── index.ts                      # MODIFIED: Export CartValidationService
+├── cart-validation.controller.ts # NEW: REST controller for storefront
+├── index.ts                      # MODIFIED: Export CartValidationService, controller
 ├── jobs/
-│   └── expire-reservations.job.ts  # NEW: BullMQ job for reservation expiry
+│   └── expire-reservations.job.ts  # NEW: @nestjs/schedule job for reservation expiry
 └── __tests__/
     ├── inventory.service.spec.ts     # Existing from 3.7
-    └── cart-validation.service.spec.ts # NEW: Unit tests
+    ├── cart-validation.service.spec.ts # NEW: Unit tests (28 tests)
+    └── expire-reservations.job.spec.ts # NEW: Job unit tests (12 tests)
+
+apps/api/src/common/guards/
+├── storefront.guard.ts           # NEW: Header-based store resolution
+├── cart-token.guard.ts           # NEW: Cart token validation (scaffold)
+└── index.ts                      # MODIFIED: Export new guards
+
+apps/api/src/common/decorators/
+├── storefront.decorator.ts       # NEW: Storefront context decorators
+└── index.ts                      # MODIFIED: Export storefront decorators
 
 apps/api/prisma/schema/
 ├── inventory-reservation.prisma  # NEW: InventoryReservation model
 └── product-variant.prisma        # MODIFIED: Add inventoryReservations relation
-
-apps/api/src/trpc/routers/
-├── inventory.router.ts           # Existing from 3.7
-└── cart-validation.router.ts     # NEW: Cart validation endpoints
 ```
 
 ---
@@ -456,10 +484,13 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 - Serializable transactions with P2034 retry logic implemented
 - Event emission for all reservation lifecycle changes
 - Code review completed with all issues resolved
+- Architecture refactored: REST controller instead of tRPC (storefront uses SDK/REST)
+- Header-based store resolution implemented (X-Trafi-Store-Id, scaffold for X-Trafi-Publishable-Key)
+- Cart token guard scaffolded (X-Trafi-Cart-Token) for Epic 4 checkout flow
 
 ### File List
 
-**New Files (8):**
+**New Files (11):**
 - `_bmad-output/implementation-artifacts/3-8-oversell-prevention.md` - Story file
 - `apps/api/prisma/schema/inventory-reservation.prisma` - InventoryReservation Prisma schema
 - `apps/api/src/modules/inventory/cart-validation.service.ts` - Cart validation and reservation service
@@ -468,20 +499,31 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 - `apps/api/src/modules/inventory/jobs/index.ts` - Jobs barrel export
 - `apps/api/src/modules/inventory/__tests__/cart-validation.service.spec.ts` - Cart validation unit tests (28 tests)
 - `apps/api/src/modules/inventory/__tests__/expire-reservations.job.spec.ts` - Expiry job unit tests (12 tests)
+- `apps/api/src/common/guards/storefront.guard.ts` - Header-based store resolution guard (X-Trafi-Store-Id, X-Trafi-Publishable-Key)
+- `apps/api/src/common/guards/cart-token.guard.ts` - Cart token validation guard (scaffold for Epic 4)
+- `apps/api/src/common/decorators/storefront.decorator.ts` - Storefront context decorators (Storefront, StorefrontStoreId, CartToken)
 
-**Modified Files (9):**
+**Modified Files (11):**
 - `apps/api/package.json` - Added @nestjs/schedule dependency
 - `apps/api/prisma/schema/product-variant.prisma` - Added inventoryReservations relation
 - `apps/api/prisma/schema/store.prisma` - Added inventoryReservations relation
 - `apps/api/src/database/prisma.service.ts` - Added invres_ prefix configuration
 - `apps/api/src/modules/inventory/index.ts` - Exported CartValidationService, CartValidationController, ExpireReservationsJob
-- `apps/api/src/modules/inventory/inventory.module.ts` - Added CartValidationController, CartValidationService, ExpireReservationsJob
+- `apps/api/src/modules/inventory/inventory.module.ts` - Added CartValidationController, CartValidationService, ExpireReservationsJob, guards
+- `apps/api/src/common/guards/index.ts` - Exported StorefrontGuard, CartTokenGuard
+- `apps/api/src/common/decorators/index.ts` - Exported storefront decorators
 - `packages/@trafi/validators/src/inventory/index.ts` - Added reservation and cart validation schemas
 - `pnpm-lock.yaml` - Updated lockfile
 - `_bmad-output/implementation-artifacts/sprint-status.yaml` - Updated story status
 
 **Architecture Decision:**
 Cart validation exposed via REST controller (not tRPC) per architecture.md:
-- Storefront → SDK/REST → `/storefront/:storeId/*` endpoints
+- Storefront → SDK/REST → `/storefront/*` endpoints (store resolved via headers)
 - Dashboard → tRPC (cart validation not needed in backoffice)
+
+**Header-Based Store Resolution:**
+- `X-Trafi-Store-Id` header for dev/debug (current)
+- `X-Trafi-Publishable-Key` for SDK clients (Epic 12)
+- Host header for multi-tenant (Epic 14)
+- Cart token auth via `X-Trafi-Cart-Token` (Epic 4)
 

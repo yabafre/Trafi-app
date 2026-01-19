@@ -19,6 +19,7 @@ import { MediaModule } from '@modules/media';
 import { CategoriesModule } from '@modules/categories';
 import { CollectionsModule } from '@modules/collections';
 import { PricingModule } from '@modules/pricing';
+import { InventoryModule, InventoryService } from '@modules/inventory';
 import { AuthService } from '@modules/auth/auth.service';
 import { UserService } from '@modules/user';
 import { SettingsService } from '@modules/settings';
@@ -55,6 +56,7 @@ export class TRPCMiddleware implements NestMiddleware {
     private readonly collectionsService: CollectionsService,
     private readonly taxRulesService: TaxRulesService,
     private readonly pricingService: PricingService,
+    private readonly inventoryService: InventoryService,
     private readonly jwtService: JwtService
   ) {
     const services: TRPCServices = {
@@ -70,6 +72,7 @@ export class TRPCMiddleware implements NestMiddleware {
       collectionsService: this.collectionsService,
       taxRulesService: this.taxRulesService,
       pricingService: this.pricingService,
+      inventoryService: this.inventoryService,
       jwtService: this.jwtService,
     };
 
@@ -102,6 +105,7 @@ export class TRPCService {
     private readonly collectionsService: CollectionsService,
     private readonly taxRulesService: TaxRulesService,
     private readonly pricingService: PricingService,
+    private readonly inventoryService: InventoryService,
     private readonly jwtService: JwtService
   ) {}
 
@@ -122,6 +126,7 @@ export class TRPCService {
       collectionsService: this.collectionsService,
       taxRulesService: this.taxRulesService,
       pricingService: this.pricingService,
+      inventoryService: this.inventoryService,
       jwtService: this.jwtService,
     };
   }
@@ -152,6 +157,7 @@ export class TRPCService {
     CategoriesModule,
     CollectionsModule,
     PricingModule,
+    InventoryModule,
   ],
   providers: [TRPCService, TRPCMiddleware],
   exports: [TRPCService, TRPCMiddleware],

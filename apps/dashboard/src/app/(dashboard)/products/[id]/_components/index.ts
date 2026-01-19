@@ -27,3 +27,7 @@ export { CategoriesSection } from './CategoriesSection'
 // Pricing Components (Story 3.6)
 export { PricingSection, PricingSectionSkeleton } from './PricingSection'
 export { EditVariantPricingDialog } from './EditVariantPricingDialog'
+
+// Inventory Components (Story 3.7)
+export { InventorySection, InventorySectionSkeleton } from './InventorySection'
+export { EditVariantInventoryDialog } from './EditVariantInventoryDialog'

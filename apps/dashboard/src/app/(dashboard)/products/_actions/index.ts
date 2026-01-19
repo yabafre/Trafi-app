@@ -23,3 +23,12 @@ export {
   calculateMarginAction,
   formatPriceAction,
 } from './pricing-actions'
+
+// Inventory actions (Story 3.7)
+export {
+  adjustInventoryAction,
+  setInventoryAction,
+  updateInventorySettingsAction,
+  getVariantInventoryAction,
+  getInventoryHistoryAction,
+} from './inventory-actions'

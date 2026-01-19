@@ -14,7 +14,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { useCreateTaxRule, useUpdateTaxRule } from '../_hooks'
-import type { TaxRuleResponse } from '../_actions'
+import type { TaxRuleResponse } from '@trafi/types'
 
 interface TaxRuleFormDialogProps {
   open: boolean

@@ -538,6 +538,8 @@ export class VariantsService {
       taxRuleId: variant.taxRuleId,
       quantity: variant.quantity,
       trackInventory: variant.trackInventory,
+      lowStockThreshold: variant.lowStockThreshold, // Story 3.7
+      allowOversell: variant.allowOversell, // Story 3.7
       weight: variant.weight,
       weightUnit: this.toApiWeightUnit(variant.weightUnit),
       createdAt: variant.createdAt,

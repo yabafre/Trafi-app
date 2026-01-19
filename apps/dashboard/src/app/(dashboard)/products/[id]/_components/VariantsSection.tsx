@@ -22,6 +22,7 @@ import { CreateVariantDialog } from './CreateVariantDialog'
 import { BulkVariantGenerator } from './BulkVariantGenerator'
 import { DeleteVariantDialog } from './DeleteVariantDialog'
 import { EditVariantPricingDialog } from './EditVariantPricingDialog'
+import { EditVariantInventoryDialog } from './EditVariantInventoryDialog'
 import type { VariantResponse } from '@trafi/validators'
 
 interface VariantsSectionProps {
@@ -39,6 +40,7 @@ export function VariantsSection({ productId }: VariantsSectionProps) {
   const [showBulkGenerator, setShowBulkGenerator] = useState(false)
   const [variantToDelete, setVariantToDelete] = useState<VariantResponse | null>(null)
   const [variantToEditPricing, setVariantToEditPricing] = useState<VariantResponse | null>(null)
+  const [variantToEditInventory, setVariantToEditInventory] = useState<VariantResponse | null>(null)
 
   if (isLoading) {
     return <VariantsSectionSkeleton />
@@ -119,7 +121,7 @@ export function VariantsSection({ productId }: VariantsSectionProps) {
                 STOCK
               </span>
             </div>
-            <div className="w-16 px-4 py-2"></div>
+            <div className="w-24 px-4 py-2"></div>
           </div>
 
           {/* Table Body */}
@@ -130,6 +132,7 @@ export function VariantsSection({ productId }: VariantsSectionProps) {
               productId={productId}
               onDelete={setVariantToDelete}
               onEditPricing={setVariantToEditPricing}
+              onEditInventory={setVariantToEditInventory}
               canEdit={canEdit}
               canDelete={canDelete}
             />
@@ -165,6 +168,14 @@ export function VariantsSection({ productId }: VariantsSectionProps) {
         onOpenChange={(open) => !open && setVariantToEditPricing(null)}
         canEdit={canEdit}
       />
+
+      <EditVariantInventoryDialog
+        variant={variantToEditInventory}
+        productId={productId}
+        open={!!variantToEditInventory}
+        onOpenChange={(open) => !open && setVariantToEditInventory(null)}
+        canEdit={canEdit}
+      />
     </div>
   )
 }
@@ -197,7 +208,9 @@ function VariantsSectionSkeleton() {
             <div className="w-24">
               <Skeleton className="h-4 w-12" />
             </div>
-            <div className="w-16">
+            <div className="w-24 flex gap-1">
+              <Skeleton className="h-6 w-6" />
+              <Skeleton className="h-6 w-6" />
               <Skeleton className="h-6 w-6" />
             </div>
           </div>

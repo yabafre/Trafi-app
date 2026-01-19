@@ -20,3 +20,12 @@ export {
   useCalculateMargin,
   useTaxRulesForSelect,
 } from './useVariantPricing'
+
+// Inventory hooks (Story 3.7)
+export {
+  useAdjustInventory,
+  useSetInventory,
+  useUpdateInventorySettings,
+  useVariantInventory,
+  useInventoryHistory,
+} from './useInventory'

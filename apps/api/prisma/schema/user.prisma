@@ -33,10 +33,11 @@ model User {
   updatedAt        DateTime    @updatedAt @map("updated_at")
 
   // Relations - Multi-store RBAC via StoreMembership
-  memberships        StoreMembership[]
-  createdKeys        ApiKey[]
-  transfersInitiated OwnershipTransfer[] @relation("TransferFrom")
-  transfersReceived  OwnershipTransfer[] @relation("TransferTo")
+  memberships           StoreMembership[]
+  createdKeys           ApiKey[]
+  transfersInitiated    OwnershipTransfer[]  @relation("TransferFrom")
+  transfersReceived     OwnershipTransfer[]  @relation("TransferTo")
+  inventoryAdjustments  InventoryHistory[]   // Story 3.7 - User who made inventory changes
 
   // Index for email lookups (global user, not store-scoped)
   @@index([email])

@@ -110,6 +110,8 @@ export const VariantResponseSchema = z.object({
   taxRuleId: z.string().nullable(), // Story 3.6 - Tax rule assignment
   quantity: z.number(),
   trackInventory: z.boolean(),
+  lowStockThreshold: z.number(), // Story 3.7 - Inventory tracking
+  allowOversell: z.boolean(), // Story 3.7 - Inventory tracking
   weight: z.number().nullable(),
   weightUnit: WeightUnitSchema,
   createdAt: z.date(),

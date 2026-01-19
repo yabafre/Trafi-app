@@ -17,6 +17,7 @@ import { MediaModule } from '@modules/media';
 import { CategoriesModule } from '@modules/categories';
 import { CollectionsModule } from '@modules/collections';
 import { PricingModule } from '@modules/pricing';
+import { InventoryModule } from '@modules/inventory';
 import { TRPCModule } from './trpc/trpc.module';
 import { TenantInterceptor, AuditInterceptor } from '@common/interceptors';
 
@@ -54,6 +55,7 @@ import { TenantInterceptor, AuditInterceptor } from '@common/interceptors';
     CategoriesModule,
     CollectionsModule,
     PricingModule,
+    InventoryModule,
     TRPCModule,
   ],
   controllers: [],

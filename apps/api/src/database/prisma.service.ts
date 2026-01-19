@@ -146,6 +146,9 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
   get taxRule() {
     return this.client.taxRule;
   }
+  get inventoryHistory() {
+    return this.client.inventoryHistory;
+  }
 
   // Delegate transaction and other methods with proper typing
   // Using bind to preserve 'this' context while forwarding calls

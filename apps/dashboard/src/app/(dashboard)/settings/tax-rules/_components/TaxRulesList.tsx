@@ -23,7 +23,7 @@ import { MoreHorizontal } from 'lucide-react'
 import { TaxRuleFormDialog } from './TaxRuleFormDialog'
 import { DeleteTaxRuleDialog } from './DeleteTaxRuleDialog'
 import { useTaxRuleList, useSetDefaultTaxRule } from '../_hooks'
-import type { TaxRuleResponse } from '../_actions'
+import type { TaxRuleResponse } from '@trafi/types'
 
 /**
  * Tax Rules List Component

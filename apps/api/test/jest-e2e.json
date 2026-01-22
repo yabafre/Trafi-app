@@ -12,10 +12,12 @@
     ]
   },
   "moduleNameMapper": {
+    "^superjson$": "<rootDir>/../__mocks__/superjson.ts",
     "^@/(.*)$": "<rootDir>/../src/$1",
     "^@common/(.*)$": "<rootDir>/../src/common/$1",
     "^@modules/(.*)$": "<rootDir>/../src/modules/$1",
     "^@database/(.*)$": "<rootDir>/../src/database/$1",
+    "^@database$": "<rootDir>/../src/database",
     "^@config/(.*)$": "<rootDir>/../src/config/$1",
     "^@generated/(.*)$": "<rootDir>/../src/generated/$1"
   },

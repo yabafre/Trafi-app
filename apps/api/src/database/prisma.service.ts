@@ -155,6 +155,15 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
   get publishableKey() {
     return this.client.publishableKey;
   }
+  get promotion() {
+    return this.client.promotion;
+  }
+  get coupon() {
+    return this.client.coupon;
+  }
+  get promotionUsage() {
+    return this.client.promotionUsage;
+  }
 
   // Delegate transaction and other methods with proper typing
   // Using bind to preserve 'this' context while forwarding calls

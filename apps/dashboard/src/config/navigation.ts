@@ -13,6 +13,9 @@ import {
   FolderTree,
   LayoutGrid,
   Receipt,
+  Megaphone,
+  Percent,
+  List,
   type LucideIcon,
 } from 'lucide-react';
 import { usePathname } from 'next/navigation';
@@ -48,6 +51,12 @@ export const navigationConfig: NavItem[] = [
     icon: Package,
     children: [
       {
+        id: 'products-catalog',
+        label: 'Catalog',
+        href: '/products',
+        icon: List,
+      },
+      {
         id: 'products-categories',
         label: 'Categories',
         href: '/products/categories',
@@ -72,6 +81,20 @@ export const navigationConfig: NavItem[] = [
     label: 'Customers',
     href: '/customers',
     icon: Users,
+  },
+  {
+    id: 'marketing',
+    label: 'Marketing',
+    href: '/marketing',
+    icon: Megaphone,
+    children: [
+      {
+        id: 'marketing-promotions',
+        label: 'Promotions',
+        href: '/marketing/promotions',
+        icon: Percent,
+      },
+    ],
   },
   {
     id: 'settings',
@@ -161,12 +184,15 @@ export function getPathLabel(segment: string): string {
   const labels: Record<string, string> = {
     dashboard: 'Dashboard',
     products: 'Products',
+    catalog: 'Catalog',
     categories: 'Categories',
     collections: 'Collections',
     new: 'Nouveau',
     edit: 'Modifier',
     orders: 'Orders',
     customers: 'Customers',
+    marketing: 'Marketing',
+    promotions: 'Promotions',
     settings: 'Settings',
     store: 'Store',
     users: 'Users',

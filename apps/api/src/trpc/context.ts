@@ -29,6 +29,7 @@ import type { CategoriesService } from '@modules/categories';
 import type { CollectionsService } from '@modules/collections';
 import type { TaxRulesService, PricingService } from '@modules/pricing';
 import type { InventoryService } from '@modules/inventory';
+import type { PromotionsService, CouponService } from '@modules/promotions';
 
 /**
  * Services injected from NestJS DI container
@@ -51,6 +52,8 @@ export interface TRPCServices {
   taxRulesService: TaxRulesService;
   pricingService: PricingService;
   inventoryService: InventoryService;
+  promotionsService: PromotionsService;
+  couponService: CouponService;
   jwtService: JwtService;
 }
 

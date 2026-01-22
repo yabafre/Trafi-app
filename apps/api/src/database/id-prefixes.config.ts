@@ -46,7 +46,7 @@ export const ID_PREFIXES: Record<string, string> = {
   // ============================================
   Promotion: 'promo',
   Coupon: 'coup',
-  PromotionRedemption: 'prdm', // NEW: Renamed from PromotionUsage
+  PromotionUsage: 'puse', // Story 3.9 - Track promotion/coupon usage
   GiftCard: 'gc',
   GiftCardTransaction: 'gctx',
   GiftCardTemplate: 'gctpl',

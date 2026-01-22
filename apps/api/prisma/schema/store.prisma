@@ -27,6 +27,9 @@ model Store {
   settings              StoreSettings?
   ownershipTransfers    OwnershipTransfer[]
   inventoryReservations InventoryReservation[] // Story 3.8 - Inventory reservations
+  promotions            Promotion[]            // Story 3.9 - Promotions
+  coupons               Coupon[]               // Story 3.9 - Coupon codes
+  promotionUsages       PromotionUsage[]       // Story 3.9 - Usage tracking
 
   @@map("stores")
 }

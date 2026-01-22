@@ -18,6 +18,7 @@ import { CategoriesModule } from '@modules/categories';
 import { CollectionsModule } from '@modules/collections';
 import { PricingModule } from '@modules/pricing';
 import { InventoryModule } from '@modules/inventory';
+import { PromotionsModule } from '@modules/promotions';
 import { TRPCModule } from './trpc/trpc.module';
 import { TenantInterceptor, AuditInterceptor } from '@common/interceptors';
 
@@ -56,6 +57,7 @@ import { TenantInterceptor, AuditInterceptor } from '@common/interceptors';
     CollectionsModule,
     PricingModule,
     InventoryModule,
+    PromotionsModule,
     TRPCModule,
   ],
   controllers: [],

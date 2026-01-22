@@ -124,7 +124,12 @@ development_status:
   3-8-oversell-prevention: done
   # New stories added 2026-01-18 for Promotions, Gift Cards, Foundation Reinforcement
   # NOTE: 3.9 Promotions SIMPLIFIED for MVP (removed PromotionRule/PromotionAction)
-  3-9-promotions-and-discounts-foundation: backlog
+  # CREATED: 2026-01-19 (create-story workflow, simplified MVP scope)
+  # STARTED: 2026-01-19 (dev-story workflow)
+  # COMPLETED: 2026-01-19 (backend tasks 1-6, dashboard tasks 7-10)
+  # REVIEWED: 2026-01-22 (code-review workflow, 5 issues found, 1 fixed - index.ts barrel exports)
+  # All ACs verified, 558 unit tests passing
+  3-9-promotions-and-discounts-foundation: done
   3-10-gift-cards: backlog
   3-R1-foundation-reinforcement: backlog
   3-R2-prefixed-ids-foundation: done

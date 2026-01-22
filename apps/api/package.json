@@ -111,6 +111,7 @@
       "^.+\\.(t|j)s$": "ts-jest"
     },
     "moduleNameMapper": {
+      "^superjson$": "<rootDir>/__mocks__/superjson.ts",
       "^@/(.*)$": "<rootDir>/src/$1",
       "^@common$": "<rootDir>/src/common/index",
       "^@common/(.*)$": "<rootDir>/src/common/$1",

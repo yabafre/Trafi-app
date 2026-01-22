@@ -20,6 +20,7 @@ import { CategoriesModule } from '@modules/categories';
 import { CollectionsModule } from '@modules/collections';
 import { PricingModule } from '@modules/pricing';
 import { InventoryModule, InventoryService } from '@modules/inventory';
+import { PromotionsModule, PromotionsService, CouponService } from '@modules/promotions';
 import { AuthService } from '@modules/auth/auth.service';
 import { UserService } from '@modules/user';
 import { SettingsService } from '@modules/settings';
@@ -57,6 +58,8 @@ export class TRPCMiddleware implements NestMiddleware {
     private readonly taxRulesService: TaxRulesService,
     private readonly pricingService: PricingService,
     private readonly inventoryService: InventoryService,
+    private readonly promotionsService: PromotionsService,
+    private readonly couponService: CouponService,
     private readonly jwtService: JwtService
   ) {
     const services: TRPCServices = {
@@ -73,6 +76,8 @@ export class TRPCMiddleware implements NestMiddleware {
       taxRulesService: this.taxRulesService,
       pricingService: this.pricingService,
       inventoryService: this.inventoryService,
+      promotionsService: this.promotionsService,
+      couponService: this.couponService,
       jwtService: this.jwtService,
     };
 
@@ -106,6 +111,8 @@ export class TRPCService {
     private readonly taxRulesService: TaxRulesService,
     private readonly pricingService: PricingService,
     private readonly inventoryService: InventoryService,
+    private readonly promotionsService: PromotionsService,
+    private readonly couponService: CouponService,
     private readonly jwtService: JwtService
   ) {}
 
@@ -129,6 +136,8 @@ export class TRPCService {
       taxRulesService: this.taxRulesService,
       pricingService: this.pricingService,
       inventoryService: this.inventoryService,
+      promotionsService: this.promotionsService,
+      couponService: this.couponService,
       jwtService: this.jwtService,
     };
   }
@@ -160,6 +169,7 @@ export class TRPCService {
     CollectionsModule,
     PricingModule,
     InventoryModule,
+    PromotionsModule,
   ],
   providers: [TRPCService, TRPCMiddleware],
   exports: [TRPCService, TRPCMiddleware],

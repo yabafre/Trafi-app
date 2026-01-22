@@ -140,8 +140,11 @@ development_status:
   3-R1-foundation-reinforcement: done
   3-R2-prefixed-ids-foundation: done
   # NEW: Dashboard UI for commerce feature flags (promotions, gift cards, multi-currency)
-  # CREATED: 2026-01-22 (backlog addition per user request)
-  3-R3-commerce-settings-ui: backlog
+  # CREATED: 2026-01-22 (create-story workflow, comprehensive developer guide)
+  # STARTED: 2026-01-22 (dev-story workflow)
+  # COMPLETED: 2026-01-22 (all 6 tasks, 19 unit tests, 249 dashboard tests passing)
+  # REVIEWED: 2026-01-22 (code-review workflow, 7 issues found and fixed)
+  3-R3-commerce-settings-ui: done
   # Architectural corrections v2 applied 2026-01-18:
   # - Global tables (Country, Currency) without storeId
   # - StoreMembership for multi-store RBAC

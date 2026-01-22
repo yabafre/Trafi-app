@@ -9,11 +9,12 @@
 // =============================================================================
 
 model Store {
-  id        String   @id @default(cuid())
-  name      String
-  slug      String   @unique
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id              String   @id @default(cuid())
+  name            String
+  slug            String   @unique
+  defaultRegionId String?  @map("default_region_id") // Story 3.R1 - Future Region linkage
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
 
   // Relations - Multi-store RBAC via StoreMembership
   memberships           StoreMembership[]
@@ -33,6 +34,7 @@ model Store {
   giftCards             GiftCard[]             // Story 3.10 - Gift cards
   giftCardTransactions  GiftCardTransaction[]  // Story 3.10 - Gift card transactions
   giftCardTemplates     GiftCardTemplate[]     // Story 3.10 - Gift card templates
+  currencies            StoreCurrency[]        // Story 3.R1 - Multi-currency support
 
   @@map("stores")
 }

@@ -1,0 +1,22 @@
+// =============================================================================
+// StoreCurrency Join Table Schema
+// =============================================================================
+// Many-to-many relationship between Store and Currency (global reference).
+// Per Architecture Principle #2: Use join tables, NOT arrays.
+// No ID prefix needed (composite primary key).
+// @see Story 3.R1 - Foundation Reinforcement
+// =============================================================================
+
+model StoreCurrency {
+  storeId      String   @map("store_id")
+  currencyCode String   @map("currency_code")
+  isDefault    Boolean  @default(false) @map("is_default")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  store    Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  currency Currency @relation(fields: [currencyCode], references: [code], onDelete: Restrict)
+
+  @@id([storeId, currencyCode])
+  @@index([storeId])
+  @@map("store_currencies")
+}

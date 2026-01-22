@@ -39,6 +39,25 @@ model StoreSettings {
   logoUrl      String? @map("logo_url")
   faviconUrl   String? @map("favicon_url")
 
+  // =============================================
+  // Commerce Feature Flags (Story 3.R1)
+  // =============================================
+
+  // Promotions settings
+  promotionsEnabled    Boolean @default(true) @map("promotions_enabled")
+  maxDiscountPercent   Int     @default(100) @map("max_discount_percent") // 0-100
+  allowStackablePromos Boolean @default(false) @map("allow_stackable_promos")
+
+  // Gift cards settings
+  giftCardsEnabled     Boolean @default(false) @map("gift_cards_enabled")
+  giftCardMinCents     Int     @default(1000) @map("gift_card_min_cents")   // $10 min
+  giftCardMaxCents     Int     @default(50000) @map("gift_card_max_cents")  // $500 max
+  giftCardValidityDays Int?    @map("gift_card_validity_days")              // null = never expires
+
+  // Multi-currency settings
+  multiCurrencyEnabled Boolean @default(false) @map("multi_currency_enabled")
+  displayPriceIncTax   Boolean @default(true) @map("display_price_inc_tax")
+
   // Timestamps
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")

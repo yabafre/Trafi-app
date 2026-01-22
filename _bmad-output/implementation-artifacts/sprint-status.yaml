@@ -132,9 +132,16 @@ development_status:
   3-9-promotions-and-discounts-foundation: done
   # CREATED: 2026-01-22 (create-story workflow, comprehensive developer guide)
   # STARTED: 2026-01-22 (dev-story workflow)
-  3-10-gift-cards: review
-  3-R1-foundation-reinforcement: backlog
+  3-10-gift-cards: done
+  # CREATED: 2026-01-22 (create-story workflow, comprehensive developer guide)
+  # STARTED: 2026-01-22 (dev-story workflow)
+  # COMPLETED: 2026-01-22 (all 7 tasks, 651 tests passing, builds successful)
+  # REVIEWED: 2026-01-22 (code-review workflow, 1 issue fixed - added StoreCurrency tests)
+  3-R1-foundation-reinforcement: done
   3-R2-prefixed-ids-foundation: done
+  # NEW: Dashboard UI for commerce feature flags (promotions, gift cards, multi-currency)
+  # CREATED: 2026-01-22 (backlog addition per user request)
+  3-R3-commerce-settings-ui: backlog
   # Architectural corrections v2 applied 2026-01-18:
   # - Global tables (Country, Currency) without storeId
   # - StoreMembership for multi-store RBAC

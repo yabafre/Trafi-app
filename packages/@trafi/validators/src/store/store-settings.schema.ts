@@ -71,6 +71,17 @@ export const StoreSettingsResponseSchema = z.object({
   logoUrl: z.string().nullable(),
   faviconUrl: z.string().nullable(),
 
+  // Commerce Feature Flags (Story 3.R1)
+  promotionsEnabled: z.boolean(),
+  maxDiscountPercent: z.number().int(),
+  allowStackablePromos: z.boolean(),
+  giftCardsEnabled: z.boolean(),
+  giftCardMinCents: z.number().int(),
+  giftCardMaxCents: z.number().int(),
+  giftCardValidityDays: z.number().int().nullable(),
+  multiCurrencyEnabled: z.boolean(),
+  displayPriceIncTax: z.boolean(),
+
   // Timestamps
   createdAt: z.coerce.date(),
   updatedAt: z.coerce.date(),
@@ -81,33 +92,62 @@ export type StoreSettingsResponse = z.infer<typeof StoreSettingsResponseSchema>;
  * Update store settings schema
  * All fields are optional for partial updates
  */
-export const UpdateStoreSettingsSchema = z.object({
-  // General
-  name: z.string().min(1).max(255).optional(),
-  description: z.string().max(1000).optional(),
-  slug: StoreSettingsSlugSchema.optional(),
+export const UpdateStoreSettingsSchema = z
+  .object({
+    // General
+    name: z.string().min(1).max(255).optional(),
+    description: z.string().max(1000).optional(),
+    slug: StoreSettingsSlugSchema.optional(),
 
-  // Localization
-  defaultCurrency: CurrencySchema.optional(),
-  defaultLocale: LocaleSchema.optional(),
-  timezone: TimezoneSchema.optional(),
-  weightUnit: WeightUnitSchema.optional(),
+    // Localization
+    defaultCurrency: CurrencySchema.optional(),
+    defaultLocale: LocaleSchema.optional(),
+    timezone: TimezoneSchema.optional(),
+    weightUnit: WeightUnitSchema.optional(),
 
-  // Business
-  taxIncluded: z.boolean().optional(),
-  autoArchiveOrders: z.boolean().optional(),
-  orderNumberPrefix: z.string().max(10).optional(),
-  lowStockThreshold: z.number().int().nonnegative().optional(),
+    // Business
+    taxIncluded: z.boolean().optional(),
+    autoArchiveOrders: z.boolean().optional(),
+    orderNumberPrefix: z.string().max(10).optional(),
+    lowStockThreshold: z.number().int().nonnegative().optional(),
 
-  // Contact
-  contactEmail: EmailSchema.optional(),
-  supportEmail: EmailSchema.optional(),
-  phoneNumber: z.string().max(30).optional(),
-  address: StoreAddressSchema.optional(),
+    // Contact
+    contactEmail: EmailSchema.optional(),
+    supportEmail: EmailSchema.optional(),
+    phoneNumber: z.string().max(30).optional(),
+    address: StoreAddressSchema.optional(),
 
-  // Brand
-  primaryColor: HexColorSchema.optional(),
-  logoUrl: z.string().max(500).optional(),
-  faviconUrl: z.string().max(500).optional(),
-});
+    // Brand
+    primaryColor: HexColorSchema.optional(),
+    logoUrl: z.string().max(500).optional(),
+    faviconUrl: z.string().max(500).optional(),
+
+    // =============================================
+    // Commerce Feature Flags (Story 3.R1)
+    // =============================================
+
+    // Promotions settings
+    promotionsEnabled: z.boolean().optional(),
+    maxDiscountPercent: z.number().int().min(0).max(100).optional(),
+    allowStackablePromos: z.boolean().optional(),
+
+    // Gift cards settings
+    giftCardsEnabled: z.boolean().optional(),
+    giftCardMinCents: z.number().int().positive().optional(),
+    giftCardMaxCents: z.number().int().positive().optional(),
+    giftCardValidityDays: z.number().int().positive().nullable().optional(),
+
+    // Multi-currency settings
+    multiCurrencyEnabled: z.boolean().optional(),
+    displayPriceIncTax: z.boolean().optional(),
+  })
+  .refine(
+    (data) => {
+      if (data.giftCardMinCents !== undefined && data.giftCardMaxCents !== undefined) {
+        return data.giftCardMinCents <= data.giftCardMaxCents;
+      }
+      return true;
+    },
+    { message: 'Min gift card amount must be <= max amount' },
+  );
 export type UpdateStoreSettingsInput = z.infer<typeof UpdateStoreSettingsSchema>;

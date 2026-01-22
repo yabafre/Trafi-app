@@ -5,7 +5,9 @@ import {
   IsEmail,
   IsBoolean,
   IsNumber,
+  IsInt,
   Min,
+  Max,
   MaxLength,
   Matches,
   IsIn,
@@ -232,4 +234,94 @@ export class UpdateStoreSettingsDto {
   @IsString()
   @MaxLength(500)
   faviconUrl?: string;
+
+  // =============================================
+  // Commerce Feature Flags (Story 3.R1)
+  // =============================================
+
+  // Promotions settings
+  @ApiPropertyOptional({
+    description: 'Enable promotions/discounts feature',
+    example: true,
+  })
+  @IsOptional()
+  @IsBoolean()
+  promotionsEnabled?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Maximum discount percentage allowed (0-100)',
+    example: 100,
+    minimum: 0,
+    maximum: 100,
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(100)
+  maxDiscountPercent?: number;
+
+  @ApiPropertyOptional({
+    description: 'Allow multiple promotions to stack',
+    example: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  allowStackablePromos?: boolean;
+
+  // Gift cards settings
+  @ApiPropertyOptional({
+    description: 'Enable gift cards feature',
+    example: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  giftCardsEnabled?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Minimum gift card amount in cents',
+    example: 1000,
+    minimum: 1,
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  giftCardMinCents?: number;
+
+  @ApiPropertyOptional({
+    description: 'Maximum gift card amount in cents',
+    example: 50000,
+    minimum: 1,
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  giftCardMaxCents?: number;
+
+  @ApiPropertyOptional({
+    description: 'Gift card validity in days (null = never expires)',
+    example: 365,
+    minimum: 1,
+    nullable: true,
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  giftCardValidityDays?: number | null;
+
+  // Multi-currency settings
+  @ApiPropertyOptional({
+    description: 'Enable multi-currency support',
+    example: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  multiCurrencyEnabled?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Display prices with tax included',
+    example: true,
+  })
+  @IsOptional()
+  @IsBoolean()
+  displayPriceIncTax?: boolean;
 }

@@ -54,3 +54,17 @@ export type Email = z.infer<typeof EmailSchema>;
  */
 export const StatusSchema = z.enum(['active', 'inactive', 'archived']);
 export type Status = z.infer<typeof StatusSchema>;
+
+/**
+ * Common ID parameter schema for router endpoints
+ * Use for single-entity operations (get, delete, etc.)
+ */
+export const IdParamSchema = z.object({ id: z.string() });
+export type IdParam = z.infer<typeof IdParamSchema>;
+
+/**
+ * Common CUID parameter schema for router endpoints
+ * Use when strict CUID validation is required
+ */
+export const CuidParamSchema = z.object({ id: z.string().cuid() });
+export type CuidParam = z.infer<typeof CuidParamSchema>;

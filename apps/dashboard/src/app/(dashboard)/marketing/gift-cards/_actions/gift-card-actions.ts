@@ -5,29 +5,14 @@ import { createServerAction } from 'zsa'
 import { z } from '@trafi/zod'
 import { createAuthenticatedTrpcClient } from '@/lib/trpc'
 import {
+  IdParamSchema,
+  ListGiftCardsSchema,
+  ListGiftCardTransactionsSchema,
   IssueGiftCardSchema,
   AdjustGiftCardBalanceSchema,
-  GiftCardStatusSchema,
+  DisableGiftCardSchema,
+  EnableGiftCardSchema,
 } from '@trafi/validators'
-
-// Local schema for listing gift cards
-const ListGiftCardsInputSchema = z.object({
-  status: GiftCardStatusSchema.optional(),
-  templateId: z.string().cuid().optional(),
-  search: z.string().max(50).optional(),
-  fromDate: z.date().optional(),
-  toDate: z.date().optional(),
-  hasBalance: z.boolean().optional(),
-  page: z.number().int().positive().optional(),
-  limit: z.number().int().positive().max(100).optional(),
-})
-
-// Local schema for getting transactions
-const ListTransactionsInputSchema = z.object({
-  giftCardId: z.string().cuid(),
-  page: z.number().int().positive().optional(),
-  limit: z.number().int().positive().max(100).optional(),
-})
 
 /**
  * List gift cards with pagination and filters.
@@ -36,7 +21,7 @@ const ListTransactionsInputSchema = z.object({
  * @see Story 3.10 - Gift Cards
  */
 export const getGiftCardListAction = createServerAction()
-  .input(ListGiftCardsInputSchema.partial())
+  .input(ListGiftCardsSchema.partial())
   .handler(async ({ input }) => {
     const trpc = await createAuthenticatedTrpcClient()
     return await trpc.giftCards.list.query(input)
@@ -46,7 +31,7 @@ export const getGiftCardListAction = createServerAction()
  * Get a single gift card by ID.
  */
 export const getGiftCardAction = createServerAction()
-  .input(z.object({ id: z.string() }))
+  .input(IdParamSchema)
   .handler(async ({ input }) => {
     const trpc = await createAuthenticatedTrpcClient()
     return await trpc.giftCards.get.query({ id: input.id })
@@ -56,7 +41,7 @@ export const getGiftCardAction = createServerAction()
  * Get transactions for a gift card.
  */
 export const getGiftCardTransactionsAction = createServerAction()
-  .input(ListTransactionsInputSchema)
+  .input(ListGiftCardTransactionsSchema)
   .handler(async ({ input }) => {
     const trpc = await createAuthenticatedTrpcClient()
     return await trpc.giftCards.getTransactions.query(input)
@@ -104,7 +89,7 @@ export const adjustGiftCardBalanceAction = createServerAction()
  * Revalidates gift cards cache after update.
  */
 export const disableGiftCardAction = createServerAction()
-  .input(z.object({ giftCardId: z.string().cuid(), reason: z.string().min(1).max(255) }))
+  .input(DisableGiftCardSchema)
   .handler(async ({ input }) => {
     const trpc = await createAuthenticatedTrpcClient()
     const result = await trpc.giftCards.disable.mutate(input)
@@ -118,7 +103,7 @@ export const disableGiftCardAction = createServerAction()
  * Revalidates gift cards cache after update.
  */
 export const enableGiftCardAction = createServerAction()
-  .input(z.object({ giftCardId: z.string().cuid() }))
+  .input(EnableGiftCardSchema)
   .handler(async ({ input }) => {
     const trpc = await createAuthenticatedTrpcClient()
     const result = await trpc.giftCards.enable.mutate(input)

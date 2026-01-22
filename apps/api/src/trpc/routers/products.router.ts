@@ -12,200 +12,56 @@
  *
  * @see Story 3.1 - Product Model and Basic CRUD
  */
-import { TRPCError } from '@trpc/server';
-import { z } from '@trafi/zod';
-import { router, publicProcedure, isAuthed } from '../trpc';
+import { z } from '@trafi/zod'
+import { router, publicProcedure, isAuthed } from '../trpc'
+import { storeQuery, storeMutation } from '../helpers'
 import {
   CreateProductSchema,
   UpdateProductSchema,
   ListProductsSchema,
-} from '@trafi/validators';
+} from '@trafi/validators'
 
 export const productsRouter = router({
-  /**
-   * List products with pagination and filtering
-   * Requires authentication and products:read permission
-   */
+  /** List products with pagination and filtering */
   list: publicProcedure
     .use(isAuthed)
     .input(ListProductsSchema)
-    .query(async ({ input, ctx }) => {
-      try {
-        ctx.requirePermission('products:read');
+    .query(storeQuery('products:read', (ctx, input) =>
+      ctx.services.productsService.list(ctx.storeId, input)
+    )),
 
-        if (!ctx.storeId) {
-          throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: 'Store context required',
-          });
-        }
-
-        return await ctx.services.productsService.list(ctx.storeId, input);
-      } catch (error) {
-        if (error instanceof TRPCError) throw error;
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: error instanceof Error ? error.message : 'Failed to list products',
-        });
-      }
-    }),
-
-  /**
-   * Get a single product by ID
-   * Requires authentication and products:read permission
-   * Returns 404 for products not found or belonging to different tenant
-   */
+  /** Get a single product by ID */
   get: publicProcedure
     .use(isAuthed)
     .input(z.object({ id: z.string() }))
-    .query(async ({ input, ctx }) => {
-      try {
-        ctx.requirePermission('products:read');
+    .query(storeQuery('products:read', (ctx, input) =>
+      ctx.services.productsService.findById(ctx.storeId, input.id)
+    )),
 
-        if (!ctx.storeId) {
-          throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: 'Store context required',
-          });
-        }
-
-        return await ctx.services.productsService.findById(ctx.storeId, input.id);
-      } catch (error) {
-        if (error instanceof TRPCError) throw error;
-        // Convert NotFoundException to NOT_FOUND
-        if (error instanceof Error && error.message === 'Product not found') {
-          throw new TRPCError({
-            code: 'NOT_FOUND',
-            message: 'Product not found',
-          });
-        }
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: error instanceof Error ? error.message : 'Failed to get product',
-        });
-      }
-    }),
-
-  /**
-   * Create a new product
-   * Requires authentication and products:create permission
-   * Auto-generates slug from name if not provided
-   */
+  /** Create a new product (auto-generates slug from name if not provided) */
   create: publicProcedure
     .use(isAuthed)
     .input(CreateProductSchema)
-    .mutation(async ({ input, ctx }) => {
-      try {
-        ctx.requirePermission('products:create');
+    .mutation(storeMutation('products:create', (ctx, input) =>
+      ctx.services.productsService.create(ctx.storeId, input)
+    )),
 
-        if (!ctx.storeId) {
-          throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: 'Store context required',
-          });
-        }
-
-        return await ctx.services.productsService.create(ctx.storeId, input);
-      } catch (error) {
-        if (error instanceof TRPCError) throw error;
-        // Convert ConflictException to CONFLICT
-        if (error instanceof Error && error.message.includes('already exists')) {
-          throw new TRPCError({
-            code: 'CONFLICT',
-            message: error.message,
-          });
-        }
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: error instanceof Error ? error.message : 'Failed to create product',
-        });
-      }
-    }),
-
-  /**
-   * Update an existing product
-   * Requires authentication and products:update permission
-   * Supports partial updates
-   */
+  /** Update an existing product (supports partial updates) */
   update: publicProcedure
     .use(isAuthed)
-    .input(
-      z.object({
-        id: z.string(),
-        data: UpdateProductSchema,
-      }),
-    )
-    .mutation(async ({ input, ctx }) => {
-      try {
-        ctx.requirePermission('products:update');
+    .input(z.object({ id: z.string(), data: UpdateProductSchema }))
+    .mutation(storeMutation('products:update', (ctx, input) =>
+      ctx.services.productsService.update(ctx.storeId, input.id, input.data)
+    )),
 
-        if (!ctx.storeId) {
-          throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: 'Store context required',
-          });
-        }
-
-        return await ctx.services.productsService.update(ctx.storeId, input.id, input.data);
-      } catch (error) {
-        if (error instanceof TRPCError) throw error;
-        // Convert NotFoundException to NOT_FOUND
-        if (error instanceof Error && error.message === 'Product not found') {
-          throw new TRPCError({
-            code: 'NOT_FOUND',
-            message: 'Product not found',
-          });
-        }
-        // Convert ConflictException to CONFLICT
-        if (error instanceof Error && error.message.includes('already exists')) {
-          throw new TRPCError({
-            code: 'CONFLICT',
-            message: error.message,
-          });
-        }
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: error instanceof Error ? error.message : 'Failed to update product',
-        });
-      }
-    }),
-
-  /**
-   * Delete a product
-   * Requires authentication and products:delete permission
-   * Returns success with no content on successful deletion
-   */
+  /** Delete a product */
   delete: publicProcedure
     .use(isAuthed)
     .input(z.object({ id: z.string() }))
-    .mutation(async ({ input, ctx }) => {
-      try {
-        ctx.requirePermission('products:delete');
+    .mutation(storeMutation('products:delete', async (ctx, input) => {
+      await ctx.services.productsService.delete(ctx.storeId, input.id)
+      return { success: true }
+    })),
+})
 
-        if (!ctx.storeId) {
-          throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: 'Store context required',
-          });
-        }
-
-        await ctx.services.productsService.delete(ctx.storeId, input.id);
-        return { success: true };
-      } catch (error) {
-        if (error instanceof TRPCError) throw error;
-        // Convert NotFoundException to NOT_FOUND
-        if (error instanceof Error && error.message === 'Product not found') {
-          throw new TRPCError({
-            code: 'NOT_FOUND',
-            message: 'Product not found',
-          });
-        }
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: error instanceof Error ? error.message : 'Failed to delete product',
-        });
-      }
-    }),
-});
-
-export type ProductsRouter = typeof productsRouter;
+export type ProductsRouter = typeof productsRouter

@@ -6,297 +6,96 @@
  *
  * @see Story 3.10 - Gift Cards (AC1, AC6)
  */
-import { TRPCError } from '@trpc/server';
-import { z } from '@trafi/zod';
-import { router, publicProcedure, isAuthed } from '../trpc';
-import { CreateGiftCardTemplateSchema } from '@trafi/validators';
-
-// Local input schema for listing templates (all optional)
-const ListTemplatesInputSchema = z.object({
-  isActive: z.boolean().optional(),
-  search: z.string().max(100).optional(),
-  page: z.number().int().positive().optional(),
-  limit: z.number().int().positive().max(100).optional(),
-});
+import { router, publicProcedure, isAuthed } from '@/trpc';
+import { storeQuery, storeMutation } from '../helpers';
+import {
+  CuidParamSchema,
+  ListGiftCardTemplatesSchema,
+  CreateGiftCardTemplateSchema,
+  UpdateGiftCardTemplateWithIdSchema,
+} from '@trafi/validators';
 
 export const giftCardTemplatesRouter = router({
-  /**
-   * List gift card templates with pagination and filters.
-   * Requires `settings:read` permission.
-   */
+  /** List gift card templates with pagination and filters */
   list: publicProcedure
     .use(isAuthed)
-    .input(ListTemplatesInputSchema.optional())
-    .query(async ({ input, ctx }) => {
-      try {
-        ctx.requirePermission('settings:read');
+    .input(ListGiftCardTemplatesSchema.optional())
+    .query(
+      storeQuery('settings:read', (ctx, input) =>
+        ctx.services.giftCardTemplateService.list(ctx.storeId, input ?? {})
+      )
+    ),
 
-        if (!ctx.storeId) {
-          throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: 'Store context required',
-          });
-        }
+  /** List templates for select dropdown (active only) */
+  listForSelect: publicProcedure
+    .use(isAuthed)
+    .query(
+      storeQuery('settings:read', (ctx) =>
+        ctx.services.giftCardTemplateService.listForSelect(ctx.storeId)
+      )
+    ),
 
-        return await ctx.services.giftCardTemplateService.list(ctx.storeId, input ?? {});
-      } catch (error) {
-        if (error instanceof TRPCError) throw error;
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: error instanceof Error ? error.message : 'Failed to list templates',
-        });
-      }
-    }),
-
-  /**
-   * List templates for select dropdown (active only).
-   * Requires `settings:read` permission.
-   */
-  listForSelect: publicProcedure.use(isAuthed).query(async ({ ctx }) => {
-    try {
-      ctx.requirePermission('settings:read');
-
-      if (!ctx.storeId) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: 'Store context required',
-        });
-      }
-
-      return await ctx.services.giftCardTemplateService.listForSelect(ctx.storeId);
-    } catch (error) {
-      if (error instanceof TRPCError) throw error;
-      throw new TRPCError({
-        code: 'INTERNAL_SERVER_ERROR',
-        message: error instanceof Error ? error.message : 'Failed to list templates',
-      });
-    }
-  }),
-
-  /**
-   * Get a single template by ID.
-   * Requires `settings:read` permission.
-   */
+  /** Get a single template by ID */
   get: publicProcedure
     .use(isAuthed)
-    .input(z.object({ id: z.string().cuid() }))
-    .query(async ({ input, ctx }) => {
-      try {
-        ctx.requirePermission('settings:read');
+    .input(CuidParamSchema)
+    .query(
+      storeQuery('settings:read', (ctx, input) =>
+        ctx.services.giftCardTemplateService.findById(ctx.storeId, input.id)
+      )
+    ),
 
-        if (!ctx.storeId) {
-          throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: 'Store context required',
-          });
-        }
-
-        return await ctx.services.giftCardTemplateService.findById(ctx.storeId, input.id);
-      } catch (error) {
-        if (error instanceof TRPCError) throw error;
-        if (error instanceof Error && error.message === 'Gift card template not found') {
-          throw new TRPCError({
-            code: 'NOT_FOUND',
-            message: 'Gift card template not found',
-          });
-        }
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: error instanceof Error ? error.message : 'Failed to get template',
-        });
-      }
-    }),
-
-  /**
-   * Create a new gift card template.
-   * Requires `settings:update` permission.
-   */
+  /** Create a new gift card template */
   create: publicProcedure
     .use(isAuthed)
     .input(CreateGiftCardTemplateSchema)
-    .mutation(async ({ input, ctx }) => {
-      try {
-        ctx.requirePermission('settings:update');
+    .mutation(
+      storeMutation('settings:update', (ctx, input) =>
+        ctx.services.giftCardTemplateService.create(ctx.storeId, input)
+      )
+    ),
 
-        if (!ctx.storeId) {
-          throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: 'Store context required',
-          });
-        }
-
-        return await ctx.services.giftCardTemplateService.create(ctx.storeId, input);
-      } catch (error) {
-        if (error instanceof TRPCError) throw error;
-        if (error instanceof Error && error.message.includes('required')) {
-          throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: error.message,
-          });
-        }
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: error instanceof Error ? error.message : 'Failed to create template',
-        });
-      }
-    }),
-
-  /**
-   * Update an existing template.
-   * Requires `settings:update` permission.
-   */
+  /** Update an existing template */
   update: publicProcedure
     .use(isAuthed)
-    .input(
-      z.object({
-        id: z.string().cuid(),
-        name: z.string().min(1).max(100).optional(),
-        description: z.string().max(500).nullish(),
-        designImageUrl: z.string().url().nullish(),
-        denominations: z.array(z.number().int().positive()).min(1).max(20).optional(),
-        allowCustomAmount: z.boolean().optional(),
-        minAmountCents: z.number().int().positive().nullish(),
-        maxAmountCents: z.number().int().positive().nullish(),
-        validityDays: z.number().int().positive().max(3650).nullish(),
-        isActive: z.boolean().optional(),
-      })
-    )
-    .mutation(async ({ input, ctx }) => {
-      try {
-        ctx.requirePermission('settings:update');
-
-        if (!ctx.storeId) {
-          throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: 'Store context required',
-          });
-        }
-
+    .input(UpdateGiftCardTemplateWithIdSchema)
+    .mutation(
+      storeMutation('settings:update', (ctx, input) => {
         const { id, ...updateData } = input;
-        return await ctx.services.giftCardTemplateService.update(ctx.storeId, id, updateData);
-      } catch (error) {
-        if (error instanceof TRPCError) throw error;
-        if (error instanceof Error && error.message === 'Gift card template not found') {
-          throw new TRPCError({
-            code: 'NOT_FOUND',
-            message: 'Gift card template not found',
-          });
-        }
-        if (error instanceof Error && error.message.includes('required')) {
-          throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: error.message,
-          });
-        }
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: error instanceof Error ? error.message : 'Failed to update template',
-        });
-      }
-    }),
+        return ctx.services.giftCardTemplateService.update(ctx.storeId, id, updateData);
+      })
+    ),
 
-  /**
-   * Delete a template.
-   * Requires `settings:update` permission.
-   */
+  /** Delete a template */
   delete: publicProcedure
     .use(isAuthed)
-    .input(z.object({ id: z.string().cuid() }))
-    .mutation(async ({ input, ctx }) => {
-      try {
-        ctx.requirePermission('settings:update');
-
-        if (!ctx.storeId) {
-          throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: 'Store context required',
-          });
-        }
-
+    .input(CuidParamSchema)
+    .mutation(
+      storeMutation('settings:update', async (ctx, input) => {
         await ctx.services.giftCardTemplateService.delete(ctx.storeId, input.id);
         return { success: true };
-      } catch (error) {
-        if (error instanceof TRPCError) throw error;
-        if (error instanceof Error && error.message === 'Gift card template not found') {
-          throw new TRPCError({
-            code: 'NOT_FOUND',
-            message: 'Gift card template not found',
-          });
-        }
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: error instanceof Error ? error.message : 'Failed to delete template',
-        });
-      }
-    }),
+      })
+    ),
 
-  /**
-   * Activate a template.
-   * Requires `settings:update` permission.
-   */
+  /** Activate a template */
   activate: publicProcedure
     .use(isAuthed)
-    .input(z.object({ id: z.string().cuid() }))
-    .mutation(async ({ input, ctx }) => {
-      try {
-        ctx.requirePermission('settings:update');
+    .input(CuidParamSchema)
+    .mutation(
+      storeMutation('settings:update', (ctx, input) =>
+        ctx.services.giftCardTemplateService.activate(ctx.storeId, input.id)
+      )
+    ),
 
-        if (!ctx.storeId) {
-          throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: 'Store context required',
-          });
-        }
-
-        return await ctx.services.giftCardTemplateService.activate(ctx.storeId, input.id);
-      } catch (error) {
-        if (error instanceof TRPCError) throw error;
-        if (error instanceof Error && error.message === 'Gift card template not found') {
-          throw new TRPCError({
-            code: 'NOT_FOUND',
-            message: 'Gift card template not found',
-          });
-        }
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: error instanceof Error ? error.message : 'Failed to activate template',
-        });
-      }
-    }),
-
-  /**
-   * Deactivate a template.
-   * Requires `settings:update` permission.
-   */
+  /** Deactivate a template */
   deactivate: publicProcedure
     .use(isAuthed)
-    .input(z.object({ id: z.string().cuid() }))
-    .mutation(async ({ input, ctx }) => {
-      try {
-        ctx.requirePermission('settings:update');
-
-        if (!ctx.storeId) {
-          throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: 'Store context required',
-          });
-        }
-
-        return await ctx.services.giftCardTemplateService.deactivate(ctx.storeId, input.id);
-      } catch (error) {
-        if (error instanceof TRPCError) throw error;
-        if (error instanceof Error && error.message === 'Gift card template not found') {
-          throw new TRPCError({
-            code: 'NOT_FOUND',
-            message: 'Gift card template not found',
-          });
-        }
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: error instanceof Error ? error.message : 'Failed to deactivate template',
-        });
-      }
-    }),
+    .input(CuidParamSchema)
+    .mutation(
+      storeMutation('settings:update', (ctx, input) =>
+        ctx.services.giftCardTemplateService.deactivate(ctx.storeId, input.id)
+      )
+    ),
 });
 
 export type GiftCardTemplatesRouter = typeof giftCardTemplatesRouter;

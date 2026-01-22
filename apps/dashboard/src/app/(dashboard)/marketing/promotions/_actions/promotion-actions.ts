@@ -5,21 +5,12 @@ import { createServerAction } from 'zsa'
 import { z } from '@trafi/zod'
 import { createAuthenticatedTrpcClient } from '@/lib/trpc'
 import {
+  IdParamSchema,
+  ListPromotionsSchema,
   CreatePromotionSchema,
   UpdatePromotionBaseSchema,
   PromotionStatusSchema,
 } from '@trafi/validators'
-
-// Local schema for listing promotions
-const ListPromotionsInputSchema = z.object({
-  status: PromotionStatusSchema.optional(),
-  type: z.enum(['PERCENT', 'FIXED', 'FREE_SHIPPING', 'BUY_X_GET_Y']).optional(),
-  search: z.string().max(100).optional(),
-  activeOnly: z.boolean().optional(),
-  includeExpired: z.boolean().optional(),
-  page: z.number().int().positive().optional(),
-  limit: z.number().int().positive().max(100).optional(),
-})
 
 /**
  * List promotions with pagination and filters.
@@ -28,7 +19,7 @@ const ListPromotionsInputSchema = z.object({
  * @see Story 3.9 - Promotions & Discounts Foundation
  */
 export const getPromotionListAction = createServerAction()
-  .input(ListPromotionsInputSchema.partial())
+  .input(ListPromotionsSchema.partial())
   .handler(async ({ input }) => {
     const trpc = await createAuthenticatedTrpcClient()
     return await trpc.promotions.list.query(input)
@@ -38,7 +29,7 @@ export const getPromotionListAction = createServerAction()
  * Get a single promotion by ID.
  */
 export const getPromotionAction = createServerAction()
-  .input(z.object({ id: z.string() }))
+  .input(IdParamSchema)
   .handler(async ({ input }) => {
     const trpc = await createAuthenticatedTrpcClient()
     return await trpc.promotions.get.query({ id: input.id })
@@ -87,7 +78,7 @@ export const updatePromotionAction = createServerAction()
  * Revalidates promotions list cache after deletion.
  */
 export const deletePromotionAction = createServerAction()
-  .input(z.object({ id: z.string() }))
+  .input(IdParamSchema)
   .handler(async ({ input }): Promise<{ success: boolean }> => {
     const trpc = await createAuthenticatedTrpcClient()
     await trpc.promotions.delete.mutate({ id: input.id })
@@ -114,7 +105,7 @@ export const updatePromotionStatusAction = createServerAction()
  * Revalidates promotions list cache after update.
  */
 export const activatePromotionAction = createServerAction()
-  .input(z.object({ id: z.string() }))
+  .input(IdParamSchema)
   .handler(async ({ input }) => {
     const trpc = await createAuthenticatedTrpcClient()
     const promotion = await trpc.promotions.activate.mutate(input)
@@ -128,7 +119,7 @@ export const activatePromotionAction = createServerAction()
  * Revalidates promotions list cache after update.
  */
 export const pausePromotionAction = createServerAction()
-  .input(z.object({ id: z.string() }))
+  .input(IdParamSchema)
   .handler(async ({ input }) => {
     const trpc = await createAuthenticatedTrpcClient()
     const promotion = await trpc.promotions.pause.mutate(input)
@@ -142,7 +133,7 @@ export const pausePromotionAction = createServerAction()
  * Revalidates promotions list cache after update.
  */
 export const archivePromotionAction = createServerAction()
-  .input(z.object({ id: z.string() }))
+  .input(IdParamSchema)
   .handler(async ({ input }) => {
     const trpc = await createAuthenticatedTrpcClient()
     const promotion = await trpc.promotions.archive.mutate(input)

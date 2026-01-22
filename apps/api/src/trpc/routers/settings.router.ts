@@ -6,67 +6,25 @@
  *
  * @see Story 2.7 - Store Settings Configuration
  */
-import { TRPCError } from '@trpc/server';
-import { router, publicProcedure, isAuthed } from '../trpc';
-import { UpdateStoreSettingsSchema } from '@trafi/validators';
+import { router, publicProcedure, isAuthed } from '../trpc'
+import { storeQuery, storeMutation } from '../helpers'
+import { UpdateStoreSettingsSchema } from '@trafi/validators'
 
 export const settingsRouter = router({
-  /**
-   * Get store settings
-   * Returns current settings or defaults if none exist
-   * Requires authentication
-   */
+  /** Get store settings (returns current settings or defaults if none exist) */
   get: publicProcedure
     .use(isAuthed)
-    .query(async ({ ctx }) => {
-      try {
-        ctx.requirePermission('settings:read');
+    .query(storeQuery('settings:read', (ctx) =>
+      ctx.services.settingsService.get(ctx.storeId)
+    )),
 
-        if (!ctx.storeId) {
-          throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: 'Store context required',
-          });
-        }
-
-        return await ctx.services.settingsService.get(ctx.storeId);
-      } catch (error) {
-        if (error instanceof TRPCError) throw error;
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: error instanceof Error ? error.message : 'Failed to get store settings',
-        });
-      }
-    }),
-
-  /**
-   * Update store settings
-   * Supports partial updates
-   * Requires authentication and settings:update permission
-   */
+  /** Update store settings (supports partial updates) */
   update: publicProcedure
     .use(isAuthed)
     .input(UpdateStoreSettingsSchema)
-    .mutation(async ({ input, ctx }) => {
-      try {
-        ctx.requirePermission('settings:update');
+    .mutation(storeMutation('settings:update', (ctx, input) =>
+      ctx.services.settingsService.update(ctx.storeId, input)
+    )),
+})
 
-        if (!ctx.storeId) {
-          throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: 'Store context required',
-          });
-        }
-
-        return await ctx.services.settingsService.update(ctx.storeId, input);
-      } catch (error) {
-        if (error instanceof TRPCError) throw error;
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: error instanceof Error ? error.message : 'Failed to update store settings',
-        });
-      }
-    }),
-});
-
-export type SettingsRouter = typeof settingsRouter;
+export type SettingsRouter = typeof settingsRouter

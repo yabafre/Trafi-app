@@ -6,167 +6,56 @@
  *
  * @see Story 3.7 - Inventory Tracking
  */
-import { z } from '@trafi/zod';
-import { TRPCError } from '@trpc/server';
-import { router, publicProcedure, isAuthed } from '../trpc';
+import { z } from '@trafi/zod'
+import { router, publicProcedure, isAuthed } from '../trpc'
+import { storeQuery, storeMutation } from '../helpers'
 import {
   AdjustInventorySchema,
   SetInventorySchema,
   UpdateInventorySettingsSchema,
   ListInventoryHistorySchema,
-} from '@trafi/validators';
+} from '@trafi/validators'
 
 export const inventoryRouter = router({
-  /**
-   * Adjust inventory by a delta amount.
-   * Requires `products:update` permission.
-   */
+  /** Adjust inventory by a delta amount */
   adjust: publicProcedure
     .use(isAuthed)
     .input(AdjustInventorySchema)
-    .mutation(async ({ input, ctx }) => {
-      try {
-        ctx.requirePermission('products:update');
+    .mutation(storeMutation('products:update', (ctx, input) =>
+      ctx.services.inventoryService.adjustInventory(ctx.storeId, input, ctx.userId)
+    )),
 
-        if (!ctx.storeId) {
-          throw new TRPCError({
-            code: 'UNAUTHORIZED',
-            message: 'Store context required',
-          });
-        }
-
-        return ctx.services.inventoryService.adjustInventory(
-          ctx.storeId,
-          input,
-          ctx.userId,
-        );
-      } catch (error) {
-        if (error instanceof TRPCError) throw error;
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: error instanceof Error ? error.message : 'Failed to adjust inventory',
-        });
-      }
-    }),
-
-  /**
-   * Set inventory to an absolute value.
-   * Requires `products:update` permission.
-   */
+  /** Set inventory to an absolute value */
   set: publicProcedure
     .use(isAuthed)
     .input(SetInventorySchema)
-    .mutation(async ({ input, ctx }) => {
-      try {
-        ctx.requirePermission('products:update');
+    .mutation(storeMutation('products:update', (ctx, input) =>
+      ctx.services.inventoryService.setInventory(ctx.storeId, input, ctx.userId)
+    )),
 
-        if (!ctx.storeId) {
-          throw new TRPCError({
-            code: 'UNAUTHORIZED',
-            message: 'Store context required',
-          });
-        }
-
-        return ctx.services.inventoryService.setInventory(
-          ctx.storeId,
-          input,
-          ctx.userId,
-        );
-      } catch (error) {
-        if (error instanceof TRPCError) throw error;
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: error instanceof Error ? error.message : 'Failed to set inventory',
-        });
-      }
-    }),
-
-  /**
-   * Update inventory settings (trackInventory, lowStockThreshold, allowOversell).
-   * Requires `products:update` permission.
-   */
+  /** Update inventory settings (trackInventory, lowStockThreshold, allowOversell) */
   updateSettings: publicProcedure
     .use(isAuthed)
     .input(UpdateInventorySettingsSchema)
-    .mutation(async ({ input, ctx }) => {
-      try {
-        ctx.requirePermission('products:update');
+    .mutation(storeMutation('products:update', (ctx, input) =>
+      ctx.services.inventoryService.updateSettings(ctx.storeId, input)
+    )),
 
-        if (!ctx.storeId) {
-          throw new TRPCError({
-            code: 'UNAUTHORIZED',
-            message: 'Store context required',
-          });
-        }
-
-        return ctx.services.inventoryService.updateSettings(ctx.storeId, input);
-      } catch (error) {
-        if (error instanceof TRPCError) throw error;
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: error instanceof Error ? error.message : 'Failed to update inventory settings',
-        });
-      }
-    }),
-
-  /**
-   * Get inventory info for a variant.
-   * Requires `products:read` permission.
-   */
+  /** Get inventory info for a variant */
   get: publicProcedure
     .use(isAuthed)
     .input(z.object({ variantId: z.string() }))
-    .query(async ({ input, ctx }) => {
-      try {
-        ctx.requirePermission('products:read');
+    .query(storeQuery('products:read', (ctx, input) =>
+      ctx.services.inventoryService.getVariantInventory(ctx.storeId, input.variantId)
+    )),
 
-        if (!ctx.storeId) {
-          throw new TRPCError({
-            code: 'UNAUTHORIZED',
-            message: 'Store context required',
-          });
-        }
-
-        return ctx.services.inventoryService.getVariantInventory(
-          ctx.storeId,
-          input.variantId,
-        );
-      } catch (error) {
-        if (error instanceof TRPCError) throw error;
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: error instanceof Error ? error.message : 'Failed to get inventory',
-        });
-      }
-    }),
-
-  /**
-   * Get paginated inventory history for a variant.
-   * Requires `products:read` permission.
-   */
+  /** Get paginated inventory history for a variant */
   history: publicProcedure
     .use(isAuthed)
     .input(ListInventoryHistorySchema)
-    .query(async ({ input, ctx }) => {
-      try {
-        ctx.requirePermission('products:read');
+    .query(storeQuery('products:read', (ctx, input) =>
+      ctx.services.inventoryService.getHistory(ctx.storeId, input)
+    )),
+})
 
-        if (!ctx.storeId) {
-          throw new TRPCError({
-            code: 'UNAUTHORIZED',
-            message: 'Store context required',
-          });
-        }
-
-        return ctx.services.inventoryService.getHistory(ctx.storeId, input);
-      } catch (error) {
-        if (error instanceof TRPCError) throw error;
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: error instanceof Error ? error.message : 'Failed to get inventory history',
-        });
-      }
-    }),
-});
-
-export type InventoryRouter = typeof inventoryRouter;
+export type InventoryRouter = typeof inventoryRouter

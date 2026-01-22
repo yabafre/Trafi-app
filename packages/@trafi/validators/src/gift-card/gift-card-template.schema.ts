@@ -128,3 +128,45 @@ export const UpdateGiftCardTemplateSchema = z
   )
 
 export type UpdateGiftCardTemplateInput = z.infer<typeof UpdateGiftCardTemplateSchema>
+
+/**
+ * Schema for updating a gift card template (with ID for router endpoints)
+ */
+export const UpdateGiftCardTemplateWithIdSchema = z
+  .object({
+    id: z.string().cuid(),
+    name: z.string().min(1).max(100).optional(),
+    description: z.string().max(500).nullish(),
+    designImageUrl: z.string().url().nullish(),
+    denominations: z
+      .array(z.number().int().positive())
+      .min(1)
+      .max(20)
+      .refine(
+        (arr) => new Set(arr).size === arr.length,
+        { message: 'Denominations must be unique' }
+      )
+      .optional(),
+    allowCustomAmount: z.boolean().optional(),
+    minAmountCents: z.number().int().positive().nullish(),
+    maxAmountCents: z.number().int().positive().nullish(),
+    validityDays: z.number().int().positive().max(3650).nullish(),
+    isActive: z.boolean().optional(),
+  })
+  .refine(
+    (data) => {
+      // max must be >= min if both provided
+      if (data.minAmountCents !== undefined && data.maxAmountCents !== undefined) {
+        if (data.minAmountCents !== null && data.maxAmountCents !== null) {
+          return data.maxAmountCents >= data.minAmountCents
+        }
+      }
+      return true
+    },
+    {
+      message: 'maxAmountCents must be greater than or equal to minAmountCents',
+      path: ['maxAmountCents'],
+    }
+  )
+
+export type UpdateGiftCardTemplateWithIdInput = z.infer<typeof UpdateGiftCardTemplateWithIdSchema>

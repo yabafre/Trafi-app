@@ -152,6 +152,15 @@ export const ListGiftCardTemplatesSchema = PaginationSchema.extend({
 
 export type ListGiftCardTemplatesInput = z.infer<typeof ListGiftCardTemplatesSchema>
 
+/**
+ * List gift card transactions query schema
+ */
+export const ListGiftCardTransactionsSchema = PaginationSchema.extend({
+  giftCardId: z.string().cuid().describe('Gift card ID to get transactions for'),
+})
+
+export type ListGiftCardTransactionsInput = z.infer<typeof ListGiftCardTransactionsSchema>
+
 // =============================================================================
 // Response Schemas
 // =============================================================================

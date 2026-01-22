@@ -1,22 +1,26 @@
 /**
  * @vitest-environment node
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import * as jose from 'jose'
-import {
-  verifyToken,
-  isTokenExpired,
-  getTokenExpiresIn,
-  toJwtPayload,
-  type SessionPayload,
-} from '../session'
 
-const SECRET = new TextEncoder().encode(
-  'development-secret-min-32-characters-long'
-)
+const TEST_SECRET = 'development-secret-min-32-characters-long'
+const SECRET = new TextEncoder().encode(TEST_SECRET)
+
+// Store original env value
+const originalEnv = process.env.JWT_SECRET
+
+// Type for the session module
+type SessionModule = typeof import('../session')
 
 async function createTestToken(
-  payload: Partial<SessionPayload>,
+  payload: {
+    sub?: string
+    tenantId?: string
+    role?: string
+    permissions?: string[]
+    type?: 'session' | 'api_key'
+  },
   expiresIn: string = '15m'
 ): Promise<string> {
   const now = Math.floor(Date.now() / 1000)
@@ -34,9 +38,22 @@ async function createTestToken(
 }
 
 describe('session', () => {
-  beforeEach(() => {
+  let sessionModule: SessionModule
+
+  beforeEach(async () => {
+    // Set env before importing
+    process.env.JWT_SECRET = TEST_SECRET
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-01-12T12:00:00Z'))
+
+    // Reset module cache and re-import to pick up new env value
+    vi.resetModules()
+    sessionModule = await import('../session')
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+    process.env.JWT_SECRET = originalEnv
   })
 
   describe('verifyToken', () => {
@@ -49,7 +66,7 @@ describe('session', () => {
         type: 'session',
       })
 
-      const result = await verifyToken(token)
+      const result = await sessionModule.verifyToken(token)
 
       expect(result).not.toBeNull()
       expect(result?.sub).toBe('user-123')
@@ -60,14 +77,14 @@ describe('session', () => {
     })
 
     it('should return null for invalid token', async () => {
-      const result = await verifyToken('invalid-token')
+      const result = await sessionModule.verifyToken('invalid-token')
       expect(result).toBeNull()
     })
 
     it('should return null for expired token', async () => {
       const token = await createTestToken({}, '-1h') // Expired 1 hour ago
 
-      const result = await verifyToken(token)
+      const result = await sessionModule.verifyToken(token)
       expect(result).toBeNull()
     })
 
@@ -82,7 +99,7 @@ describe('session', () => {
         .setExpirationTime('15m')
         .sign(SECRET)
 
-      const result = await verifyToken(token)
+      const result = await sessionModule.verifyToken(token)
       expect(result).toBeNull()
     })
 
@@ -97,14 +114,14 @@ describe('session', () => {
         .setExpirationTime('15m')
         .sign(SECRET)
 
-      const result = await verifyToken(token)
+      const result = await sessionModule.verifyToken(token)
       expect(result).toBeNull()
     })
   })
 
   describe('isTokenExpired', () => {
     it('should return false for non-expired token', () => {
-      const payload: SessionPayload = {
+      const payload: SessionModule['SessionPayload'] = {
         sub: 'user-123',
         tenantId: 'tenant-456',
         role: 'ADMIN',
@@ -113,11 +130,11 @@ describe('session', () => {
         exp: Math.floor(Date.now() / 1000) + 3600, // 1 hour from now
       }
 
-      expect(isTokenExpired(payload)).toBe(false)
+      expect(sessionModule.isTokenExpired(payload)).toBe(false)
     })
 
     it('should return true for expired token', () => {
-      const payload: SessionPayload = {
+      const payload: SessionModule['SessionPayload'] = {
         sub: 'user-123',
         tenantId: 'tenant-456',
         role: 'ADMIN',
@@ -126,11 +143,11 @@ describe('session', () => {
         exp: Math.floor(Date.now() / 1000) - 3600, // 1 hour ago
       }
 
-      expect(isTokenExpired(payload)).toBe(true)
+      expect(sessionModule.isTokenExpired(payload)).toBe(true)
     })
 
     it('should return true for token without exp', () => {
-      const payload: SessionPayload = {
+      const payload: SessionModule['SessionPayload'] = {
         sub: 'user-123',
         tenantId: 'tenant-456',
         role: 'ADMIN',
@@ -138,12 +155,12 @@ describe('session', () => {
         type: 'session',
       }
 
-      expect(isTokenExpired(payload)).toBe(true)
+      expect(sessionModule.isTokenExpired(payload)).toBe(true)
     })
 
     it('should account for 5 second buffer', () => {
       const now = Math.floor(Date.now() / 1000)
-      const payload: SessionPayload = {
+      const payload: SessionModule['SessionPayload'] = {
         sub: 'user-123',
         tenantId: 'tenant-456',
         role: 'ADMIN',
@@ -152,14 +169,14 @@ describe('session', () => {
         exp: now - 3, // 3 seconds ago (within 5 second buffer)
       }
 
-      expect(isTokenExpired(payload)).toBe(false)
+      expect(sessionModule.isTokenExpired(payload)).toBe(false)
     })
   })
 
   describe('getTokenExpiresIn', () => {
     it('should return seconds until expiration', () => {
       const now = Math.floor(Date.now() / 1000)
-      const payload: SessionPayload = {
+      const payload: SessionModule['SessionPayload'] = {
         sub: 'user-123',
         tenantId: 'tenant-456',
         role: 'ADMIN',
@@ -168,11 +185,11 @@ describe('session', () => {
         exp: now + 900, // 15 minutes from now
       }
 
-      expect(getTokenExpiresIn(payload)).toBe(900)
+      expect(sessionModule.getTokenExpiresIn(payload)).toBe(900)
     })
 
     it('should return 0 for expired token', () => {
-      const payload: SessionPayload = {
+      const payload: SessionModule['SessionPayload'] = {
         sub: 'user-123',
         tenantId: 'tenant-456',
         role: 'ADMIN',
@@ -181,11 +198,11 @@ describe('session', () => {
         exp: Math.floor(Date.now() / 1000) - 3600,
       }
 
-      expect(getTokenExpiresIn(payload)).toBe(0)
+      expect(sessionModule.getTokenExpiresIn(payload)).toBe(0)
     })
 
     it('should return 0 for token without exp', () => {
-      const payload: SessionPayload = {
+      const payload: SessionModule['SessionPayload'] = {
         sub: 'user-123',
         tenantId: 'tenant-456',
         role: 'ADMIN',
@@ -193,14 +210,14 @@ describe('session', () => {
         type: 'session',
       }
 
-      expect(getTokenExpiresIn(payload)).toBe(0)
+      expect(sessionModule.getTokenExpiresIn(payload)).toBe(0)
     })
   })
 
   describe('toJwtPayload', () => {
     it('should convert SessionPayload to JwtPayload', () => {
       const now = Math.floor(Date.now() / 1000)
-      const session: SessionPayload = {
+      const session: SessionModule['SessionPayload'] = {
         sub: 'user-123',
         tenantId: 'tenant-456',
         role: 'ADMIN',
@@ -210,7 +227,7 @@ describe('session', () => {
         exp: now + 900,
       }
 
-      const result = toJwtPayload(session)
+      const result = sessionModule.toJwtPayload(session)
 
       expect(result).toEqual({
         sub: 'user-123',
@@ -225,7 +242,7 @@ describe('session', () => {
 
     it('should use current time for missing iat', () => {
       const now = Math.floor(Date.now() / 1000)
-      const session: SessionPayload = {
+      const session: SessionModule['SessionPayload'] = {
         sub: 'user-123',
         tenantId: 'tenant-456',
         role: 'OWNER',
@@ -234,7 +251,7 @@ describe('session', () => {
         exp: now + 900,
       }
 
-      const result = toJwtPayload(session)
+      const result = sessionModule.toJwtPayload(session)
 
       expect(result.iat).toBe(now)
     })

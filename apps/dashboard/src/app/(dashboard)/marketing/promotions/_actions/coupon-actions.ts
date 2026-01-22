@@ -5,21 +5,13 @@ import { createServerAction } from 'zsa'
 import { z } from '@trafi/zod'
 import { createAuthenticatedTrpcClient } from '@/lib/trpc'
 import {
+  IdParamSchema,
+  ListCouponsSchema,
   CreateCouponSchema,
   GenerateCouponsSchema,
   UpdateCouponSchema,
   ValidateCouponSchema,
 } from '@trafi/validators'
-
-// Local schema for listing coupons
-const ListCouponsInputSchema = z.object({
-  promotionId: z.string().optional(),
-  isActive: z.boolean().optional(),
-  search: z.string().max(50).optional(),
-  includeExpired: z.boolean().optional(),
-  page: z.number().int().positive().optional(),
-  limit: z.number().int().positive().max(100).optional(),
-})
 
 /**
  * List coupons with pagination and filters.
@@ -28,7 +20,7 @@ const ListCouponsInputSchema = z.object({
  * @see Story 3.9 - Promotions & Discounts Foundation
  */
 export const getCouponListAction = createServerAction()
-  .input(ListCouponsInputSchema.partial())
+  .input(ListCouponsSchema.partial())
   .handler(async ({ input }) => {
     const trpc = await createAuthenticatedTrpcClient()
     return await trpc.coupons.list.query(input)
@@ -38,7 +30,7 @@ export const getCouponListAction = createServerAction()
  * Get a single coupon by ID.
  */
 export const getCouponAction = createServerAction()
-  .input(z.object({ id: z.string() }))
+  .input(IdParamSchema)
   .handler(async ({ input }) => {
     const trpc = await createAuthenticatedTrpcClient()
     return await trpc.coupons.get.query({ id: input.id })
@@ -101,7 +93,7 @@ export const updateCouponAction = createServerAction()
  * Revalidates coupons list cache after update.
  */
 export const deactivateCouponAction = createServerAction()
-  .input(z.object({ id: z.string() }))
+  .input(IdParamSchema)
   .handler(async ({ input }) => {
     const trpc = await createAuthenticatedTrpcClient()
     const coupon = await trpc.coupons.deactivate.mutate({ id: input.id })
@@ -114,7 +106,7 @@ export const deactivateCouponAction = createServerAction()
  * Revalidates coupons list cache after deletion.
  */
 export const deleteCouponAction = createServerAction()
-  .input(z.object({ id: z.string() }))
+  .input(IdParamSchema)
   .handler(async ({ input }): Promise<{ success: boolean }> => {
     const trpc = await createAuthenticatedTrpcClient()
     await trpc.coupons.delete.mutate({ id: input.id })

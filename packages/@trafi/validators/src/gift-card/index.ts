@@ -21,6 +21,7 @@ export type {
   GiftCardErrorCode,
   ListGiftCardsInput,
   ListGiftCardTemplatesInput,
+  ListGiftCardTransactionsInput,
   GiftCardResponse,
   GiftCardTemplateResponse,
 } from './gift-card.schema'
@@ -39,6 +40,7 @@ export type {
 export type {
   CreateGiftCardTemplateInput,
   UpdateGiftCardTemplateInput,
+  UpdateGiftCardTemplateWithIdInput,
 } from './gift-card-template.schema'
 
 export type {

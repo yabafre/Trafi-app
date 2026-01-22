@@ -24,3 +24,4 @@ export * from './collection';
 export * from './pricing';
 export * from './inventory';
 export * from './promotion';
+export * from './gift-card';

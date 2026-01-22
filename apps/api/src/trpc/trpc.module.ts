@@ -21,6 +21,7 @@ import { CollectionsModule } from '@modules/collections';
 import { PricingModule } from '@modules/pricing';
 import { InventoryModule, InventoryService } from '@modules/inventory';
 import { PromotionsModule, PromotionsService, CouponService } from '@modules/promotions';
+import { GiftCardsModule, GiftCardsService, GiftCardTemplateService } from '@modules/gift-cards';
 import { AuthService } from '@modules/auth/auth.service';
 import { UserService } from '@modules/user';
 import { SettingsService } from '@modules/settings';
@@ -60,6 +61,8 @@ export class TRPCMiddleware implements NestMiddleware {
     private readonly inventoryService: InventoryService,
     private readonly promotionsService: PromotionsService,
     private readonly couponService: CouponService,
+    private readonly giftCardsService: GiftCardsService,
+    private readonly giftCardTemplateService: GiftCardTemplateService,
     private readonly jwtService: JwtService
   ) {
     const services: TRPCServices = {
@@ -78,6 +81,8 @@ export class TRPCMiddleware implements NestMiddleware {
       inventoryService: this.inventoryService,
       promotionsService: this.promotionsService,
       couponService: this.couponService,
+      giftCardsService: this.giftCardsService,
+      giftCardTemplateService: this.giftCardTemplateService,
       jwtService: this.jwtService,
     };
 
@@ -113,6 +118,8 @@ export class TRPCService {
     private readonly inventoryService: InventoryService,
     private readonly promotionsService: PromotionsService,
     private readonly couponService: CouponService,
+    private readonly giftCardsService: GiftCardsService,
+    private readonly giftCardTemplateService: GiftCardTemplateService,
     private readonly jwtService: JwtService
   ) {}
 
@@ -138,6 +145,8 @@ export class TRPCService {
       inventoryService: this.inventoryService,
       promotionsService: this.promotionsService,
       couponService: this.couponService,
+      giftCardsService: this.giftCardsService,
+      giftCardTemplateService: this.giftCardTemplateService,
       jwtService: this.jwtService,
     };
   }
@@ -170,6 +179,7 @@ export class TRPCService {
     PricingModule,
     InventoryModule,
     PromotionsModule,
+    GiftCardsModule,
   ],
   providers: [TRPCService, TRPCMiddleware],
   exports: [TRPCService, TRPCMiddleware],

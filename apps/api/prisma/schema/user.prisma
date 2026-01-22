@@ -37,7 +37,8 @@ model User {
   createdKeys           ApiKey[]
   transfersInitiated    OwnershipTransfer[]  @relation("TransferFrom")
   transfersReceived     OwnershipTransfer[]  @relation("TransferTo")
-  inventoryAdjustments  InventoryHistory[]   // Story 3.7 - User who made inventory changes
+  inventoryAdjustments    InventoryHistory[]       // Story 3.7 - User who made inventory changes
+  giftCardTransactions    GiftCardTransaction[]    // Story 3.10 - Gift card adjustments
 
   // Index for email lookups (global user, not store-scoped)
   @@index([email])

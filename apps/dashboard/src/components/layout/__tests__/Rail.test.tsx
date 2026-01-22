@@ -3,9 +3,9 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Rail } from '../Rail';
 
-// Mock Next.js navigation
+// Mock Next.js navigation - use '/' since that's the Dashboard href
 vi.mock('next/navigation', () => ({
-  usePathname: vi.fn(() => '/dashboard'),
+  usePathname: vi.fn(() => '/'),
 }));
 
 // Mock the UI store
@@ -25,17 +25,20 @@ describe('Rail', () => {
   it('renders all navigation icons as links or buttons', () => {
     render(<Rail />);
 
-    // Check for main navigation items via href (Settings is a button with popover)
+    // Check for direct link items (items without children)
     const links = screen.getAllByRole('link');
-    expect(links).toHaveLength(4); // dashboard, products, orders, customers
+    expect(links).toHaveLength(3); // dashboard, orders, customers
 
     const hrefs = links.map((link) => link.getAttribute('href'));
-    expect(hrefs).toContain('/dashboard');
-    expect(hrefs).toContain('/products');
+    expect(hrefs).toContain('/'); // Dashboard
     expect(hrefs).toContain('/orders');
     expect(hrefs).toContain('/customers');
 
-    // Settings is a button that opens a popover with child navigation
+    // Products, Marketing, and Settings have children, so they're buttons with popovers
+    const productsButton = screen.getByRole('button', { name: /products/i });
+    expect(productsButton).toBeInTheDocument();
+    const marketingButton = screen.getByRole('button', { name: /marketing/i });
+    expect(marketingButton).toBeInTheDocument();
     const settingsButton = screen.getByRole('button', { name: /settings/i });
     expect(settingsButton).toBeInTheDocument();
   });
@@ -44,10 +47,9 @@ describe('Rail', () => {
     render(<Rail />);
 
     // Dashboard link should have active styles (border-l-2 and text-primary)
+    // Rail shows only icons, so we query by href. Dashboard href is '/'
     const links = screen.getAllByRole('link');
-    const dashboardLink = links.find(
-      (link) => link.getAttribute('href') === '/dashboard'
-    );
+    const dashboardLink = links.find(link => link.getAttribute('href') === '/');
 
     expect(dashboardLink).toHaveClass('border-l-2');
     expect(dashboardLink).toHaveClass('text-primary');

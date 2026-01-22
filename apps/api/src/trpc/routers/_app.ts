@@ -22,6 +22,8 @@ import { pricingRouter } from './pricing.router';
 import { inventoryRouter } from './inventory.router';
 import { promotionsRouter } from './promotions.router';
 import { couponsRouter } from './coupons.router';
+import { giftCardsRouter } from './gift-cards.router';
+import { giftCardTemplatesRouter } from './gift-card-templates.router';
 
 /**
  * Main application router
@@ -49,6 +51,8 @@ export const appRouter = router({
   inventory: inventoryRouter,
   promotions: promotionsRouter,
   coupons: couponsRouter,
+  giftCards: giftCardsRouter,
+  giftCardTemplates: giftCardTemplatesRouter,
 });
 
 /**

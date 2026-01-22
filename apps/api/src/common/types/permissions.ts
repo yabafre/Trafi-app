@@ -9,9 +9,4 @@
  */
 
 // Re-export everything from @trafi/types - single source of truth
-export {
-  PERMISSIONS,
-  ROLE_PERMISSIONS,
-  type Permission,
-  type Role,
-} from '@trafi/types';
+export { PERMISSIONS, ROLE_PERMISSIONS, type Permission, type Role } from '@trafi/types';

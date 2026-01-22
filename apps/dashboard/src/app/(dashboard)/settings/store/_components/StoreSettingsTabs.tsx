@@ -6,8 +6,9 @@ import { GeneralSettingsForm } from './GeneralSettingsForm'
 import { LocalizationSettingsForm } from './LocalizationSettingsForm'
 import { ContactSettingsForm } from './ContactSettingsForm'
 import { BrandSettingsForm } from './BrandSettingsForm'
+import { CommerceSettingsForm } from './CommerceSettingsForm'
 
-type TabValue = 'general' | 'localization' | 'contact' | 'brand'
+type TabValue = 'general' | 'localization' | 'contact' | 'brand' | 'commerce'
 
 interface Tab {
   value: TabValue
@@ -19,6 +20,7 @@ const TABS: Tab[] = [
   { value: 'localization', label: 'LOCALISATION' },
   { value: 'contact', label: 'CONTACT' },
   { value: 'brand', label: 'MARQUE' },
+  { value: 'commerce', label: 'COMMERCE' },
 ]
 
 /**
@@ -57,6 +59,7 @@ export function StoreSettingsTabs() {
         {activeTab === 'localization' && <LocalizationSettingsForm />}
         {activeTab === 'contact' && <ContactSettingsForm />}
         {activeTab === 'brand' && <BrandSettingsForm />}
+        {activeTab === 'commerce' && <CommerceSettingsForm />}
       </div>
     </div>
   )

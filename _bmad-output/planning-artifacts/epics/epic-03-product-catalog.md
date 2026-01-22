@@ -136,3 +136,4 @@ model Product {
 | 3.10 | Gift Cards | [story-3-10-gift-cards.md](./epic-03/story-3-10-gift-cards.md) |
 | 3.R1 | Foundation Reinforcement (Epic 1 & 2 Enhancements) | [story-3-r1-foundation.md](./epic-03/story-3-r1-foundation.md) |
 | 3.R2 | Prefixed IDs Foundation | [story-3-r2-prefixed-ids.md](./epic-03/story-3-r2-prefixed-ids.md) |
+| 3.R3 | Commerce Feature Flags Dashboard UI | [story-3-r3-commerce-settings-ui.md](./epic-03/story-3-r3-commerce-settings-ui.md) |

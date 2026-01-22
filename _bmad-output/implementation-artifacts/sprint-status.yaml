@@ -139,6 +139,9 @@ development_status:
   # REVIEWED: 2026-01-22 (code-review workflow, 1 issue fixed - added StoreCurrency tests)
   3-R1-foundation-reinforcement: done
   3-R2-prefixed-ids-foundation: done
+  # NEW: Dashboard UI for commerce feature flags (promotions, gift cards, multi-currency)
+  # CREATED: 2026-01-22 (backlog addition per user request)
+  3-R3-commerce-settings-ui: backlog
   # Architectural corrections v2 applied 2026-01-18:
   # - Global tables (Country, Currency) without storeId
   # - StoreMembership for multi-store RBAC

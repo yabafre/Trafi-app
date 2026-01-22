@@ -30,6 +30,7 @@ import type { CollectionsService } from '@modules/collections';
 import type { TaxRulesService, PricingService } from '@modules/pricing';
 import type { InventoryService } from '@modules/inventory';
 import type { PromotionsService, CouponService } from '@modules/promotions';
+import type { GiftCardsService, GiftCardTemplateService } from '@modules/gift-cards';
 
 /**
  * Services injected from NestJS DI container
@@ -54,6 +55,8 @@ export interface TRPCServices {
   inventoryService: InventoryService;
   promotionsService: PromotionsService;
   couponService: CouponService;
+  giftCardsService: GiftCardsService;
+  giftCardTemplateService: GiftCardTemplateService;
   jwtService: JwtService;
 }
 

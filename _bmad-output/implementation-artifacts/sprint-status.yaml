@@ -130,7 +130,9 @@ development_status:
   # REVIEWED: 2026-01-22 (code-review workflow, 5 issues found, 1 fixed - index.ts barrel exports)
   # All ACs verified, 558 unit tests passing
   3-9-promotions-and-discounts-foundation: done
-  3-10-gift-cards: backlog
+  # CREATED: 2026-01-22 (create-story workflow, comprehensive developer guide)
+  # STARTED: 2026-01-22 (dev-story workflow)
+  3-10-gift-cards: review
   3-R1-foundation-reinforcement: backlog
   3-R2-prefixed-ids-foundation: done
   # Architectural corrections v2 applied 2026-01-18:

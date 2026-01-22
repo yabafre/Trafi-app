@@ -98,10 +98,12 @@ describe('AppSidebar', () => {
 
     // Check for main navigation items
     expect(screen.getByRole('link', { name: /dashboard/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /products/i })).toBeInTheDocument();
+    // Products has children, so it's a collapsible button
+    expect(screen.getByRole('button', { name: /products/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /orders/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /customers/i })).toBeInTheDocument();
-    // Settings is a button (expandable)
+    // Marketing and Settings are buttons (expandable)
+    expect(screen.getByRole('button', { name: /marketing/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /settings/i })).toBeInTheDocument();
   });
 

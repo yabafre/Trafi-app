@@ -24,6 +24,7 @@ export * from './pricing.types';
 export * from './inventory.types';
 export * from './storefront.types';
 export * from './promotion.types';
+export * from './gift-card.types';
 
 // Common types from validators
 export type {

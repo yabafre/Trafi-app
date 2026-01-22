@@ -164,6 +164,15 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
   get promotionUsage() {
     return this.client.promotionUsage;
   }
+  get giftCard() {
+    return this.client.giftCard;
+  }
+  get giftCardTransaction() {
+    return this.client.giftCardTransaction;
+  }
+  get giftCardTemplate() {
+    return this.client.giftCardTemplate;
+  }
 
   // Delegate transaction and other methods with proper typing
   // Using bind to preserve 'this' context while forwarding calls

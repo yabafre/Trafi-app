@@ -504,7 +504,13 @@ describe('GiftCardsService', () => {
   // ===========================================================================
   describe('refund', () => {
     it('should successfully refund to gift card', async () => {
-      prismaService.giftCard.findFirst.mockResolvedValue(mockGiftCard)
+      // Mock raw query for FOR UPDATE lock (Code Review Fix)
+      prismaService.$queryRaw.mockResolvedValue([{
+        id: mockGiftCardId,
+        store_id: mockStoreId,
+        current_balance_cents: 5000,
+        status: 'ACTIVE',
+      }])
       prismaService.giftCard.update.mockResolvedValue({
         ...mockGiftCard,
         currentBalanceCents: 7000,
@@ -533,11 +539,13 @@ describe('GiftCardsService', () => {
     })
 
     it('should reactivate depleted card on refund', async () => {
-      prismaService.giftCard.findFirst.mockResolvedValue({
-        ...mockGiftCard,
+      // Mock raw query for FOR UPDATE lock (Code Review Fix)
+      prismaService.$queryRaw.mockResolvedValue([{
+        id: mockGiftCardId,
+        store_id: mockStoreId,
+        current_balance_cents: 0,
         status: 'DEPLETED',
-        currentBalanceCents: 0,
-      })
+      }])
       prismaService.giftCard.update.mockResolvedValue({
         ...mockGiftCard,
         status: 'ACTIVE',
@@ -560,7 +568,8 @@ describe('GiftCardsService', () => {
     })
 
     it('should fail for non-existent gift card', async () => {
-      prismaService.giftCard.findFirst.mockResolvedValue(null)
+      // Mock raw query returning empty array (Code Review Fix)
+      prismaService.$queryRaw.mockResolvedValue([])
 
       const result = await service.refund(mockStoreId, {
         giftCardId: 'gc_invalid',
@@ -578,7 +587,13 @@ describe('GiftCardsService', () => {
   // ===========================================================================
   describe('adjustBalance', () => {
     it('should add to balance', async () => {
-      prismaService.giftCard.findFirst.mockResolvedValue(mockGiftCard)
+      // Mock raw query for FOR UPDATE lock (Code Review Fix)
+      prismaService.$queryRaw.mockResolvedValue([{
+        id: mockGiftCardId,
+        store_id: mockStoreId,
+        current_balance_cents: 5000,
+        status: 'ACTIVE',
+      }])
       prismaService.giftCard.update.mockResolvedValue({
         ...mockGiftCard,
         currentBalanceCents: 7000,
@@ -607,7 +622,13 @@ describe('GiftCardsService', () => {
     })
 
     it('should subtract from balance', async () => {
-      prismaService.giftCard.findFirst.mockResolvedValue(mockGiftCard)
+      // Mock raw query for FOR UPDATE lock (Code Review Fix)
+      prismaService.$queryRaw.mockResolvedValue([{
+        id: mockGiftCardId,
+        store_id: mockStoreId,
+        current_balance_cents: 5000,
+        status: 'ACTIVE',
+      }])
       prismaService.giftCard.update.mockResolvedValue({
         ...mockGiftCard,
         currentBalanceCents: 3000,
@@ -634,10 +655,13 @@ describe('GiftCardsService', () => {
     })
 
     it('should not allow negative balance (floor at 0)', async () => {
-      prismaService.giftCard.findFirst.mockResolvedValue({
-        ...mockGiftCard,
-        currentBalanceCents: 1000,
-      })
+      // Mock raw query for FOR UPDATE lock (Code Review Fix)
+      prismaService.$queryRaw.mockResolvedValue([{
+        id: mockGiftCardId,
+        store_id: mockStoreId,
+        current_balance_cents: 1000,
+        status: 'ACTIVE',
+      }])
       prismaService.giftCard.update.mockResolvedValue({
         ...mockGiftCard,
         currentBalanceCents: 0,
@@ -665,7 +689,8 @@ describe('GiftCardsService', () => {
     })
 
     it('should fail for non-existent gift card', async () => {
-      prismaService.giftCard.findFirst.mockResolvedValue(null)
+      // Mock raw query returning empty array (Code Review Fix)
+      prismaService.$queryRaw.mockResolvedValue([])
 
       const result = await service.adjustBalance(
         mockStoreId,

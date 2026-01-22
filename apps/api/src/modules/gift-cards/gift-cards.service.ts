@@ -506,68 +506,99 @@ export class GiftCardsService {
     input: RefundToGiftCardInput,
     performedById?: string,
   ): Promise<{ success: boolean; transactionId?: string; newBalanceCents?: number; error?: string }> {
-    const giftCard = await this.prisma.giftCard.findFirst({
-      where: { id: input.giftCardId, storeId },
-    })
+    try {
+      // Code Review Fix: Use pessimistic locking to prevent race conditions
+      // Move findFirst inside transaction with FOR UPDATE lock
+      const result = await this.prisma.$transaction(
+        async (tx) => {
+          // Find gift card with FOR UPDATE lock to prevent concurrent modifications
+          const giftCards = await tx.$queryRaw<
+            Array<{
+              id: string
+              store_id: string
+              current_balance_cents: number
+              status: GiftCardStatus
+            }>
+          >`
+            SELECT id, store_id, current_balance_cents, status
+            FROM gift_cards
+            WHERE id = ${input.giftCardId} AND store_id = ${storeId}
+            FOR UPDATE
+          `
 
-    if (!giftCard) {
-      return { success: false, error: 'Gift card not found' }
-    }
+          const giftCard = giftCards[0]
 
-    // Calculate new balance
-    const newBalance = giftCard.currentBalanceCents + input.amountCents
+          if (!giftCard) {
+            throw new Error('NOT_FOUND')
+          }
 
-    // If card was depleted, reactivate it
-    const newStatus: GiftCardStatus =
-      giftCard.status === 'DEPLETED' || giftCard.status === 'PENDING' ? 'ACTIVE' : giftCard.status
+          // Calculate new balance using locked, current value
+          const newBalance = giftCard.current_balance_cents + input.amountCents
 
-    // Perform refund in transaction
-    const result = await this.prisma.$transaction(async (tx) => {
-      // Update gift card balance
-      await tx.giftCard.update({
-        where: { id: giftCard.id },
-        data: {
-          currentBalanceCents: newBalance,
-          status: newStatus,
+          // If card was depleted, reactivate it
+          const newStatus: GiftCardStatus =
+            giftCard.status === 'DEPLETED' || giftCard.status === 'PENDING' ? 'ACTIVE' : giftCard.status
+
+          // Update gift card balance
+          await tx.giftCard.update({
+            where: { id: giftCard.id },
+            data: {
+              currentBalanceCents: newBalance,
+              status: newStatus,
+            },
+          })
+
+          // Create refund transaction
+          const transaction = await tx.giftCardTransaction.create({
+            data: {
+              storeId,
+              giftCardId: giftCard.id,
+              type: 'REFUND',
+              amountCents: input.amountCents, // Positive for credit
+              balanceAfterCents: newBalance,
+              orderId: input.orderId,
+              reason: input.reason ?? null,
+              performedById: performedById ?? null,
+            },
+          })
+
+          return { giftCard, transaction, newBalance }
         },
+        {
+          // Use SERIALIZABLE isolation for maximum safety against race conditions
+          isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+        },
+      )
+
+      // Emit event (after successful transaction)
+      this.eventEmitter.emit('giftCard.refunded', {
+        giftCardId: result.giftCard.id,
+        storeId,
+        transactionId: result.transaction.id,
+        orderId: input.orderId,
+        amountCents: input.amountCents,
+        newBalanceCents: result.newBalance,
+        timestamp: new Date().toISOString(),
       })
 
-      // Create refund transaction
-      const transaction = await tx.giftCardTransaction.create({
-        data: {
-          storeId,
-          giftCardId: giftCard.id,
-          type: 'REFUND',
-          amountCents: input.amountCents, // Positive for credit
-          balanceAfterCents: newBalance,
-          orderId: input.orderId,
-          reason: input.reason ?? null,
-          performedById: performedById ?? null,
-        },
-      })
+      this.logger.log(
+        `Gift card refunded: ${result.giftCard.id} for ${input.amountCents} cents (order: ${input.orderId})`,
+      )
 
-      return transaction
-    })
+      return {
+        success: true,
+        transactionId: result.transaction.id,
+        newBalanceCents: result.newBalance,
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
 
-    // Emit event
-    this.eventEmitter.emit('giftCard.refunded', {
-      giftCardId: giftCard.id,
-      storeId,
-      transactionId: result.id,
-      orderId: input.orderId,
-      amountCents: input.amountCents,
-      newBalanceCents: newBalance,
-      timestamp: new Date().toISOString(),
-    })
+      if (errorMessage === 'NOT_FOUND') {
+        return { success: false, error: 'Gift card not found' }
+      }
 
-    this.logger.log(
-      `Gift card refunded: ${giftCard.id} for ${input.amountCents} cents (order: ${input.orderId})`,
-    )
-
-    return {
-      success: true,
-      transactionId: result.id,
-      newBalanceCents: newBalance,
+      this.logger.error(`Gift card refund failed: ${errorMessage}`, error)
+      throw error
     }
   }
 
@@ -588,74 +619,107 @@ export class GiftCardsService {
     input: AdjustGiftCardBalanceInput,
     performedById: string,
   ): Promise<{ success: boolean; transactionId?: string; previousBalanceCents?: number; newBalanceCents?: number; error?: string }> {
-    const giftCard = await this.prisma.giftCard.findFirst({
-      where: { id: input.giftCardId, storeId },
-    })
+    try {
+      // Code Review Fix: Use pessimistic locking to prevent race conditions
+      // Move findFirst inside transaction with FOR UPDATE lock
+      const result = await this.prisma.$transaction(
+        async (tx) => {
+          // Find gift card with FOR UPDATE lock to prevent concurrent modifications
+          const giftCards = await tx.$queryRaw<
+            Array<{
+              id: string
+              store_id: string
+              current_balance_cents: number
+              status: GiftCardStatus
+            }>
+          >`
+            SELECT id, store_id, current_balance_cents, status
+            FROM gift_cards
+            WHERE id = ${input.giftCardId} AND store_id = ${storeId}
+            FOR UPDATE
+          `
 
-    if (!giftCard) {
-      return { success: false, error: 'Gift card not found' }
-    }
+          const giftCard = giftCards[0]
 
-    // Calculate new balance (ensure non-negative)
-    const newBalance = Math.max(0, giftCard.currentBalanceCents + input.amountCents)
+          if (!giftCard) {
+            throw new Error('NOT_FOUND')
+          }
 
-    // Determine new status
-    let newStatus = giftCard.status
-    if (newBalance === 0 && giftCard.status === 'ACTIVE') {
-      newStatus = 'DEPLETED'
-    } else if (newBalance > 0 && giftCard.status === 'DEPLETED') {
-      newStatus = 'ACTIVE'
-    }
+          const previousBalance = giftCard.current_balance_cents
 
-    // Perform adjustment in transaction
-    const result = await this.prisma.$transaction(async (tx) => {
-      // Update gift card balance
-      await tx.giftCard.update({
-        where: { id: giftCard.id },
-        data: {
-          currentBalanceCents: newBalance,
-          status: newStatus,
+          // Calculate new balance using locked, current value (ensure non-negative)
+          const newBalance = Math.max(0, giftCard.current_balance_cents + input.amountCents)
+
+          // Determine new status
+          let newStatus = giftCard.status
+          if (newBalance === 0 && giftCard.status === 'ACTIVE') {
+            newStatus = 'DEPLETED'
+          } else if (newBalance > 0 && giftCard.status === 'DEPLETED') {
+            newStatus = 'ACTIVE'
+          }
+
+          // Update gift card balance
+          await tx.giftCard.update({
+            where: { id: giftCard.id },
+            data: {
+              currentBalanceCents: newBalance,
+              status: newStatus,
+            },
+          })
+
+          // Create adjustment transaction
+          const transaction = await tx.giftCardTransaction.create({
+            data: {
+              storeId,
+              giftCardId: giftCard.id,
+              type: 'ADJUSTMENT',
+              amountCents: input.amountCents,
+              balanceAfterCents: newBalance,
+              reason: input.reason,
+              performedById,
+            },
+          })
+
+          return { giftCard: { id: giftCard.id }, transaction, previousBalance, newBalance }
         },
+        {
+          // Use SERIALIZABLE isolation for maximum safety against race conditions
+          isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+        },
+      )
+
+      // Emit event (after successful transaction)
+      this.eventEmitter.emit('giftCard.adjusted', {
+        giftCardId: result.giftCard.id,
+        storeId,
+        transactionId: result.transaction.id,
+        previousBalanceCents: result.previousBalance,
+        adjustmentCents: input.amountCents,
+        newBalanceCents: result.newBalance,
+        reason: input.reason,
+        performedById,
+        timestamp: new Date().toISOString(),
       })
 
-      // Create adjustment transaction
-      const transaction = await tx.giftCardTransaction.create({
-        data: {
-          storeId,
-          giftCardId: giftCard.id,
-          type: 'ADJUSTMENT',
-          amountCents: input.amountCents,
-          balanceAfterCents: newBalance,
-          reason: input.reason,
-          performedById,
-        },
-      })
+      this.logger.log(
+        `Gift card adjusted: ${result.giftCard.id} by ${input.amountCents} cents (${input.reason})`,
+      )
 
-      return transaction
-    })
+      return {
+        success: true,
+        transactionId: result.transaction.id,
+        previousBalanceCents: result.previousBalance,
+        newBalanceCents: result.newBalance,
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
 
-    // Emit event
-    this.eventEmitter.emit('giftCard.adjusted', {
-      giftCardId: giftCard.id,
-      storeId,
-      transactionId: result.id,
-      previousBalanceCents: giftCard.currentBalanceCents,
-      adjustmentCents: input.amountCents,
-      newBalanceCents: newBalance,
-      reason: input.reason,
-      performedById,
-      timestamp: new Date().toISOString(),
-    })
+      if (errorMessage === 'NOT_FOUND') {
+        return { success: false, error: 'Gift card not found' }
+      }
 
-    this.logger.log(
-      `Gift card adjusted: ${giftCard.id} by ${input.amountCents} cents (${input.reason})`,
-    )
-
-    return {
-      success: true,
-      transactionId: result.id,
-      previousBalanceCents: giftCard.currentBalanceCents,
-      newBalanceCents: newBalance,
+      this.logger.error(`Gift card adjustment failed: ${errorMessage}`, error)
+      throw error
     }
   }
 

@@ -52,6 +52,16 @@ describe('SettingsService', () => {
     primaryColor: '#CCFF00',
     logoUrl: null,
     faviconUrl: null,
+    // Commerce Feature Flags (Story 3.R1)
+    promotionsEnabled: true,
+    maxDiscountPercent: 100,
+    allowStackablePromos: false,
+    giftCardsEnabled: false,
+    giftCardMinCents: 1000,
+    giftCardMaxCents: 50000,
+    giftCardValidityDays: null,
+    multiCurrencyEnabled: false,
+    displayPriceIncTax: true,
     createdAt: new Date('2024-01-01'),
     updatedAt: new Date('2024-01-01'),
     ...overrides,
@@ -328,6 +338,121 @@ describe('SettingsService', () => {
           },
         })
       )
+    })
+  })
+
+  // Story 3.R1 - Commerce Feature Flags Tests
+  describe('commerce feature flags (Story 3.R1)', () => {
+    it('should return default commerce feature flags when none exist', async () => {
+      const mockStore = createMockStore({ settings: null })
+      mockPrisma.store.findUnique.mockResolvedValue(mockStore)
+
+      const result = await service.get(mockStoreId)
+
+      // Promotions defaults
+      expect(result.promotionsEnabled).toBe(true)
+      expect(result.maxDiscountPercent).toBe(100)
+      expect(result.allowStackablePromos).toBe(false)
+
+      // Gift cards defaults
+      expect(result.giftCardsEnabled).toBe(false)
+      expect(result.giftCardMinCents).toBe(1000)
+      expect(result.giftCardMaxCents).toBe(50000)
+      expect(result.giftCardValidityDays).toBeNull()
+
+      // Multi-currency defaults
+      expect(result.multiCurrencyEnabled).toBe(false)
+      expect(result.displayPriceIncTax).toBe(true)
+    })
+
+    it('should update promotions feature flags', async () => {
+      const mockStore = createMockStore()
+      const updatedSettings = createMockSettings({
+        promotionsEnabled: false,
+        maxDiscountPercent: 50,
+        allowStackablePromos: true,
+      })
+
+      mockPrisma.store.findUnique.mockResolvedValue(mockStore)
+      mockPrisma.storeSettings.upsert.mockResolvedValue(updatedSettings)
+
+      const result = await service.update(mockStoreId, {
+        promotionsEnabled: false,
+        maxDiscountPercent: 50,
+        allowStackablePromos: true,
+      })
+
+      expect(result.promotionsEnabled).toBe(false)
+      expect(result.maxDiscountPercent).toBe(50)
+      expect(result.allowStackablePromos).toBe(true)
+    })
+
+    it('should update gift cards feature flags', async () => {
+      const mockStore = createMockStore()
+      const updatedSettings = createMockSettings({
+        giftCardsEnabled: true,
+        giftCardMinCents: 500,
+        giftCardMaxCents: 100000,
+        giftCardValidityDays: 365,
+      })
+
+      mockPrisma.store.findUnique.mockResolvedValue(mockStore)
+      mockPrisma.storeSettings.upsert.mockResolvedValue(updatedSettings)
+
+      const result = await service.update(mockStoreId, {
+        giftCardsEnabled: true,
+        giftCardMinCents: 500,
+        giftCardMaxCents: 100000,
+        giftCardValidityDays: 365,
+      })
+
+      expect(result.giftCardsEnabled).toBe(true)
+      expect(result.giftCardMinCents).toBe(500)
+      expect(result.giftCardMaxCents).toBe(100000)
+      expect(result.giftCardValidityDays).toBe(365)
+    })
+
+    it('should update multi-currency feature flags', async () => {
+      const mockStore = createMockStore()
+      const updatedSettings = createMockSettings({
+        multiCurrencyEnabled: true,
+        displayPriceIncTax: false,
+      })
+
+      mockPrisma.store.findUnique.mockResolvedValue(mockStore)
+      mockPrisma.storeSettings.upsert.mockResolvedValue(updatedSettings)
+
+      const result = await service.update(mockStoreId, {
+        multiCurrencyEnabled: true,
+        displayPriceIncTax: false,
+      })
+
+      expect(result.multiCurrencyEnabled).toBe(true)
+      expect(result.displayPriceIncTax).toBe(false)
+    })
+
+    it('should preserve commerce flags when updating other fields', async () => {
+      const mockSettings = createMockSettings({
+        promotionsEnabled: false,
+        giftCardsEnabled: true,
+        multiCurrencyEnabled: true,
+      })
+      const mockStore = createMockStore({ settings: mockSettings })
+      const updatedSettings = createMockSettings({
+        ...mockSettings,
+        name: 'Updated Name',
+      })
+
+      mockPrisma.store.findUnique.mockResolvedValue(mockStore)
+      mockPrisma.storeSettings.upsert.mockResolvedValue(updatedSettings)
+
+      await service.update(mockStoreId, { name: 'Updated Name' })
+
+      // Verify only name is in update payload, not commerce flags
+      const upsertCall = mockPrisma.storeSettings.upsert.mock.calls[0][0]
+      expect(upsertCall.update).toHaveProperty('name', 'Updated Name')
+      expect(upsertCall.update).not.toHaveProperty('promotionsEnabled')
+      expect(upsertCall.update).not.toHaveProperty('giftCardsEnabled')
     })
   })
 })

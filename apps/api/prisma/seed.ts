@@ -197,6 +197,25 @@ async function seedStore(): Promise<string> {
   });
 
   console.log(`  Store: ${store.name} (${store.id})`);
+
+  // Seed default StoreCurrency (Story 3.R1)
+  // EUR is the default currency for all stores
+  await prisma.storeCurrency.upsert({
+    where: {
+      storeId_currencyCode: {
+        storeId: store.id,
+        currencyCode: 'EUR',
+      },
+    },
+    update: {},
+    create: {
+      storeId: store.id,
+      currencyCode: 'EUR',
+      isDefault: true,
+    },
+  });
+  console.log(`  StoreCurrency: EUR (default)`);
+
   return store.id;
 }
 

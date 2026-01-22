@@ -169,6 +169,68 @@ export class StoreSettingsResponseDto {
   })
   faviconUrl!: string | null;
 
+  // =============================================
+  // Commerce Feature Flags (Story 3.R1)
+  // =============================================
+
+  // Promotions settings
+  @ApiProperty({
+    description: 'Enable promotions/discounts feature',
+    example: true,
+  })
+  promotionsEnabled!: boolean;
+
+  @ApiProperty({
+    description: 'Maximum discount percentage allowed (0-100)',
+    example: 100,
+  })
+  maxDiscountPercent!: number;
+
+  @ApiProperty({
+    description: 'Allow multiple promotions to stack',
+    example: false,
+  })
+  allowStackablePromos!: boolean;
+
+  // Gift cards settings
+  @ApiProperty({
+    description: 'Enable gift cards feature',
+    example: false,
+  })
+  giftCardsEnabled!: boolean;
+
+  @ApiProperty({
+    description: 'Minimum gift card amount in cents',
+    example: 1000,
+  })
+  giftCardMinCents!: number;
+
+  @ApiProperty({
+    description: 'Maximum gift card amount in cents',
+    example: 50000,
+  })
+  giftCardMaxCents!: number;
+
+  @ApiPropertyOptional({
+    description: 'Gift card validity in days (null = never expires)',
+    example: 365,
+    nullable: true,
+  })
+  giftCardValidityDays!: number | null;
+
+  // Multi-currency settings
+  @ApiProperty({
+    description: 'Enable multi-currency support',
+    example: false,
+  })
+  multiCurrencyEnabled!: boolean;
+
+  @ApiProperty({
+    description: 'Display prices with tax included',
+    example: true,
+  })
+  displayPriceIncTax!: boolean;
+
   // Timestamps
   @ApiProperty({
     description: 'Record creation timestamp',

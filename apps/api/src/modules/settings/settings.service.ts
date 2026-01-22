@@ -54,6 +54,16 @@ export class SettingsService {
       primaryColor: '#CCFF00', // Brutalist accent color
       logoUrl: null,
       faviconUrl: null,
+      // Commerce Feature Flags (Story 3.R1)
+      promotionsEnabled: true,
+      maxDiscountPercent: 100,
+      allowStackablePromos: false,
+      giftCardsEnabled: false,
+      giftCardMinCents: 1000,
+      giftCardMaxCents: 50000,
+      giftCardValidityDays: null,
+      multiCurrencyEnabled: false,
+      displayPriceIncTax: true,
     };
   }
 
@@ -167,6 +177,16 @@ export class SettingsService {
       'primaryColor',
       'logoUrl',
       'faviconUrl',
+      // Commerce Feature Flags (Story 3.R1)
+      'promotionsEnabled',
+      'maxDiscountPercent',
+      'allowStackablePromos',
+      'giftCardsEnabled',
+      'giftCardMinCents',
+      'giftCardMaxCents',
+      'giftCardValidityDays',
+      'multiCurrencyEnabled',
+      'displayPriceIncTax',
     ];
 
     for (const field of fields) {
@@ -203,6 +223,16 @@ export class SettingsService {
       primaryColor: defaults.primaryColor,
       logoUrl: defaults.logoUrl,
       faviconUrl: defaults.faviconUrl,
+      // Commerce Feature Flags (Story 3.R1)
+      promotionsEnabled: defaults.promotionsEnabled,
+      maxDiscountPercent: defaults.maxDiscountPercent,
+      allowStackablePromos: defaults.allowStackablePromos,
+      giftCardsEnabled: defaults.giftCardsEnabled,
+      giftCardMinCents: defaults.giftCardMinCents,
+      giftCardMaxCents: defaults.giftCardMaxCents,
+      giftCardValidityDays: defaults.giftCardValidityDays,
+      multiCurrencyEnabled: defaults.multiCurrencyEnabled,
+      displayPriceIncTax: defaults.displayPriceIncTax,
     };
   }
 
@@ -232,6 +262,16 @@ export class SettingsService {
       primaryColor: settings.primaryColor,
       logoUrl: settings.logoUrl,
       faviconUrl: settings.faviconUrl,
+      // Commerce Feature Flags (Story 3.R1)
+      promotionsEnabled: settings.promotionsEnabled,
+      maxDiscountPercent: settings.maxDiscountPercent,
+      allowStackablePromos: settings.allowStackablePromos,
+      giftCardsEnabled: settings.giftCardsEnabled,
+      giftCardMinCents: settings.giftCardMinCents,
+      giftCardMaxCents: settings.giftCardMaxCents,
+      giftCardValidityDays: settings.giftCardValidityDays,
+      multiCurrencyEnabled: settings.multiCurrencyEnabled,
+      displayPriceIncTax: settings.displayPriceIncTax,
       createdAt: settings.createdAt,
       updatedAt: settings.updatedAt,
     };

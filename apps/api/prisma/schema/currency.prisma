@@ -12,5 +12,8 @@ model Currency {
   symbol        String                       // Currency symbol: "$", "€"
   decimalDigits Int    @map("decimal_digits") // Decimal places: 2 for USD, 0 for JPY
 
+  // Relations (Story 3.R1)
+  stores StoreCurrency[]
+
   @@map("currencies")
 }
